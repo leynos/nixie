@@ -1,6 +1,6 @@
 # nixie
 
-`nixie` is a simple command line tool that validates Mermaid diagrams embedded in Markdown files.
+`nixie` is a simple command-line tool that validates Mermaid diagrams embedded in Markdown files.
 
 The CLI scans each provided file (or directory) for `mermaid` code blocks and
 invokes `mermaid-cli` to verify that the diagrams can be rendered without
