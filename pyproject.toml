@@ -17,6 +17,7 @@ dev = [
   "ruff",
   "pyright",
   "pytest",
+  "pytest-asyncio",
 ]
 
 [project.scripts]
@@ -28,3 +29,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv]
 package = true
+
+[tool.pytest.ini_options]
+testpaths = ["nixie/unittests", "tests"]
