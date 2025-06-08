@@ -29,84 +29,85 @@ def stub_render(monkeypatch) -> AsyncMock:
     return mock
 
 
-def test_single_file_success(tmp_path: Path, stub_render, capsys) -> None:
-    md = tmp_path / "good.md"
-    md.write_text("""```mermaid
-A-->B
-```""")
-    exit_code = asyncio.run(main([md], 2))
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    (
+        "structure",
+        "inputs",
+        "expected_exit",
+        "error_substring",
+        "expected_calls",
+    ),
+    [
+        (
+            {"good.md": "```mermaid\nA-->B\n```"},
+            ["good.md"],
+            0,
+            None,
+            [("good.md", 1)],
+        ),
+        (
+            {"bad.md": "```mermaid\nINVALID\n```"},
+            ["bad.md"],
+            1,
+            "Parse error",
+            [("bad.md", 1)],
+        ),
+        (
+            {
+                "docs/one.md": "```mermaid\nA-->B\n```",
+                "docs/two.md": "```mermaid\ninvalid diagram\n```",
+                "extra.md": "Just text",
+            },
+            ["docs", "extra.md"],
+            1,
+            "Parse error",
+            [("docs/one.md", 1), ("docs/two.md", 1)],
+        ),
+        (
+            {"multi.md": ("```mermaid\nA-->B\n```\n\n```mermaid\ninvalid\n```")},
+            ["multi.md"],
+            1,
+            "Parse error",
+            [("multi.md", 1), ("multi.md", 2)],
+        ),
+        (
+            {"none.md": "No diagrams here"},
+            ["none.md"],
+            0,
+            None,
+            [],
+        ),
+    ],
+)
+async def test_cli_behavior(
+    tmp_path: Path,
+    stub_render: AsyncMock,
+    capsys: pytest.CaptureFixture[str],
+    structure: dict[str, str],
+    inputs: list[str],
+    expected_exit: int,
+    error_substring: str | None,
+    expected_calls: list[tuple[str, int]],
+) -> None:
+    for rel, content in structure.items():
+        dest = tmp_path / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content)
+
+    paths = [tmp_path / p for p in inputs]
+    exit_code = await main(paths, 2)
     captured = capsys.readouterr()
-    assert exit_code == 0
-    assert captured.err == ""
-    assert stub_render.await_count == 1
-    args = stub_render.await_args_list[0].args
-    assert args[3] == md
-    assert args[4] == 1
+    assert exit_code == expected_exit
+    if error_substring is None:
+        assert captured.err == ""
+    else:
+        assert error_substring in captured.err
 
-
-def test_single_file_failure(tmp_path: Path, stub_render, capsys) -> None:
-    md = tmp_path / "bad.md"
-    md.write_text("""```mermaid
-INVALID
-```""")
-    exit_code = asyncio.run(main([md], 2))
-    captured = capsys.readouterr()
-    assert exit_code == 1
-    assert "Parse error" in captured.err
-    assert stub_render.await_count == 1
-    args = stub_render.await_args_list[0].args
-    assert args[3] == md
-    assert args[4] == 1
-
-
-def test_directory_and_multiple_files(tmp_path: Path, stub_render, capsys) -> None:
-    dir_path = tmp_path / "docs"
-    dir_path.mkdir()
-    (dir_path / "one.md").write_text("""```mermaid
-A-->B
-```""")
-    (dir_path / "two.md").write_text("""```mermaid
-invalid diagram
-```""")
-    extra = tmp_path / "extra.md"
-    extra.write_text("Just text")
-    exit_code = asyncio.run(main([dir_path, extra], 2))
-    captured = capsys.readouterr()
-    assert exit_code == 1
-    assert "Parse error" in captured.err
-    assert stub_render.await_count == 2
-    paths = {call.args[3] for call in stub_render.await_args_list}
-    assert {dir_path / "one.md", dir_path / "two.md"} == paths
-    indices = sorted(call.args[4] for call in stub_render.await_args_list)
-    assert indices == [1, 1]
-
-
-def test_multiple_diagrams(tmp_path: Path, stub_render, capsys) -> None:
-    md = tmp_path / "multi.md"
-    md.write_text(
-        """```mermaid
-A-->B
-```
-
-```mermaid
-invalid
-```"""
-    )
-    exit_code = asyncio.run(main([md], 2))
-    captured = capsys.readouterr()
-    assert exit_code == 1
-    assert "Parse error" in captured.err
-    assert stub_render.await_count == 2
-    indices = sorted(call.args[4] for call in stub_render.await_args_list)
-    assert indices == [1, 2]
-    assert all(call.args[3] == md for call in stub_render.await_args_list)
-
-
-def test_no_diagrams(tmp_path: Path, stub_render, capsys) -> None:
-    md = tmp_path / "none.md"
-    md.write_text("No diagrams here")
-    exit_code = asyncio.run(main([md], 2))
-    captured = capsys.readouterr()
-    assert exit_code == 0
-    assert captured.err == ""
-    assert stub_render.await_count == 0
+    assert stub_render.await_count == len(expected_calls)
+    actual = {
+        (call.args[3].relative_to(tmp_path), call.args[4])
+        for call in stub_render.await_args_list
+    }
+    expected = {(Path(p), i) for p, i in expected_calls}
+    assert actual == expected
