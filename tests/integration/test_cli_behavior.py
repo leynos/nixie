@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -8,8 +9,8 @@ from nixie.cli import main
 
 
 @pytest.fixture
-def stub_render(monkeypatch):
-    async def fake_render_block(
+def stub_render(monkeypatch) -> AsyncMock:
+    async def side_effect(
         block: str,
         tmpdir: Path,
         cfg_path: Path,
@@ -23,8 +24,9 @@ def stub_render(monkeypatch):
             return False
         return True
 
-    monkeypatch.setattr("nixie.cli.render_block", fake_render_block)
-    return fake_render_block
+    mock = AsyncMock(side_effect=side_effect)
+    monkeypatch.setattr("nixie.cli.render_block", mock)
+    return mock
 
 
 def test_single_file_success(tmp_path: Path, stub_render, capsys) -> None:
@@ -36,6 +38,10 @@ A-->B
     captured = capsys.readouterr()
     assert exit_code == 0
     assert captured.err == ""
+    assert stub_render.await_count == 1
+    args = stub_render.await_args_list[0].args
+    assert args[3] == md
+    assert args[4] == 1
 
 
 def test_single_file_failure(tmp_path: Path, stub_render, capsys) -> None:
@@ -47,6 +53,10 @@ INVALID
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "Parse error" in captured.err
+    assert stub_render.await_count == 1
+    args = stub_render.await_args_list[0].args
+    assert args[3] == md
+    assert args[4] == 1
 
 
 def test_directory_and_multiple_files(tmp_path: Path, stub_render, capsys) -> None:
@@ -64,6 +74,11 @@ invalid diagram
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "Parse error" in captured.err
+    assert stub_render.await_count == 2
+    paths = {call.args[3] for call in stub_render.await_args_list}
+    assert {dir_path / "one.md", dir_path / "two.md"} == paths
+    indices = sorted(call.args[4] for call in stub_render.await_args_list)
+    assert indices == [1, 1]
 
 
 def test_multiple_diagrams(tmp_path: Path, stub_render, capsys) -> None:
@@ -81,6 +96,10 @@ invalid
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "Parse error" in captured.err
+    assert stub_render.await_count == 2
+    indices = sorted(call.args[4] for call in stub_render.await_args_list)
+    assert indices == [1, 2]
+    assert all(call.args[3] == md for call in stub_render.await_args_list)
 
 
 def test_no_diagrams(tmp_path: Path, stub_render, capsys) -> None:
@@ -90,3 +109,4 @@ def test_no_diagrams(tmp_path: Path, stub_render, capsys) -> None:
     captured = capsys.readouterr()
     assert exit_code == 0
     assert captured.err == ""
+    assert stub_render.await_count == 0

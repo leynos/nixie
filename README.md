@@ -25,3 +25,10 @@ uv sync --include dev
 ```
 
 This installs linters and test tools such as Ruff, Pyright and pytest.
+
+Before running the test suite, install the project in editable mode so the
+package can be imported:
+
+```bash
+pip install -e .
+```
