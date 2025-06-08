@@ -1,0 +1,30 @@
+[project]
+name = "nixie"
+version = "0.1.0"
+description = "Validate Mermaid diagrams in Markdown files"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "ISC" }
+authors = [{ name = "Payton McIntosh", email = "pmcintosh@df12.net" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: ISC License",
+  "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff",
+  "pyright",
+  "pytest",
+]
+
+[project.scripts]
+nixie = "nixie.cli:cli"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = true

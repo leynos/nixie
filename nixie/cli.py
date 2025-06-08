@@ -210,6 +210,11 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
     sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
+
+
+if __name__ == "__main__":
+    cli()
