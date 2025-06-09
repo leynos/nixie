@@ -17,7 +17,7 @@
 ## Installation
 
 Install the package in editable mode and set up development tools using
-[uv](https://github.com/astral-sh/uv), Astral's fast Python package manager:
+[uv](https://docs.astral.sh/uv/), Astral's fast Python package manager:
 
 ```bash
 pip install -e .
@@ -31,7 +31,8 @@ nixie [--concurrency N] FILE [FILE...]
 ```
 
 `--concurrency` controls how many diagrams are processed in parallel (defaults
-to the number of CPU cores or `4`). Paths can be files or directories.
+to the number of CPU cores or `4` if this cannot be determined). Paths can be
+files or directories.
 
 Example:
 
