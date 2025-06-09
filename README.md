@@ -1,35 +1,56 @@
 # nixie
 
-`nixie` is a simple command-line tool that validates Mermaid diagrams embedded in Markdown files.
+`nixie` validates Mermaid diagrams embedded in Markdown files.
 
-The CLI scans each provided file (or directory) for `mermaid` code blocks and
-invokes `mermaid-cli` to verify that the diagrams can be rendered without
-errors.
+## Features
+
+- Recursively searches directories for Markdown files
+- Parses `mermaid` code blocks and uses `@mermaid-js/mermaid-cli` to validate
+- Runs checks concurrently for faster feedback
+- Prints clear error messages for failing diagrams
+
+## Requirements
+
+- Python 3.11+
+- Node.js with `npx` and `@mermaid-js/mermaid-cli`
+
+## Installation
+
+Install the package in editable mode and set up development tools using `uv`:
+
+```bash
+pip install -e .
+uv sync --include dev
+```
 
 ## Usage
 
 ```bash
-nixie path/to/file.md
+nixie [--concurrency N] FILE [FILE...]
 ```
 
-Use `--concurrency` to control how many diagrams are processed in parallel. The tool relies on
-Node.js and `@mermaid-js/mermaid-cli` being available on your system.
+`--concurrency` controls how many diagrams are processed in parallel. Paths can
+be files or directories.
 
 ## Development
 
-Development dependencies are managed via `pyproject.toml`. After installing
-[uv](https://github.com/astral-sh/uv), run:
+Run formatting, linting, type checking and tests before committing:
 
 ```bash
-uv sync --include dev
+ruff format
+ruff check
+pyright
+pytest
 ```
 
-This installs linters and test tools such as Ruff, Pyright, pytest and
-pytest-asyncio.
+The integration tests mock the CLI so Node.js is not needed during testing.
 
-Before running the test suite, install the project in editable mode so the
-package can be imported:
+## Project Structure
 
-```bash
-pip install -e .
-```
+- `nixie/cli.py` – command-line interface and validation logic
+- `nixie/unittests/` – unit tests for helper functions
+- `tests/integration/` – behavioural tests covering the CLI
+
+## License
+
+See `LICENSE` for license details.
