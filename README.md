@@ -16,8 +16,21 @@
 
 ## Installation
 
-Install the package in editable mode and set up development tools using
-[uv](https://docs.astral.sh/uv/), Astral's fast Python package manager:
+### From PyPI
+
+End users can install the latest release directly from PyPI:
+
+```bash
+pip install nixie
+```
+
+This provides the `nixie` command without any development extras.
+
+### Development Setup
+
+To contribute to nixie, install the package in editable mode and set up
+development tools using [uv](https://docs.astral.sh/uv/), Astral's fast Python
+package manager:
 
 ```bash
 pip install -e .
