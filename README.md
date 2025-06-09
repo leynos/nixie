@@ -16,7 +16,8 @@
 
 ## Installation
 
-Install the package in editable mode and set up development tools using `uv`:
+Install the package in editable mode and set up development tools using
+[uv](https://github.com/astral-sh/uv), Astral's fast Python package manager:
 
 ```bash
 pip install -e .
@@ -29,8 +30,18 @@ uv sync --include dev
 nixie [--concurrency N] FILE [FILE...]
 ```
 
-`--concurrency` controls how many diagrams are processed in parallel. Paths can
-be files or directories.
+`--concurrency` controls how many diagrams are processed in parallel (defaults
+to the number of CPU cores or `4`). Paths can be files or directories.
+
+Example:
+
+```bash
+$ nixie bad.md
+Parse error on line 1:
+invalid diagram
+^
+Unexpected token: syntax error
+```
 
 ## Development
 
