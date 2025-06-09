@@ -23,3 +23,7 @@ def test_parse_blocks_multiple() -> None:
 
 def test_parse_blocks_none() -> None:
     assert parse_blocks("No diagrams here") == []
+
+
+def test_parse_blocks_empty() -> None:
+    assert parse_blocks("") == []
