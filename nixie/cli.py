@@ -58,10 +58,20 @@ def create_puppeteer_config() -> typing.Generator[Path]:
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
     """Return the command to run mermaid-cli."""
-    cli = "mmdc" if shutil.which("mmdc") else "npx"
-    cmd = [cli]
-    if cli == "npx":
-        cmd += ["--yes", "@mermaid-js/mermaid-cli", "mmdc"]
+    cli = "mmdc"
+    if not shutil.which("mmdc"):
+        if shutil.which("bun"):
+            cli = "bun"
+        else:
+            cli = "npx"
+
+    match cli:
+        case "npx":
+            cmd = ["npx", "--yes", "@mermaid-js/mermaid-cli", "mmdc"]
+        case "bun":
+            cmd = ["bun", "x", "--bun", "@mermaid-js/mermaid-cli", "mmdc"]
+        case _:
+            cmd = [cli]
     cmd += ["-p", str(cfg_path), "-i", str(mmd), "-o", str(svg)]
     return cmd
 
@@ -122,7 +132,10 @@ async def render_block(
                 )
             except FileNotFoundError:
                 print(
-                    f"Error: '{cli}' not found. Node.js with npx and @mermaid-js/mermaid-cli is required.",
+                    (
+                        f"Error: '{cli}' not found. Install Node.js with npx "
+                        "or Bun to use @mermaid-js/mermaid-cli."
+                    ),
                     file=sys.stderr,
                 )
                 return False
