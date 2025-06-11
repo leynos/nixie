@@ -12,7 +12,7 @@
 ## Requirements
 
 - Python 3.11+
-- Node.js with `npx` and `@mermaid-js/mermaid-cli`
+- Node.js with `npx` or Bun with `bun x --bun` and `@mermaid-js/mermaid-cli`
 
 ## Installation
 
