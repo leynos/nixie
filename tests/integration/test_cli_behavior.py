@@ -88,3 +88,25 @@ async def test_cli_behavior(
     }
     expected = {(Path(p), i) for p, i in expected_calls}
     assert actual == expected
+
+
+@pytest.mark.asyncio
+async def test_cli_marks_file_boundaries(
+    tmp_path: Path, stub_render: AsyncMock, capsys: pytest.CaptureFixture[str]
+) -> None:
+    file_a = tmp_path / "a.md"
+    file_b = tmp_path / "b.md"
+    file_a.write_text("```mermaid\nA-->B\n```")
+    file_b.write_text("No diagrams here")
+
+    exit_code = await main([file_a, file_b], 2)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    expected_lines = [
+        f"==> {file_a}",
+        f"<== {file_a}",
+        f"==> {file_b}",
+        f"<== {file_b}",
+    ]
+    assert captured.out.splitlines() == expected_lines

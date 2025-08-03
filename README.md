@@ -47,6 +47,14 @@ nixie [--concurrency N] FILE [FILE...]
 to the number of CPU cores or `4` if this cannot be determined). Paths can be
 files or directories.
 
+When multiple files are provided, nixie prints markers that show where the
+output for each file starts and ends:
+
+```text
+==> path/to/file.md
+<== path/to/file.md
+```
+
 Example:
 
 ```bash
