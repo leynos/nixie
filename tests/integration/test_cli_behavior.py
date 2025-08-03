@@ -103,10 +103,55 @@ async def test_cli_marks_file_boundaries(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    expected_lines = [
+    lines = captured.out.splitlines()
+    markers = [
         f"==> {file_a}",
         f"<== {file_a}",
         f"==> {file_b}",
         f"<== {file_b}",
     ]
-    assert captured.out.splitlines() == expected_lines
+    for marker in markers:
+        assert lines.count(marker) == 1
+    positions = [lines.index(marker) for marker in markers]
+    assert positions == sorted(positions)
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_file_processing_error(
+    tmp_path: Path,
+    stub_render: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    file_a = tmp_path / "a.md"
+    file_b = tmp_path / "b.md"
+    file_a.write_text("```mermaid\nA-->B\n```")
+    file_b.write_text("```mermaid\nA-->B\n```")
+
+    from nixie import cli as cli_module
+
+    original_check_file = cli_module.check_file
+
+    async def mock_check_file(path: Path, *args, **kwargs) -> bool:
+        if path == file_b:
+            raise ValueError("Simulated processing error")
+        return await original_check_file(path, *args, **kwargs)
+
+    monkeypatch.setattr(cli_module, "check_file", mock_check_file)
+
+    exit_code = await main([file_a, file_b], 2)
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    lines = captured.out.splitlines()
+    markers = [
+        f"==> {file_a}",
+        f"<== {file_a}",
+        f"==> {file_b}",
+        f"<== {file_b}",
+    ]
+    for marker in markers:
+        assert lines.count(marker) == 1
+    positions = [lines.index(marker) for marker in markers]
+    assert positions == sorted(positions)
+    assert "Simulated processing error" in captured.out
