@@ -180,16 +180,17 @@ async def main(paths, max_concurrent):
     """Main entry point."""
     semaphore = asyncio.Semaphore(max_concurrent)
     with create_puppeteer_config() as cfg_path:
-        collected_files = collect_markdown_files(paths)
-        tasks = [check_file(p, cfg_path, semaphore) for p in collected_files]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
         all_success = True
-        for result in results:
-            if isinstance(result, Exception):
-                print(f"Validation task raised an exception: {result}")
+        for path in collect_markdown_files(paths):
+            print(f"==> {path}")
+            try:
+                success = await check_file(path, cfg_path, semaphore)
+            except Exception as exc:  # pragma: no cover - unexpected
+                print(f"Validation task raised an exception: {exc}")
+                success = False
+            if not success:
                 all_success = False
-            elif not result:
-                all_success = False
+            print(f"<== {path}")
         return 0 if all_success else 1
 
 
