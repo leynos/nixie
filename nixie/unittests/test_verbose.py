@@ -12,7 +12,7 @@ import pytest
 from nixie.cli import get_mmdc_cmd, parse_args, render_block
 
 
-def test_parse_args_verbose(monkeypatch) -> None:
+def test_parse_args_verbose(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "argv", ["nixie", "--verbose", "file.md"])
     parsed = parse_args()
     assert parsed.verbose is True
@@ -21,22 +21,26 @@ def test_parse_args_verbose(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_render_block_emits_command(
-    monkeypatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
-    async def fake_create_subprocess_exec(*cmd, **kwargs):
+    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
         return object()
 
-    async def fake_wait_for_proc(proc, path, idx, timeout):
+    async def fake_wait_for_proc(
+        proc: object, path: Path, idx: int, timeout: float
+    ) -> tuple[bool, bytes]:
         return True, b""
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     block = "A-->B"
     with caplog.at_level(logging.INFO, logger="nixie.cli"):
@@ -50,22 +54,26 @@ async def test_render_block_emits_command(
 
 @pytest.mark.asyncio
 async def test_render_block_silent_without_verbose(
-    monkeypatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
-    async def fake_create_subprocess_exec(*cmd, **kwargs):
+    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
         return object()
 
-    async def fake_wait_for_proc(proc, path, idx, timeout):
+    async def fake_wait_for_proc(
+        proc: object, path: Path, idx: int, timeout: float
+    ) -> tuple[bool, bytes]:
         return True, b""
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     block = "A-->B"
     with caplog.at_level(logging.WARNING, logger="nixie.cli"):

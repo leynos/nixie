@@ -115,7 +115,31 @@ async def render_block(
     semaphore: asyncio.Semaphore,
     timeout: float = 30.0,
 ) -> bool:
-    """Render a single mermaid block using the CLI asynchronously."""
+    """Render a single mermaid block using the CLI asynchronously.
+
+    Parameters
+    ----------
+    block
+        Mermaid code block to render.
+    tmpdir
+        Temporary directory for intermediate files.
+    cfg_path
+        Path to the Puppeteer configuration file.
+    path
+        Markdown file containing the block.
+    idx
+        Index of the block within ``path``.
+    semaphore
+        Limits concurrent CLI invocations.
+    timeout
+        Maximum time in seconds to wait for the CLI to finish.
+
+    Returns
+    -------
+    bool
+        ``True`` on success, ``False`` otherwise. The command line used for
+        rendering is logged at ``INFO`` level.
+    """
     mmd = tmpdir / f"{path.stem}_{idx}.mmd"
     svg = mmd.with_suffix(".svg")
 
