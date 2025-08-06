@@ -113,6 +113,7 @@ async def render_block(
     path: Path,
     idx: int,
     semaphore: asyncio.Semaphore,
+    *,
     verbose: bool | None = None,
     timeout: float = 30.0,
 ) -> bool:
@@ -156,13 +157,12 @@ async def render_block(
         mmd.write_text(block)
 
         cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-        log_cmd = (
-            verbose
-            if verbose is not None
-            else logging.getLogger(__name__).isEnabledFor(logging.INFO)
+        logger = logging.getLogger(__name__)
+        should_log = (
+            verbose if verbose is not None else logger.isEnabledFor(logging.INFO)
         )
-        if log_cmd:
-            logging.getLogger(__name__).info(shlex.join(cmd))
+        if should_log:
+            logger.info(shlex.join(cmd))
         cli = cmd[0]
 
         async with semaphore:
