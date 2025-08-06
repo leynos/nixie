@@ -47,7 +47,7 @@ nixie [--concurrency N] [--verbose] FILE [FILE...]
 to the number of CPU cores or `4` if this cannot be determined). Paths can be
 files or directories.
 
-`--verbose` prints the exact `mermaid-cli` command for each diagram.
+`--verbose` logs the exact `mermaid-cli` command for each diagram.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends:

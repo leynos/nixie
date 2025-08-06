@@ -16,7 +16,6 @@ def stub_render(monkeypatch) -> AsyncMock:
         idx: int,
         semaphore: asyncio.Semaphore,
         timeout: float = 30.0,
-        verbose: bool = False,
     ) -> bool:
         if "invalid" in block.lower():
             print("Parse error on line 1: INVALID", file=sys.stderr)

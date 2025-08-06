@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import os
 import re
 import shlex
@@ -113,7 +114,6 @@ async def render_block(
     idx: int,
     semaphore: asyncio.Semaphore,
     timeout: float = 30.0,
-    verbose: bool = False,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously."""
     mmd = tmpdir / f"{path.stem}_{idx}.mmd"
@@ -123,8 +123,7 @@ async def render_block(
         mmd.write_text(block)
 
         cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-        if verbose:
-            print(shlex.join(cmd))
+        logging.getLogger(__name__).info(shlex.join(cmd))
         cli = cmd[0]
 
         async with semaphore:
@@ -168,7 +167,6 @@ async def check_file(
     path: Path,
     cfg_path: Path,
     semaphore: asyncio.Semaphore,
-    verbose: bool = False,
 ) -> bool:
     """Check a single file for Mermaid diagrams."""
     blocks = parse_blocks(path.read_text(encoding="utf-8"))
@@ -185,7 +183,6 @@ async def check_file(
                 path,
                 idx,
                 semaphore,
-                verbose=verbose,
             )
             for idx, block in enumerate(blocks, 1)
         ]
@@ -193,7 +190,7 @@ async def check_file(
     return all(result is True for result in results)
 
 
-async def main(paths, max_concurrent, verbose: bool = False):
+async def main(paths, max_concurrent):
     """Main entry point."""
     semaphore = asyncio.Semaphore(max_concurrent)
     with create_puppeteer_config() as cfg_path:
@@ -201,7 +198,7 @@ async def main(paths, max_concurrent, verbose: bool = False):
         for path in collect_markdown_files(paths):
             print(f"==> {path}")
             try:
-                success = await check_file(path, cfg_path, semaphore, verbose)
+                success = await check_file(path, cfg_path, semaphore)
             except Exception as exc:  # pragma: no cover - unexpected
                 print(f"Validation task raised an exception: {exc}")
                 success = False
@@ -241,7 +238,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Print the command line of each mermaid-cli invocation",
+        help="Log the command line of each mermaid-cli invocation",
     )
     return parser.parse_args()
 
@@ -249,7 +246,11 @@ def parse_args() -> argparse.Namespace:
 def cli() -> None:
     """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
-    sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency, parsed.verbose)))
+    logging.basicConfig(
+        level=logging.INFO if parsed.verbose else logging.WARNING,
+        stream=sys.stderr,
+    )
+    sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
 
 
 if __name__ == "__main__":
