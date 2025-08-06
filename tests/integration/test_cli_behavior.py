@@ -155,3 +155,14 @@ async def test_cli_handles_file_processing_error(
     positions = [lines.index(marker) for marker in markers]
     assert positions == sorted(positions)
     assert "Simulated processing error" in captured.out
+
+
+@pytest.mark.asyncio
+async def test_cli_passes_verbose_flag(tmp_path: Path, stub_render: AsyncMock) -> None:
+    file_a = tmp_path / "a.md"
+    file_a.write_text("```mermaid\nA-->B\n```")
+
+    await main([file_a], 2, verbose=True)
+
+    assert stub_render.await_count == 1
+    assert stub_render.await_args_list[0].kwargs["verbose"] is True

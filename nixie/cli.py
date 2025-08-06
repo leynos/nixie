@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import re
+import shlex
 import shutil
 import sys
 import tempfile
@@ -112,6 +113,7 @@ async def render_block(
     idx: int,
     semaphore: asyncio.Semaphore,
     timeout: float = 30.0,
+    verbose: bool = False,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously."""
     mmd = tmpdir / f"{path.stem}_{idx}.mmd"
@@ -121,6 +123,8 @@ async def render_block(
         mmd.write_text(block)
 
         cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+        if verbose:
+            print(shlex.join(cmd))
         cli = cmd[0]
 
         async with semaphore:
@@ -160,7 +164,12 @@ def default_concurrency() -> int:
     return os.cpu_count() or 4
 
 
-async def check_file(path: Path, cfg_path: Path, semaphore: asyncio.Semaphore) -> bool:
+async def check_file(
+    path: Path,
+    cfg_path: Path,
+    semaphore: asyncio.Semaphore,
+    verbose: bool = False,
+) -> bool:
     """Check a single file for Mermaid diagrams."""
     blocks = parse_blocks(path.read_text(encoding="utf-8"))
     if not blocks:
@@ -169,14 +178,22 @@ async def check_file(path: Path, cfg_path: Path, semaphore: asyncio.Semaphore) -
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         tasks = [
-            render_block(block, tmp_path, cfg_path, path, idx, semaphore)
+            render_block(
+                block,
+                tmp_path,
+                cfg_path,
+                path,
+                idx,
+                semaphore,
+                verbose=verbose,
+            )
             for idx, block in enumerate(blocks, 1)
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
     return all(result is True for result in results)
 
 
-async def main(paths, max_concurrent):
+async def main(paths, max_concurrent, verbose: bool = False):
     """Main entry point."""
     semaphore = asyncio.Semaphore(max_concurrent)
     with create_puppeteer_config() as cfg_path:
@@ -184,7 +201,7 @@ async def main(paths, max_concurrent):
         for path in collect_markdown_files(paths):
             print(f"==> {path}")
             try:
-                success = await check_file(path, cfg_path, semaphore)
+                success = await check_file(path, cfg_path, semaphore, verbose)
             except Exception as exc:  # pragma: no cover - unexpected
                 print(f"Validation task raised an exception: {exc}")
                 success = False
@@ -204,7 +221,7 @@ def positive_int(value: str) -> int:
     return ivalue
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Validate Mermaid diagrams in Markdown files"
@@ -221,13 +238,18 @@ def parse_args():
         default=default_concurrency(),
         help="Maximum number of concurrent mmdc processes",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print the command line of each mermaid-cli invocation",
+    )
     return parser.parse_args()
 
 
 def cli() -> None:
     """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
-    sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
+    sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency, parsed.verbose)))
 
 
 if __name__ == "__main__":
