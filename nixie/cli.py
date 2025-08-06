@@ -137,8 +137,12 @@ async def render_block(
     Returns
     -------
     bool
-        ``True`` on success, ``False`` otherwise. The command line used for
-        rendering is logged at ``INFO`` level.
+        ``True`` on success, ``False`` otherwise.
+
+    Notes
+    -----
+    The command line used for rendering is logged at ``INFO`` level. Run the
+    CLI with ``--verbose`` to display these commands.
     """
     mmd = tmpdir / f"{path.stem}_{idx}.mmd"
     svg = mmd.with_suffix(".svg")
