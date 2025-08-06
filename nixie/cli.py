@@ -113,6 +113,7 @@ async def render_block(
     path: Path,
     idx: int,
     semaphore: asyncio.Semaphore,
+    verbose: bool | None = None,
     timeout: float = 30.0,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
@@ -131,6 +132,10 @@ async def render_block(
         Index of the block within ``path``.
     semaphore
         Limits concurrent CLI invocations.
+    verbose
+        If ``True``, log the CLI command used to render the block. If ``False``,
+        suppress it. When ``None`` (default), log only if the logger is set to
+        ``INFO`` level.
     timeout
         Maximum time in seconds to wait for the CLI to finish.
 
@@ -141,8 +146,8 @@ async def render_block(
 
     Notes
     -----
-    The command line used for rendering is logged at ``INFO`` level. Run the
-    CLI with ``--verbose`` to display these commands.
+    When command logging is enabled, the command line used for rendering is
+    logged at ``INFO`` level.
     """
     mmd = tmpdir / f"{path.stem}_{idx}.mmd"
     svg = mmd.with_suffix(".svg")
@@ -151,7 +156,13 @@ async def render_block(
         mmd.write_text(block)
 
         cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-        logging.getLogger(__name__).info(shlex.join(cmd))
+        log_cmd = (
+            verbose
+            if verbose is not None
+            else logging.getLogger(__name__).isEnabledFor(logging.INFO)
+        )
+        if log_cmd:
+            logging.getLogger(__name__).info(shlex.join(cmd))
         cli = cmd[0]
 
         async with semaphore:
