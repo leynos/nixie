@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import asyncio.subprocess
 import json
 import logging
 import os
@@ -106,14 +107,19 @@ async def wait_for_proc(
     return success, stderr
 
 
-def _write_diagram_file(
-    block: str, tmpdir: Path, path: Path, idx: int
-) -> tuple[Path, Path]:
-    """Write ``block`` to a temporary ``.mmd`` file.
+async def _render_diagram(
+    block: str,
+    tmpdir: Path,
+    cfg_path: Path,
+    path: Path,
+    idx: int,
+    sem: asyncio.Semaphore,
+    timeout: float,
+) -> None:
+    """Write ``block`` to disk and invoke ``mermaid-cli``.
 
-    Separating this helper keeps filesystem concerns isolated from the
-    rendering workflow, which aids targeted unit testing and clearer error
-    reporting.
+    This consolidates temporary file handling and CLI invocation so callers only
+    coordinate concurrency and error handling.
 
     Parameters
     ----------
@@ -121,33 +127,16 @@ def _write_diagram_file(
         Mermaid source code.
     tmpdir
         Directory for intermediate files.
+    cfg_path
+        Puppeteer configuration passed to the CLI.
     path
-        Original Markdown file; used for naming only.
+        Markdown file containing the diagram; used for naming only.
     idx
         Index of the diagram within ``path``.
-
-    Returns
-    -------
-    tuple[Path, Path]
-        Paths to the ``.mmd`` input file and expected ``.svg`` output.
-    """
-
-    mmd = tmpdir / f"{path.stem}_{idx}.mmd"
-    mmd.write_text(block)
-    return mmd, mmd.with_suffix(".svg")
-
-
-async def _run_mermaid_cli(
-    cmd: list[str],
-    semaphore: asyncio.Semaphore,
-    path: Path,
-    idx: int,
-    timeout: float,
-) -> None:
-    """Invoke ``mermaid-cli`` using ``cmd`` to render a diagram.
-
-    Isolating the CLI invocation simplifies coordination in ``render_block``
-    and allows this behaviour to be exercised in focused tests.
+    sem
+        Semaphore limiting concurrent CLI executions.
+    timeout
+        Maximum time in seconds to wait for the CLI to finish.
 
     Raises
     ------
@@ -157,9 +146,14 @@ async def _run_mermaid_cli(
         If the CLI executable cannot be found.
     """
 
+    mmd = tmpdir / f"{path.stem}_{idx}.mmd"
+    svg = mmd.with_suffix(".svg")
+    mmd.write_text(block)
+
+    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     logging.getLogger(__name__).info(shlex.join(cmd))
 
-    async with semaphore:
+    async with sem:
         proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
             *cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -184,7 +178,6 @@ async def render_block(
     idx: int,
     semaphore: asyncio.Semaphore,
     *,
-    verbose: bool | None = None,
     timeout: float = 30.0,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
@@ -196,29 +189,21 @@ async def render_block(
         path: Markdown file containing the block.
         idx: Index of the block within ``path``.
         semaphore: Limits concurrent CLI invocations.
-        verbose: If ``True``, log the CLI command used to render the block. If
-            ``False``, suppress it. When ``None`` (default), log only if the
-            logger is set to ``INFO`` level.
         timeout: Maximum time in seconds to wait for the CLI to finish.
 
     Returns:
         ``True`` on success, ``False`` otherwise.
 
     Notes:
-        When command logging is enabled, the command line used for rendering is
-        logged at ``INFO`` level.
+        The command line used for rendering is logged at ``INFO`` level.
     """
-    cmd: list[str] = []
     try:
-        mmd, svg = _write_diagram_file(block, tmpdir, path, idx)
-        cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-        await _run_mermaid_cli(cmd, semaphore, path, idx, timeout)
+        await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
-        cli = exc.filename or (cmd[0] if cmd else "mmdc")
+        cli = exc.filename or "mmdc"
         print(
-            (
-                f"Error: '{cli}' not found. Install Node.js with npx "
-                "or Bun to use @mermaid-js/mermaid-cli."
+            "Error: '{0}' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.".format(
+                cli
             ),
             file=sys.stderr,
         )

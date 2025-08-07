@@ -8,23 +8,18 @@ from pathlib import Path
 
 import pytest
 
-from nixie.cli import _run_mermaid_cli, get_mmdc_cmd
+from nixie.cli import _render_diagram, get_mmdc_cmd
 
 
 @pytest.mark.asyncio
-async def test_run_mermaid_cli_invokes_command(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
+async def test_render_diagram_writes_file_and_logs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    mmd = tmp_path / "diagram.mmd"
-    mmd.write_text("A-->B")
-    svg = mmd.with_suffix(".svg")
     semaphore = asyncio.Semaphore(1)
     path = Path("doc.md")
-    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    block = "A-->B"
 
     async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
         return object()
@@ -39,24 +34,24 @@ async def test_run_mermaid_cli_invokes_command(
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     with caplog.at_level(logging.INFO, logger="nixie.cli"):
-        await _run_mermaid_cli(cmd, semaphore, path, 1, 30.0)
+        await _render_diagram(block, tmp_path, cfg_path, path, 1, semaphore, 30.0)
 
-    expected = shlex.join(cmd)
+    mmd = tmp_path / "doc_1.mmd"
+    assert mmd.read_text() == block
+    svg = mmd.with_suffix(".svg")
+    expected = shlex.join(get_mmdc_cmd(mmd, svg, cfg_path))
     assert expected in caplog.text
 
 
 @pytest.mark.asyncio
-async def test_run_mermaid_cli_raises_on_failure(
+async def test_render_diagram_raises_on_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    mmd = tmp_path / "diagram.mmd"
-    mmd.write_text("A-->B")
-    svg = mmd.with_suffix(".svg")
     semaphore = asyncio.Semaphore(1)
     path = Path("doc.md")
-    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    block = "A-->B"
 
     async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
         return object()
@@ -71,7 +66,7 @@ async def test_run_mermaid_cli_raises_on_failure(
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     with pytest.raises(RuntimeError) as err:
-        await _run_mermaid_cli(cmd, semaphore, path, 1, 30.0)
+        await _render_diagram(block, tmp_path, cfg_path, path, 1, semaphore, 30.0)
 
     msg = str(err.value)
     assert "Parse error on line 1" in msg
