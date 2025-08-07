@@ -22,7 +22,6 @@ import shlex
 import shutil
 import sys
 import tempfile
-import traceback
 import typing
 from contextlib import contextmanager
 from pathlib import Path
@@ -217,9 +216,6 @@ async def render_block(
         )
     except RuntimeError as exc:
         print(exc, file=sys.stderr)
-    except Exception as exc:  # pragma: no cover - unexpected
-        print(f"{path}: unexpected error in diagram {idx}", file=sys.stderr)
-        traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
     else:
         return True
     return False
