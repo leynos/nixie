@@ -22,7 +22,9 @@ import shlex
 import shutil
 import sys
 import tempfile
+import typing
 import typing as typ
+import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
@@ -214,6 +216,7 @@ async def render_block(
     semaphore: asyncio.Semaphore,
     *,
     timeout: float = 30.0,
+    verbose: bool | None = None,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
 
@@ -225,6 +228,7 @@ async def render_block(
         idx: Index of the block within ``path``.
         semaphore: Limits concurrent CLI invocations.
         timeout: Maximum time in seconds to wait for the CLI to finish.
+        verbose: Deprecated. Configure logging to control command emission.
 
     Returns
     -------
@@ -234,6 +238,12 @@ async def render_block(
     -----
         The command line used for rendering is logged at ``INFO`` level.
     """
+    if verbose is not None:
+        warnings.warn(
+            "render_block(verbose=...) is deprecated; configure logging level instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     try:
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
@@ -347,3 +357,4 @@ def cli() -> None:
 
 if __name__ == "__main__":
     cli()
+

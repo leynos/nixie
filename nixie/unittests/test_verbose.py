@@ -88,3 +88,28 @@ async def test_render_block_silent_when_warning_level(
     svg = mmd.with_suffix(".svg")
     unexpected = shlex.join(get_mmdc_cmd(mmd, svg, cfg_path))
     assert unexpected not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_render_block_logs_missing_cli(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    cfg_path = tmp_path / "cfg.json"
+    cfg_path.write_text("{}")
+    semaphore = asyncio.Semaphore(1)
+    path = tmp_path / "doc.md"
+
+    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
+        raise FileNotFoundError(2, "No such file or directory", cmd[0])
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
+
+    block = "A-->B"
+    with caplog.at_level(logging.ERROR, logger="nixie.cli"):
+        result = await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+
+    assert result is False
+    assert "not found" in caplog.text
