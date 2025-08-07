@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""Command-line interface for validating Mermaid diagrams in Markdown files.
+
+This module parses Markdown files, extracts Mermaid blocks, and validates
+them with the `mermaid-cli` tool. It supports concurrent rendering via
+`asyncio` and falls back between `mmdc`, `npx`, and `bun` executables.
+
+Usage:
+    nixie [--concurrency N] [--verbose] path1.md [path2.md ...]
+"""
+
 from __future__ import annotations
 
 import argparse
