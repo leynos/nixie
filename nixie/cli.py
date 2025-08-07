@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import asyncio.subprocess
+import asyncio.subprocess as asyncio_subprocess
 import json
 import logging
 import os
@@ -103,7 +103,7 @@ def format_cli_error(stderr: str) -> str:
 
 
 async def wait_for_proc(
-    proc: asyncio.subprocess.Process, path: Path, idx: int, timeout: float = 30.0
+    proc: asyncio_subprocess.Process, path: Path, idx: int, timeout: float = 30.0
 ) -> tuple[bool, bytes]:
     """Wait for a process to complete and return its success status and stderr."""
     try:
@@ -166,8 +166,8 @@ async def _render_diagram(
     async with sem:
         proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
             *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdout=asyncio_subprocess.PIPE,
+            stderr=asyncio_subprocess.PIPE,
         )
 
     success, stderr = await wait_for_proc(proc, path, idx, timeout)
