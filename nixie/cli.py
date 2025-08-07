@@ -22,11 +22,11 @@ import shlex
 import shutil
 import sys
 import tempfile
-import typing
-from contextlib import contextmanager
+import typing as typ
+from contextlib import contextmanager, suppress
 from pathlib import Path
 
-if typing.TYPE_CHECKING:
+if typ.TYPE_CHECKING:
     import collections.abc as cabc
 
 BLOCK_RE = re.compile(
@@ -54,7 +54,7 @@ def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
 
 
 @contextmanager
-def create_puppeteer_config() -> typing.Generator[Path]:
+def create_puppeteer_config() -> typ.Generator[Path]:
     """Yield a Puppeteer config path and remove it on exit."""
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
         json.dump({"args": ["--no-sandbox"]}, fh)
@@ -64,20 +64,15 @@ def create_puppeteer_config() -> typing.Generator[Path]:
     try:
         yield path
     finally:
-        try:
+        with suppress(OSError):
             os.remove(path)
-        except OSError:
-            pass
 
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
     """Return the command to run mermaid-cli."""
     cli = "mmdc"
     if not shutil.which("mmdc"):
-        if shutil.which("bun"):
-            cli = "bun"
-        else:
-            cli = "npx"
+        cli = "bun" if shutil.which("bun") else "npx"
 
     match cli:
         case "npx":
@@ -176,7 +171,6 @@ async def _render_diagram(
     FileNotFoundError
         If the CLI executable cannot be found.
     """
-
     mmd = tmpdir / f"{path.stem}_{idx}.mmd"
     svg = mmd.with_suffix(".svg")
     mmd.write_text(block)
@@ -217,10 +211,12 @@ async def render_block(
         semaphore: Limits concurrent CLI invocations.
         timeout: Maximum time in seconds to wait for the CLI to finish.
 
-    Returns:
+    Returns
+    -------
         ``True`` on success, ``False`` otherwise.
 
-    Notes:
+    Notes
+    -----
         The command line used for rendering is logged at ``INFO`` level.
     """
     try:
@@ -270,7 +266,7 @@ async def check_file(
     return all(result is True for result in results)
 
 
-async def main(paths, max_concurrent):
+async def main(paths, max_concurrent) -> int:
     """Main entry point."""
     semaphore = asyncio.Semaphore(max_concurrent)
     with create_puppeteer_config() as cfg_path:

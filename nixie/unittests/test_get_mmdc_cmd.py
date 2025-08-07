@@ -6,7 +6,7 @@ import pytest
 from nixie.cli import get_mmdc_cmd
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_paths(tmp_path: Path) -> tuple[Path, Path, Path]:
     mmd = tmp_path / "diagram.mmd"
     svg = tmp_path / "diagram.svg"
