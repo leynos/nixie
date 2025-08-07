@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import asyncio.subprocess
+import asyncio.subprocess as asyncio_subprocess
 import json
 import logging
 import os
@@ -34,6 +34,8 @@ BLOCK_RE = re.compile(
     r"^```\s*mermaid\s*\n(.*?)\n```[ \t]*$",
     re.DOTALL | re.MULTILINE,
 )
+
+ALLOWED_EXECUTABLES: typing.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
 
 
 def parse_blocks(text: str) -> list[str]:
@@ -103,7 +105,7 @@ def format_cli_error(stderr: str) -> str:
 
 
 async def wait_for_proc(
-    proc: asyncio.subprocess.Process, path: Path, idx: int, timeout: float = 30.0
+    proc: asyncio_subprocess.Process, path: Path, idx: int, timeout: float = 30.0
 ) -> tuple[bool, bytes]:
     """Wait for a process to complete and return its success status and stderr."""
     try:
@@ -115,6 +117,26 @@ async def wait_for_proc(
         return (False, b"")
     success = proc.returncode == 0
     return success, stderr
+
+
+async def _run_mermaid_cli(
+    cmd: list[str],
+    sem: asyncio.Semaphore,
+    path: Path,
+    idx: int,
+    timeout: float,
+) -> tuple[bool, bytes]:
+    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
+        raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
+
+    async with sem:
+        proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+            *cmd,
+            stdout=asyncio_subprocess.PIPE,
+            stderr=asyncio_subprocess.PIPE,
+        )
+
+    return await wait_for_proc(proc, path, idx, timeout)
 
 
 async def _render_diagram(
@@ -161,16 +183,11 @@ async def _render_diagram(
     mmd.write_text(block)
 
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
+        raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
     logging.getLogger(__name__).info(shlex.join(cmd))
 
-    async with sem:
-        proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-
-    success, stderr = await wait_for_proc(proc, path, idx, timeout)
+    success, stderr = await _run_mermaid_cli(cmd, sem, path, idx, timeout)
     if not success:
         error_message = (
             f"Error running command {shlex.join(cmd)} for file '{path}' "

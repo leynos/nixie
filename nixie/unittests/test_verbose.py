@@ -53,7 +53,7 @@ async def test_render_block_emits_command(
 
 
 @pytest.mark.asyncio
-async def test_render_block_silent_without_verbose(
+async def test_render_block_silent_when_warning_level(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
