@@ -111,6 +111,10 @@ def _write_diagram_file(
 ) -> tuple[Path, Path]:
     """Write ``block`` to a temporary ``.mmd`` file.
 
+    Separating this helper keeps filesystem concerns isolated from the
+    rendering workflow, which aids targeted unit testing and clearer error
+    reporting.
+
     Parameters
     ----------
     block
@@ -141,6 +145,9 @@ async def _run_mermaid_cli(
     timeout: float,
 ) -> None:
     """Invoke ``mermaid-cli`` using ``cmd`` to render a diagram.
+
+    Isolating the CLI invocation simplifies coordination in ``render_block``
+    and allows this behaviour to be exercised in focused tests.
 
     Raises
     ------
@@ -206,7 +213,6 @@ async def render_block(
         mmd, svg = _write_diagram_file(block, tmpdir, path, idx)
         cmd = get_mmdc_cmd(mmd, svg, cfg_path)
         await _run_mermaid_cli(cmd, semaphore, path, idx, timeout)
-        return True
     except FileNotFoundError as exc:
         cli = exc.filename or (cmd[0] if cmd else "mmdc")
         print(
@@ -221,6 +227,8 @@ async def render_block(
     except Exception as exc:
         print(f"{path}: unexpected error in diagram {idx}", file=sys.stderr)
         traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
+    else:
+        return True
     return False
 
 
