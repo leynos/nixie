@@ -12,7 +12,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "ruff",
   "pyright",
