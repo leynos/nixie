@@ -108,7 +108,7 @@ async def wait_for_proc(
     """Wait for a process to complete and return its success status and stderr."""
     try:
         _, stderr = await asyncio.wait_for(proc.communicate(), timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         print(f"{path}: diagram {idx} timed out", file=sys.stderr)
@@ -212,9 +212,7 @@ async def render_block(
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
         print(
-            "Error: '{0}' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.".format(
-                cli
-            ),
+            f"Error: '{cli}' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
             file=sys.stderr,
         )
     except RuntimeError as exc:
