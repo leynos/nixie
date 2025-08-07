@@ -32,3 +32,66 @@ package = true
 
 [tool.pytest.ini_options]
 testpaths = ["nixie/unittests", "tests"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "F",        # Pyflakes rules
+    "W",        # PyCodeStyle warnings
+    "E",        # PyCodeStyle errors
+    "I",        # Sort imports properly
+    "UP",       # Warn if certain things can changed due to newer Python versions
+    "C4",       # Catch incorrect use of comprehensions, dict, list, etc
+    "FA",       # Enforce from __future__ import annotations
+    "ISC",      # Good use of string concatenation
+    "ICN",      # Use common import conventions
+    "RET",      # Good return practices
+    "SIM",      # Common simplification rules
+    "TID",      # Some good import practices
+    "TC",       # Enforce importing certain types in a TYPE_CHECKING block
+    "PTH",      # Use pathlib instead of os.path
+    "TD",       # Be diligent with TODO comments
+    "A",        # detect shadowed builtins
+    "BLE",      # disallow catch-all exceptions
+    "S",        # disallow things like "exec"; also restricts "assert" but I just NOQA it when I really need it
+    "DTZ",      # require strict timezone manipulation with datetime
+    "FBT",      # detect boolean traps
+    "N",        # enforce naming conventions, e.g. ClassName vs function_name
+    "FURB",
+    "B",
+    "RUF",
+    "LOG",
+    "Q",
+    "PT",
+    "RSE",
+    "PERF",
+    "TRY",
+    "D",
+    "ANN",
+]
+per-file-ignores = {"**/test_*.py" = ["S101"]}
+ignore = ["D205"]
+
+[tool.ruff.lint.flake8-import-conventions]
+# Declare the banned `from` imports.
+banned-from = [
+    "typing",
+    "datetime",
+    "collections.abc",
+    "dataclasses",
+    "enum",
+    "msgspec",
+]
+
+[tool.ruff.lint.flake8-import-conventions.aliases]
+datetime = "dt"
+dataclasses = "dc"
+"collections.abc" = "cabc"
+"msgspec.json" = "msgspec_json"
+typing = "typ"
+
+[tool.ruff.lint.pydocstyle]
+# Enforce NumPy docstring style
+convention = "numpy"
