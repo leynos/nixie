@@ -106,6 +106,67 @@ async def wait_for_proc(
     return success, stderr
 
 
+def _write_diagram_file(
+    block: str, tmpdir: Path, path: Path, idx: int
+) -> tuple[Path, Path]:
+    """Write ``block`` to a temporary ``.mmd`` file.
+
+    Parameters
+    ----------
+    block
+        Mermaid source code.
+    tmpdir
+        Directory for intermediate files.
+    path
+        Original Markdown file; used for naming only.
+    idx
+        Index of the diagram within ``path``.
+
+    Returns
+    -------
+    tuple[Path, Path]
+        Paths to the ``.mmd`` input file and expected ``.svg`` output.
+    """
+
+    mmd = tmpdir / f"{path.stem}_{idx}.mmd"
+    mmd.write_text(block)
+    return mmd, mmd.with_suffix(".svg")
+
+
+async def _run_mermaid_cli(
+    mmd: Path,
+    svg: Path,
+    cfg_path: Path,
+    semaphore: asyncio.Semaphore,
+    path: Path,
+    idx: int,
+    timeout: float,
+) -> None:
+    """Invoke ``mermaid-cli`` to render ``mmd`` into ``svg``.
+
+    Raises
+    ------
+    RuntimeError
+        If the CLI exits with a non-zero status.
+    FileNotFoundError
+        If the CLI executable cannot be found.
+    """
+
+    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    logging.getLogger(__name__).info(shlex.join(cmd))
+
+    async with semaphore:
+        proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+    success, stderr = await wait_for_proc(proc, path, idx, timeout)
+    if not success:
+        raise RuntimeError(format_cli_error(stderr.decode("utf-8", errors="replace")))
+
+
 async def render_block(
     block: str,
     tmpdir: Path,
@@ -138,51 +199,25 @@ async def render_block(
         When command logging is enabled, the command line used for rendering is
         logged at ``INFO`` level.
     """
-    mmd = tmpdir / f"{path.stem}_{idx}.mmd"
-    svg = mmd.with_suffix(".svg")
-
     try:
-        mmd.write_text(block)
-
-        cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-        logger = logging.getLogger(__name__)
-        should_log = (
-            verbose if verbose is not None else logger.isEnabledFor(logging.INFO)
+        mmd, svg = _write_diagram_file(block, tmpdir, path, idx)
+        await _run_mermaid_cli(mmd, svg, cfg_path, semaphore, path, idx, timeout)
+        return True
+    except FileNotFoundError as exc:
+        cli = exc.filename or "mmdc"
+        print(
+            (
+                f"Error: '{cli}' not found. Install Node.js with npx "
+                "or Bun to use @mermaid-js/mermaid-cli."
+            ),
+            file=sys.stderr,
         )
-        if should_log:
-            logger.info(shlex.join(cmd))
-        cli = cmd[0]
-
-        async with semaphore:
-            try:
-                proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
-                    *cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-            except FileNotFoundError:
-                print(
-                    (
-                        f"Error: '{cli}' not found. Install Node.js with npx "
-                        "or Bun to use @mermaid-js/mermaid-cli."
-                    ),
-                    file=sys.stderr,
-                )
-                return False
-
-            success, stderr = await wait_for_proc(proc, path, idx, timeout)
-            if not success:
-                print(
-                    format_cli_error(stderr.decode("utf-8", errors="replace")),
-                    file=sys.stderr,
-                )
-                return False
-            return True
-
+    except RuntimeError as exc:
+        print(exc, file=sys.stderr)
     except Exception as exc:
         print(f"{path}: unexpected error in diagram {idx}", file=sys.stderr)
         traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
-        return False
+    return False
 
 
 def default_concurrency() -> int:
