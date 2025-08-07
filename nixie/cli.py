@@ -182,6 +182,9 @@ async def _render_diagram(
     mmd.write_text(block)
 
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    allowed_executables = {"mmdc", "bun", "npx"}
+    if not cmd or cmd[0] not in allowed_executables:
+        raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
     logging.getLogger(__name__).info(shlex.join(cmd))
 
     success, stderr = await _run_mermaid_cli(cmd, sem, path, idx, timeout)
