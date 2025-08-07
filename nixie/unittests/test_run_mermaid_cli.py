@@ -24,6 +24,7 @@ async def test_run_mermaid_cli_invokes_command(
     svg = mmd.with_suffix(".svg")
     semaphore = asyncio.Semaphore(1)
     path = Path("doc.md")
+    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
 
     async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
         return object()
@@ -38,9 +39,9 @@ async def test_run_mermaid_cli_invokes_command(
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     with caplog.at_level(logging.INFO, logger="nixie.cli"):
-        await _run_mermaid_cli(mmd, svg, cfg_path, semaphore, path, 1, 30.0)
+        await _run_mermaid_cli(cmd, semaphore, path, 1, 30.0)
 
-    expected = shlex.join(get_mmdc_cmd(mmd, svg, cfg_path))
+    expected = shlex.join(cmd)
     assert expected in caplog.text
 
 
@@ -55,6 +56,7 @@ async def test_run_mermaid_cli_raises_on_failure(
     svg = mmd.with_suffix(".svg")
     semaphore = asyncio.Semaphore(1)
     path = Path("doc.md")
+    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
 
     async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
         return object()
@@ -69,6 +71,9 @@ async def test_run_mermaid_cli_raises_on_failure(
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     with pytest.raises(RuntimeError) as err:
-        await _run_mermaid_cli(mmd, svg, cfg_path, semaphore, path, 1, 30.0)
+        await _run_mermaid_cli(cmd, semaphore, path, 1, 30.0)
 
-    assert "Parse error on line 1" in str(err.value)
+    msg = str(err.value)
+    assert "Parse error on line 1" in msg
+    assert "doc.md" in msg
+    assert "mmdc" in msg

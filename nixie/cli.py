@@ -134,15 +134,13 @@ def _write_diagram_file(
 
 
 async def _run_mermaid_cli(
-    mmd: Path,
-    svg: Path,
-    cfg_path: Path,
+    cmd: list[str],
     semaphore: asyncio.Semaphore,
     path: Path,
     idx: int,
     timeout: float,
 ) -> None:
-    """Invoke ``mermaid-cli`` to render ``mmd`` into ``svg``.
+    """Invoke ``mermaid-cli`` using ``cmd`` to render a diagram.
 
     Raises
     ------
@@ -152,7 +150,6 @@ async def _run_mermaid_cli(
         If the CLI executable cannot be found.
     """
 
-    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     logging.getLogger(__name__).info(shlex.join(cmd))
 
     async with semaphore:
@@ -164,7 +161,12 @@ async def _run_mermaid_cli(
 
     success, stderr = await wait_for_proc(proc, path, idx, timeout)
     if not success:
-        raise RuntimeError(format_cli_error(stderr.decode("utf-8", errors="replace")))
+        error_message = (
+            f"Error running command {shlex.join(cmd)} for file '{path}' "
+            f"(diagram {idx}):\n"
+            f"{format_cli_error(stderr.decode('utf-8', errors='replace'))}"
+        )
+        raise RuntimeError(error_message)
 
 
 async def render_block(
@@ -199,12 +201,14 @@ async def render_block(
         When command logging is enabled, the command line used for rendering is
         logged at ``INFO`` level.
     """
+    cmd: list[str] = []
     try:
         mmd, svg = _write_diagram_file(block, tmpdir, path, idx)
-        await _run_mermaid_cli(mmd, svg, cfg_path, semaphore, path, idx, timeout)
+        cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+        await _run_mermaid_cli(cmd, semaphore, path, idx, timeout)
         return True
     except FileNotFoundError as exc:
-        cli = exc.filename or "mmdc"
+        cli = exc.filename or (cmd[0] if cmd else "mmdc")
         print(
             (
                 f"Error: '{cli}' not found. Install Node.js with npx "
