@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from nixie.cli import _render_diagram, get_mmdc_cmd
+from nixie.cli import _render_diagram, get_mmdc_cmd, _run_mermaid_cli
 
 
 @pytest.mark.asyncio
