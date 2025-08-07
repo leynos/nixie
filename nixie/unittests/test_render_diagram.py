@@ -72,3 +72,12 @@ async def test_render_diagram_raises_on_failure(
     assert "Parse error on line 1" in msg
     assert "doc.md" in msg
     assert "mmdc" in msg
+
+
+@pytest.mark.asyncio
+async def test_run_mermaid_cli_rejects_unexpected_executable() -> None:
+    semaphore = asyncio.Semaphore(1)
+    path = Path("doc.md")
+    cmd = ["echo", "hello"]
+    with pytest.raises(ValueError, match="Unexpected executable"):
+        await _run_mermaid_cli(cmd, semaphore, path, 1, 30.0)

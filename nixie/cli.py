@@ -163,6 +163,10 @@ async def _render_diagram(
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     logging.getLogger(__name__).info(shlex.join(cmd))
 
+    allowed_executables = {"mmdc", "bun", "npx"}
+    if cmd[0] not in allowed_executables:
+        raise ValueError(f"Unexpected executable: {cmd[0]}")
+
     async with sem:
         proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
             *cmd,
