@@ -35,6 +35,8 @@ BLOCK_RE = re.compile(
     re.DOTALL | re.MULTILINE,
 )
 
+ALLOWED_EXECUTABLES: typing.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
+
 
 def parse_blocks(text: str) -> list[str]:
     """Return all mermaid code blocks found in the text."""
@@ -124,8 +126,7 @@ async def _run_mermaid_cli(
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
-    allowed_executables = {"mmdc", "bun", "npx"}
-    if not cmd or cmd[0] not in allowed_executables:
+    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
         raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
 
     async with sem:
@@ -182,8 +183,7 @@ async def _render_diagram(
     mmd.write_text(block)
 
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-    allowed_executables = {"mmdc", "bun", "npx"}
-    if not cmd or cmd[0] not in allowed_executables:
+    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
         raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
     logging.getLogger(__name__).info(shlex.join(cmd))
 
