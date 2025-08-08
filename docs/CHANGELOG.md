@@ -2,6 +2,6 @@
 
 ## Unreleased
 
-- Deprecate `render_block(verbose=...)` and `--verbose` CLI option. These will
-  be removed in v0.2.0; set the `nixie.cli` logger to INFO to log
-  `mermaid-cli` commands.
+- `--verbose` now sets the `nixie.cli` logger to INFO, logging the underlying
+  `mermaid-cli` commands. The `render_block(verbose=...)` parameter mirrors this
+  behaviour.

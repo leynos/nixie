@@ -57,9 +57,10 @@ async def test_render_block_emits_command(
 
 
 @pytest.mark.asyncio
-async def test_render_block_warns_on_verbose(
+async def test_render_block_verbose_sets_logger(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
@@ -79,10 +80,16 @@ async def test_render_block_warns_on_verbose(
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 
     block = "A-->B"
-    with pytest.warns(DeprecationWarning):
-        assert await render_block(
-            block, tmp_path, cfg_path, path, 1, semaphore, verbose=True
-        )
+    logging.getLogger("nixie.cli").setLevel(logging.WARNING)
+    caplog.set_level(logging.INFO)
+    assert await render_block(
+        block, tmp_path, cfg_path, path, 1, semaphore, verbose=True
+    )
+
+    mmd = tmp_path / "doc_1.mmd"
+    svg = mmd.with_suffix(".svg")
+    expected = shlex.join(get_mmdc_cmd(mmd, svg, cfg_path))
+    assert expected in caplog.text
 
 
 @pytest.mark.asyncio

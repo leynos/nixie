@@ -8,9 +8,8 @@ them with the `mermaid-cli` tool. It supports concurrent rendering via
 Usage:
     nixie [--concurrency N] [--verbose] path1.md [path2.md ...]
 
-The ``--verbose`` flag is deprecated and will be removed in v0.2.0. To emit
-the underlying ``mermaid-cli`` commands, set the ``nixie.cli`` logger to
-``INFO``.
+The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
+underlying ``mermaid-cli`` commands.
 """
 
 from __future__ import annotations
@@ -28,7 +27,6 @@ import sys
 import tempfile
 import typing
 import typing as typ
-import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
@@ -232,9 +230,8 @@ async def render_block(
         idx: Index of the block within ``path``.
         semaphore: Limits concurrent CLI invocations.
         timeout: Maximum time in seconds to wait for the CLI to finish.
-        verbose: Deprecated. Configure logging to control command emission.
-            This option will be removed in v0.2.0; set the "nixie.cli" logger
-            level to ``INFO`` to replicate its behaviour.
+        verbose: If ``True``, set the ``nixie.cli`` logger to ``INFO`` to
+            emit command lines. Preserved for backward compatibility.
 
     Returns
     -------
@@ -244,15 +241,8 @@ async def render_block(
     -----
         The command line used for rendering is logged at ``INFO`` level.
     """
-    if verbose is not None:
-        warnings.warn(
-            (
-                "render_block(verbose=...) is deprecated and will be removed in v0.2.0; "
-                'set the "nixie.cli" logger to INFO to emit command lines'
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
+    if verbose:
+        logging.getLogger(__name__).setLevel(logging.INFO)
     try:
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
@@ -353,10 +343,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help=(
-            "[DEPRECATED] Log mermaid-cli commands; set the 'nixie.cli' logger "
-            "to INFO instead"
-        ),
+        help="Log mermaid-cli commands for each diagram",
     )
     return parser.parse_args()
 
@@ -364,10 +351,9 @@ def parse_args() -> argparse.Namespace:
 def cli() -> None:
     """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
-    logging.basicConfig(
-        level=logging.INFO if parsed.verbose else logging.WARNING,
-        stream=sys.stderr,
-    )
+    logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
+    if parsed.verbose:
+        logging.getLogger(__name__).setLevel(logging.INFO)
     sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
 
 
