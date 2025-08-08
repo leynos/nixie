@@ -24,7 +24,7 @@ async def test_render_diagram_writes_file_and_logs(
     path = Path("doc.md")
     block = "A-->B"
 
-    async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         return object()
 
     async def fake_wait_for_proc(
@@ -58,7 +58,7 @@ async def test_render_diagram_raises_on_failure(
     path = Path("doc.md")
     block = "A-->B"
 
-    async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         return object()
 
     async def fake_wait_for_proc(

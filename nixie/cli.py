@@ -158,7 +158,7 @@ async def _render_diagram(
     cfg_path: Path,
     path: Path,
     idx: int,
-    sem: asyncio.Semaphore,
+    semaphore: asyncio.Semaphore,
     timeout: float,
 ) -> None:
     """Write ``block`` to disk and invoke ``mermaid-cli``.
@@ -178,7 +178,7 @@ async def _render_diagram(
         Markdown file containing the diagram; used for naming only.
     idx
         Index of the diagram within ``path``.
-    sem
+    semaphore
         Semaphore limiting concurrent CLI executions.
     timeout
         Maximum time in seconds to wait for the CLI to finish.
@@ -199,7 +199,13 @@ async def _render_diagram(
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
     logging.getLogger(__name__).info(shlex.join(cmd))
 
-    success, stderr = await _run_mermaid_cli(cmd, sem, path, idx, timeout)
+    async with semaphore:
+        proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        success, stderr = await wait_for_proc(proc, path, idx, timeout)
     if not success:
         error_message = (
             f"Error running command {shlex.join(cmd)} for file '{path}' "
@@ -247,17 +253,29 @@ async def render_block(
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
+<<<<<<< HEAD
         print(
             "Error: "
             f"'{cli}' not found. Install Node.js with npx or Bun to use "
             "@mermaid-js/mermaid-cli.",
             file=sys.stderr,
+||||||| parent of c8480b7 (Log rendering errors with tracebacks)
+        logging.getLogger(__name__).error(
+            "Error: '%s' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
+            cli,
+=======
+        logging.getLogger(__name__).exception(
+            "Error: '%s' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
+            cli,
+>>>>>>> c8480b7 (Log rendering errors with tracebacks)
         )
-    except RuntimeError as exc:
-        logging.getLogger(__name__).error("%s", exc)
+    except RuntimeError:
+        logging.getLogger(__name__).exception("Runtime error while rendering diagram")
     except Exception:
         logging.getLogger(__name__).exception(
-            "%s: unexpected error in diagram %s", path, idx
+            "%s: unexpected error in diagram %s",
+            path,
+            idx,
         )
     else:
         return True
