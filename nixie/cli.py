@@ -229,23 +229,33 @@ async def render_block(
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
 
-    Args:
-        block: Mermaid code block to render.
-        tmpdir: Temporary directory for intermediate files.
-        cfg_path: Path to the Puppeteer configuration file.
-        path: Markdown file containing the block.
-        idx: Index of the block within ``path``.
-        semaphore: Limits concurrent CLI invocations.
-        timeout: Maximum time in seconds to wait for the CLI to finish.
-        verbose: Deprecated. Configure the ``nixie.cli`` logger instead.
+    Parameters
+    ----------
+    block : str
+        Mermaid code block to render.
+    tmpdir : Path
+        Temporary directory for intermediate files.
+    cfg_path : Path
+        Path to the Puppeteer configuration file.
+    path : Path
+        Markdown file containing the block.
+    idx : int
+        Index of the block within ``path``.
+    semaphore : asyncio.Semaphore
+        Limits concurrent CLI invocations.
+    timeout : float, default 30.0
+        Maximum time in seconds to wait for the CLI to finish.
+    verbose : bool, optional
+        Deprecated; configure the ``nixie.cli`` logger instead.
 
     Returns
     -------
+    bool
         ``True`` on success, ``False`` otherwise.
 
     Notes
     -----
-        The command line used for rendering is logged at ``INFO`` level.
+    The command line used for rendering is logged at ``INFO`` level.
     """
     if verbose is not None:
         warnings.warn(
@@ -263,11 +273,9 @@ async def render_block(
             cli,
         )
     except RuntimeError:
-        logging.getLogger(__name__).exception(
-            "Runtime error while rendering diagram"
-        )
+        logging.getLogger(__name__).exception("Runtime error while rendering diagram")
     except Exception as exc:
-        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+        if isinstance(exc, KeyboardInterrupt | SystemExit):
             raise
         logging.getLogger(__name__).exception(
             "%s: unexpected error in diagram %s",
