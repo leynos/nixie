@@ -62,6 +62,7 @@ async def test_render_block_verbose_deprecated(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    """Test deprecated verbose parameter still works but warns."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
@@ -84,7 +85,10 @@ async def test_render_block_verbose_deprecated(
     with (
         pytest.warns(
             DeprecationWarning,
-            match=r"The 'verbose' parameter is deprecated; configure the 'nixie\.cli' logger level instead\.",
+            match=(
+                r"The 'verbose' parameter is deprecated; configure the"
+                r"'nixie\.cli' logger level instead\."
+            ),
         ),
         caplog.at_level(logging.WARNING, logger="nixie.cli"),
     ):
@@ -144,6 +148,7 @@ async def test_render_block_logs_missing_cli(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    """Log error when CLI tool is missing."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
@@ -169,6 +174,7 @@ async def test_render_block_logs_runtime_error(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    """Log runtime errors during diagram rendering."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
@@ -193,16 +199,17 @@ async def test_render_block_logs_unexpected_exception(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    """Log unexpected exceptions during diagram rendering."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     class BoomError(Exception):
-        pass
+        """Uh oh."""
 
     async def raise_exception(*_args: object, **_kwargs: object) -> None:
-        raise BoomError("uh oh")
+        raise BoomError
 
     monkeypatch.setattr("nixie.cli._render_diagram", raise_exception)
 
