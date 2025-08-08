@@ -7,6 +7,9 @@ them with the `mermaid-cli` tool. It supports concurrent rendering via
 
 Usage:
     nixie [--concurrency N] [--verbose] path1.md [path2.md ...]
+
+The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
+underlying ``mermaid-cli`` commands.
 """
 
 from __future__ import annotations
@@ -23,11 +26,14 @@ import shutil
 import sys
 import tempfile
 import typing as typ
+import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
+
+LOGGER = logging.getLogger(__name__)
 
 BLOCK_RE = re.compile(
     r"^```\s*mermaid\s*\n(.*?)\n```[ \t]*$",
@@ -79,7 +85,7 @@ def create_puppeteer_config() -> typ.Generator[Path]:
         yield path
     finally:
         with suppress(OSError):
-            path.unlink()
+            path.unlink(missing_ok=True)
 
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
@@ -154,7 +160,7 @@ async def _render_diagram(
     cfg_path: Path,
     path: Path,
     idx: int,
-    sem: asyncio.Semaphore,
+    semaphore: asyncio.Semaphore,
     timeout: float,
 ) -> None:
     """Write ``block`` to disk and invoke ``mermaid-cli``.
@@ -174,7 +180,7 @@ async def _render_diagram(
         Markdown file containing the diagram; used for naming only.
     idx
         Index of the diagram within ``path``.
-    sem
+    semaphore
         Semaphore limiting concurrent CLI executions.
     timeout
         Maximum time in seconds to wait for the CLI to finish.
@@ -193,9 +199,16 @@ async def _render_diagram(
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
-    logging.getLogger(__name__).info(shlex.join(cmd))
+    LOGGER.info(shlex.join(cmd))
 
-    success, stderr = await _run_mermaid_cli(cmd, sem, path, idx, timeout)
+    async with semaphore:
+        # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        success, stderr = await wait_for_proc(proc, path, idx, timeout)
     if not success:
         error_message = (
             f"Error running command {shlex.join(cmd)} for file '{path}' "
@@ -214,38 +227,66 @@ async def render_block(
     semaphore: asyncio.Semaphore,
     *,
     timeout: float = 30.0,
+    verbose: bool | None = None,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
 
-    Args:
-        block: Mermaid code block to render.
-        tmpdir: Temporary directory for intermediate files.
-        cfg_path: Path to the Puppeteer configuration file.
-        path: Markdown file containing the block.
-        idx: Index of the block within ``path``.
-        semaphore: Limits concurrent CLI invocations.
-        timeout: Maximum time in seconds to wait for the CLI to finish.
+    Parameters
+    ----------
+    block : str
+        Mermaid code block to render.
+    tmpdir : Path
+        Temporary directory for intermediate files.
+    cfg_path : Path
+        Path to the Puppeteer configuration file.
+    path : Path
+        Markdown file containing the block.
+    idx : int
+        Index of the block within ``path``.
+    semaphore : asyncio.Semaphore
+        Limits concurrent CLI invocations.
+    timeout : float, default 30.0
+        Maximum time in seconds to wait for the CLI to finish.
+    verbose : bool, optional
+        Deprecated; configure the ``nixie.cli`` logger instead.
 
     Returns
     -------
+    bool
         ``True`` on success, ``False`` otherwise.
 
     Notes
     -----
-        The command line used for rendering is logged at ``INFO`` level.
+    The command line used for rendering is logged at ``INFO`` level.
     """
+    if verbose is not None:
+        warnings.warn(
+            "The 'verbose' parameter is deprecated; configure the 'nixie.cli'"
+            " logger level instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     try:
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
-        print(
-            "Error: "
-            f"'{cli}' not found. Install Node.js with npx or Bun to use "
-            "@mermaid-js/mermaid-cli.",
-            file=sys.stderr,
+        LOGGER.exception(
+            (
+                "Error: '%s' not found. Install Node.js with npx or Bun to use "
+                "@mermaid-js/mermaid-cli."
+            ),
+            cli,
         )
-    except RuntimeError as exc:
-        print(exc, file=sys.stderr)
+    except RuntimeError:
+        LOGGER.exception("Runtime error while rendering diagram")
+    except Exception as exc:
+        if isinstance(exc, KeyboardInterrupt | SystemExit):
+            raise
+        LOGGER.exception(
+            "%s: unexpected error in diagram %s",
+            path,
+            idx,
+        )
     else:
         return True
     return False
@@ -330,7 +371,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Log the command line of each mermaid-cli invocation",
+        help="Log mermaid-cli commands for each diagram",
     )
     return parser.parse_args()
 
@@ -338,10 +379,13 @@ def parse_args() -> argparse.Namespace:
 def cli() -> None:
     """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
-    logging.basicConfig(
-        level=logging.INFO if parsed.verbose else logging.WARNING,
-        stream=sys.stderr,
-    )
+    logger = LOGGER
+    if not logger.handlers:
+        handler = logging.StreamHandler(stream=sys.stderr)
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        logger.addHandler(handler)
+        logger.propagate = False
+    logger.setLevel(logging.INFO if parsed.verbose else logging.WARNING)
     sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
 
 

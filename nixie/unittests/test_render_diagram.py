@@ -24,12 +24,13 @@ async def test_render_diagram_writes_file_and_logs(
     path = Path("doc.md")
     block = "A-->B"
 
-    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         return object()
 
     async def fake_wait_for_proc(
-        proc: object, path: Path, idx: int, timeout: float
+        _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        assert semaphore.locked()
         return True, b""
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
@@ -57,12 +58,13 @@ async def test_render_diagram_raises_on_failure(
     path = Path("doc.md")
     block = "A-->B"
 
-    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         return object()
 
     async def fake_wait_for_proc(
-        proc: object, path: Path, idx: int, timeout: float
+        _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        assert semaphore.locked()
         return False, b"Parse error on line 1:\nfoo\n^\n"
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
