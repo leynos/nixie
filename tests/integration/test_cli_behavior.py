@@ -1,4 +1,4 @@
-"""Integration tests for the CLI's high-level behavior."""
+"""Integration tests for the CLI's high-level behaviour."""
 
 import asyncio
 from pathlib import Path
@@ -153,7 +153,7 @@ async def test_cli_handles_file_processing_error(
         **kwargs: object,
     ) -> bool:
         if path == file_b:
-            raise SimulatedProcessingError
+            raise SimulatedProcessingError()  # noqa: RSE102 - explicit instance for clarity
         return await original_check_file(path, cfg_path, semaphore, *args, **kwargs)
 
     monkeypatch.setattr(cli_module, "check_file", mock_check_file)

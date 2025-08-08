@@ -37,7 +37,7 @@ def test_get_mmdc_cmd_with_bun(
 def test_get_mmdc_cmd_with_npx(
     monkeypatch: pytest.MonkeyPatch, sample_paths: tuple[Path, Path, Path]
 ) -> None:
-    """Fallback to npx when neither bun nor mmdc is available."""
+    """Fall back to npx when neither Bun nor mmdc is available."""
     mmd, svg, cfg = sample_paths
 
     monkeypatch.setattr(shutil, "which", lambda cmd: None)
