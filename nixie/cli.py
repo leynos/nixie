@@ -27,6 +27,7 @@ import sys
 import tempfile
 import typing
 import typing as typ
+import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
@@ -236,8 +237,7 @@ async def render_block(
         idx: Index of the block within ``path``.
         semaphore: Limits concurrent CLI invocations.
         timeout: Maximum time in seconds to wait for the CLI to finish.
-        verbose: If ``True``, set the ``nixie.cli`` logger to ``INFO`` to
-            emit command lines. Preserved for backward compatibility.
+        verbose: Deprecated. Configure the ``nixie.cli`` logger instead.
 
     Returns
     -------
@@ -247,31 +247,28 @@ async def render_block(
     -----
         The command line used for rendering is logged at ``INFO`` level.
     """
-    if verbose:
-        logging.getLogger(__name__).setLevel(logging.INFO)
+    if verbose is not None:
+        warnings.warn(
+            "The 'verbose' parameter is deprecated; configure the 'nixie.cli'"
+            " logger level instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     try:
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
-<<<<<<< HEAD
-        print(
-            "Error: "
-            f"'{cli}' not found. Install Node.js with npx or Bun to use "
-            "@mermaid-js/mermaid-cli.",
-            file=sys.stderr,
-||||||| parent of c8480b7 (Log rendering errors with tracebacks)
         logging.getLogger(__name__).error(
             "Error: '%s' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
             cli,
-=======
-        logging.getLogger(__name__).exception(
-            "Error: '%s' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
-            cli,
->>>>>>> c8480b7 (Log rendering errors with tracebacks)
         )
     except RuntimeError:
-        logging.getLogger(__name__).exception("Runtime error while rendering diagram")
-    except Exception:
+        logging.getLogger(__name__).exception(
+            "Runtime error while rendering diagram"
+        )
+    except Exception as exc:
+        if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+            raise
         logging.getLogger(__name__).exception(
             "%s: unexpected error in diagram %s",
             path,

@@ -57,7 +57,7 @@ async def test_render_block_emits_command(
 
 
 @pytest.mark.asyncio
-async def test_render_block_verbose_sets_logger(
+async def test_render_block_verbose_deprecated(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
@@ -81,15 +81,16 @@ async def test_render_block_verbose_sets_logger(
 
     block = "A-->B"
     logging.getLogger("nixie.cli").setLevel(logging.WARNING)
-    caplog.set_level(logging.INFO)
-    assert await render_block(
-        block, tmp_path, cfg_path, path, 1, semaphore, verbose=True
-    )
+    with pytest.warns(DeprecationWarning):
+        with caplog.at_level(logging.WARNING, logger="nixie.cli"):
+            assert await render_block(
+                block, tmp_path, cfg_path, path, 1, semaphore, verbose=True
+            )
 
     mmd = tmp_path / "doc_1.mmd"
     svg = mmd.with_suffix(".svg")
-    expected = shlex.join(get_mmdc_cmd(mmd, svg, cfg_path))
-    assert expected in caplog.text
+    unexpected = shlex.join(get_mmdc_cmd(mmd, svg, cfg_path))
+    assert unexpected not in caplog.text
 
 
 @pytest.mark.asyncio
@@ -149,3 +150,51 @@ async def test_render_block_logs_missing_cli(
 
     assert result is False
     assert "not found" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_render_block_logs_runtime_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    cfg_path = tmp_path / "cfg.json"
+    cfg_path.write_text("{}")
+    semaphore = asyncio.Semaphore(1)
+    path = tmp_path / "doc.md"
+
+    async def raise_runtime_error(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("nixie.cli._render_diagram", raise_runtime_error)
+
+    block = "A-->B"
+    with caplog.at_level(logging.ERROR, logger="nixie.cli"):
+        result = await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+
+    assert result is False
+    assert "Runtime error while rendering diagram" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_render_block_logs_unexpected_exception(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    cfg_path = tmp_path / "cfg.json"
+    cfg_path.write_text("{}")
+    semaphore = asyncio.Semaphore(1)
+    path = tmp_path / "doc.md"
+
+    async def raise_exception(*_args: object, **_kwargs: object) -> None:
+        raise Exception("uh oh")
+
+    monkeypatch.setattr("nixie.cli._render_diagram", raise_exception)
+
+    block = "A-->B"
+    with caplog.at_level(logging.ERROR, logger="nixie.cli"):
+        result = await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+
+    assert result is False
+    assert "unexpected error in diagram" in caplog.text
