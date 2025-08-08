@@ -87,7 +87,7 @@ async def test_render_block_verbose_deprecated(
             DeprecationWarning,
             match=(
                 r"The 'verbose' parameter is deprecated; configure the"
-                r"'nixie\.cli' logger level instead\."
+                r" 'nixie\.cli' logger level instead\."
             ),
         ),
         caplog.at_level(logging.WARNING, logger="nixie.cli"),
