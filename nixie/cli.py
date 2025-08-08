@@ -34,7 +34,21 @@ BLOCK_RE = re.compile(
     re.DOTALL | re.MULTILINE,
 )
 
-ALLOWED_EXECUTABLES: typing.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
+ALLOWED_EXECUTABLES: typ.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
+
+
+class UnexpectedExecutableError(ValueError):
+    """Raised when an executable outside the allowed set is requested."""
+
+    def __init__(self, executable: str) -> None:
+        super().__init__(f"Unexpected executable: {executable}")
+
+
+class ConcurrencyValueError(argparse.ArgumentTypeError):
+    """Raised when a concurrency value less than one is supplied."""
+
+    def __init__(self, value: str) -> None:
+        super().__init__(f"concurrency must be at least 1 (got {value})")
 
 
 def parse_blocks(text: str) -> list[str]:
@@ -65,7 +79,7 @@ def create_puppeteer_config() -> typ.Generator[Path]:
         yield path
     finally:
         with suppress(OSError):
-            os.remove(path)
+            path.unlink()
 
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
@@ -121,10 +135,11 @@ async def _run_mermaid_cli(
     timeout: float,
 ) -> tuple[bool, bytes]:
     if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
-        raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
+        raise UnexpectedExecutableError(cmd[0] if cmd else "")
 
     async with sem:
-        proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+        # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+        proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio_subprocess.PIPE,
             stderr=asyncio_subprocess.PIPE,
@@ -177,7 +192,7 @@ async def _render_diagram(
 
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
-        raise ValueError(f"Unexpected executable: {cmd[0] if cmd else ''}")
+        raise UnexpectedExecutableError(cmd[0] if cmd else "")
     logging.getLogger(__name__).info(shlex.join(cmd))
 
     success, stderr = await _run_mermaid_cli(cmd, sem, path, idx, timeout)
@@ -224,7 +239,9 @@ async def render_block(
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
         print(
-            f"Error: '{cli}' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
+            "Error: "
+            f"'{cli}' not found. Install Node.js with npx or Bun to use "
+            "@mermaid-js/mermaid-cli.",
             file=sys.stderr,
         )
     except RuntimeError as exc:
@@ -266,8 +283,8 @@ async def check_file(
     return all(result is True for result in results)
 
 
-async def main(paths, max_concurrent) -> int:
-    """Main entry point."""
+async def main(paths: cabc.Iterable[Path], max_concurrent: int) -> int:
+    """Run the CLI entry point."""
     semaphore = asyncio.Semaphore(max_concurrent)
     with create_puppeteer_config() as cfg_path:
         all_success = True
@@ -275,7 +292,8 @@ async def main(paths, max_concurrent) -> int:
             print(f"==> {path}")
             try:
                 success = await check_file(path, cfg_path, semaphore)
-            except Exception as exc:  # pragma: no cover - unexpected
+            except Exception as exc:  # noqa: BLE001  pragma: no cover - unexpected
+                # Catch unexpected errors so the CLI can continue processing.
                 print(f"Validation task raised an exception: {exc}")
                 success = False
             if not success:
@@ -288,9 +306,7 @@ def positive_int(value: str) -> int:
     """Type for argparse to ensure a positive integer (>=1)."""
     ivalue = int(value)
     if ivalue < 1:
-        raise argparse.ArgumentTypeError(
-            f"concurrency must be at least 1 (got {value})"
-        )
+        raise ConcurrencyValueError(value)
     return ivalue
 
 

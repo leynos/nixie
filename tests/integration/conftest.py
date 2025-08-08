@@ -1,3 +1,5 @@
+"""Common fixtures for integration tests."""
+
 import asyncio
 import sys
 from pathlib import Path
@@ -7,7 +9,9 @@ import pytest
 
 
 @pytest.fixture
-def stub_render(monkeypatch) -> AsyncMock:
+def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
+    """Replace ``render_block`` with a stub for predictable results."""
+
     async def side_effect(
         block: str,
         tmpdir: Path,

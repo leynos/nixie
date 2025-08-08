@@ -1,9 +1,19 @@
+"""Integration tests for the CLI's high-level behaviour."""
+
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 
 from nixie.cli import main
+
+
+class SimulatedProcessingError(ValueError):
+    """Exception used to simulate processing failures in tests."""
+
+    def __init__(self) -> None:
+        super().__init__("Simulated processing error")
 
 
 @pytest.mark.asyncio
@@ -67,6 +77,7 @@ async def test_cli_behavior(
     error_substring: str | None,
     expected_calls: list[tuple[str, int]],
 ) -> None:
+    """Process various input structures and validate outcomes."""
     for rel, content in structure.items():
         dest = tmp_path / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -94,6 +105,7 @@ async def test_cli_behavior(
 async def test_cli_marks_file_boundaries(
     tmp_path: Path, stub_render: AsyncMock, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Emit clear boundary markers for each processed file."""
     file_a = tmp_path / "a.md"
     file_b = tmp_path / "b.md"
     file_a.write_text("```mermaid\nA-->B\n```")
@@ -123,6 +135,7 @@ async def test_cli_handles_file_processing_error(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Handle exceptions from ``check_file`` without halting processing."""
     file_a = tmp_path / "a.md"
     file_b = tmp_path / "b.md"
     file_a.write_text("```mermaid\nA-->B\n```")
@@ -132,10 +145,16 @@ async def test_cli_handles_file_processing_error(
 
     original_check_file = cli_module.check_file
 
-    async def mock_check_file(path: Path, *args, **kwargs) -> bool:
+    async def mock_check_file(
+        path: Path,
+        cfg_path: Path,
+        semaphore: asyncio.Semaphore,
+        *args: object,
+        **kwargs: object,
+    ) -> bool:
         if path == file_b:
-            raise ValueError("Simulated processing error")
-        return await original_check_file(path, *args, **kwargs)
+            raise SimulatedProcessingError()  # noqa: RSE102 - explicit instance for clarity
+        return await original_check_file(path, cfg_path, semaphore, *args, **kwargs)
 
     monkeypatch.setattr(cli_module, "check_file", mock_check_file)
 

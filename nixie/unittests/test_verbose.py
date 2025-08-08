@@ -1,3 +1,5 @@
+"""Tests for verbose logging behavior."""
+
 from __future__ import annotations
 
 import asyncio
@@ -13,6 +15,7 @@ from nixie.cli import get_mmdc_cmd, parse_args, render_block
 
 
 def test_parse_args_verbose(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Parse the ``--verbose`` flag into the argument namespace."""
     monkeypatch.setattr(sys, "argv", ["nixie", "--verbose", "file.md"])
     parsed = parse_args()
     assert parsed.verbose is True
@@ -25,6 +28,7 @@ async def test_render_block_emits_command(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    """Log the CLI command when verbose logging is enabled."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
@@ -58,6 +62,7 @@ async def test_render_block_silent_when_warning_level(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    """Avoid emitting command when only warnings are logged."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
