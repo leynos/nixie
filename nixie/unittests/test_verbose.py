@@ -34,11 +34,11 @@ async def test_render_block_emits_command(
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
-    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
         return object()
 
     async def fake_wait_for_proc(
-        proc: object, path: Path, idx: int, timeout: float
+        _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
         return True, b""
 
@@ -57,7 +57,36 @@ async def test_render_block_emits_command(
 
 
 @pytest.mark.asyncio
-async def test_render_block_silent_when_warning_level(
+async def test_render_block_warns_on_verbose(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    cfg_path = tmp_path / "cfg.json"
+    cfg_path.write_text("{}")
+    semaphore = asyncio.Semaphore(1)
+    path = tmp_path / "doc.md"
+
+    async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
+        return object()
+
+    async def fake_wait_for_proc(
+        _proc: object, _path: Path, _idx: int, _timeout: float
+    ) -> tuple[bool, bytes]:
+        return True, b""
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
+    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
+
+    block = "A-->B"
+    with pytest.warns(DeprecationWarning):
+        assert await render_block(
+            block, tmp_path, cfg_path, path, 1, semaphore, verbose=True
+        )
+
+
+@pytest.mark.asyncio
+async def test_render_block_silent_without_verbose(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
@@ -68,11 +97,11 @@ async def test_render_block_silent_when_warning_level(
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
-    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
         return object()
 
     async def fake_wait_for_proc(
-        proc: object, path: Path, idx: int, timeout: float
+        _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
         return True, b""
 
@@ -101,7 +130,7 @@ async def test_render_block_logs_missing_cli(
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
-    async def fake_create_subprocess_exec(*cmd: str, **kwargs: object) -> object:
+    async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
         raise FileNotFoundError(2, "No such file or directory", cmd[0])
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)

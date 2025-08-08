@@ -7,6 +7,10 @@ them with the `mermaid-cli` tool. It supports concurrent rendering via
 
 Usage:
     nixie [--concurrency N] [--verbose] path1.md [path2.md ...]
+
+The ``--verbose`` flag is deprecated and will be removed in v0.2.0. To emit
+the underlying ``mermaid-cli`` commands, set the ``nixie.cli`` logger to
+``INFO``.
 """
 
 from __future__ import annotations
@@ -229,6 +233,8 @@ async def render_block(
         semaphore: Limits concurrent CLI invocations.
         timeout: Maximum time in seconds to wait for the CLI to finish.
         verbose: Deprecated. Configure logging to control command emission.
+            This option will be removed in v0.2.0; set the "nixie.cli" logger
+            level to ``INFO`` to replicate its behaviour.
 
     Returns
     -------
@@ -240,7 +246,10 @@ async def render_block(
     """
     if verbose is not None:
         warnings.warn(
-            "render_block(verbose=...) is deprecated; configure logging level instead",
+            (
+                "render_block(verbose=...) is deprecated and will be removed in v0.2.0; "
+                'set the "nixie.cli" logger to INFO to emit command lines'
+            ),
             DeprecationWarning,
             stacklevel=2,
         )
@@ -255,7 +264,11 @@ async def render_block(
             file=sys.stderr,
         )
     except RuntimeError as exc:
-        print(exc, file=sys.stderr)
+        logging.getLogger(__name__).error("%s", exc)
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "%s: unexpected error in diagram %s", path, idx
+        )
     else:
         return True
     return False
@@ -340,7 +353,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Log the command line of each mermaid-cli invocation",
+        help=(
+            "[DEPRECATED] Log mermaid-cli commands; set the 'nixie.cli' logger "
+            "to INFO instead"
+        ),
     )
     return parser.parse_args()
 
@@ -357,4 +373,3 @@ def cli() -> None:
 
 if __name__ == "__main__":
     cli()
-
