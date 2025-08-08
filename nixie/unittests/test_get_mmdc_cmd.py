@@ -1,3 +1,5 @@
+"""Unit tests for :mod:`nixie.cli.get_mmdc_cmd`."""
+
 import shutil
 from pathlib import Path
 
@@ -8,6 +10,7 @@ from nixie.cli import get_mmdc_cmd
 
 @pytest.fixture
 def sample_paths(tmp_path: Path) -> tuple[Path, Path, Path]:
+    """Return sample mmd, svg, and config paths."""
     mmd = tmp_path / "diagram.mmd"
     svg = tmp_path / "diagram.svg"
     cfg = tmp_path / "cfg.json"
@@ -15,8 +18,9 @@ def sample_paths(tmp_path: Path) -> tuple[Path, Path, Path]:
 
 
 def test_get_mmdc_cmd_with_bun(
-    monkeypatch, sample_paths: tuple[Path, Path, Path]
+    monkeypatch: pytest.MonkeyPatch, sample_paths: tuple[Path, Path, Path]
 ) -> None:
+    """Use Bun executable when available."""
     mmd, svg, cfg = sample_paths
 
     def which(cmd: str) -> str | None:
@@ -31,8 +35,9 @@ def test_get_mmdc_cmd_with_bun(
 
 
 def test_get_mmdc_cmd_with_npx(
-    monkeypatch, sample_paths: tuple[Path, Path, Path]
+    monkeypatch: pytest.MonkeyPatch, sample_paths: tuple[Path, Path, Path]
 ) -> None:
+    """Fallback to npx when neither bun nor mmdc is available."""
     mmd, svg, cfg = sample_paths
 
     monkeypatch.setattr(shutil, "which", lambda cmd: None)

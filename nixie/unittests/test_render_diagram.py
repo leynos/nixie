@@ -1,4 +1,7 @@
+"""Tests for rendering diagrams via the CLI helpers."""
+
 from __future__ import annotations
+
 import asyncio
 import logging
 import shlex
@@ -7,13 +10,14 @@ from pathlib import Path
 
 import pytest
 
-from nixie.cli import _render_diagram, get_mmdc_cmd, _run_mermaid_cli
+from nixie.cli import _render_diagram, _run_mermaid_cli, get_mmdc_cmd
 
 
 @pytest.mark.asyncio
 async def test_render_diagram_writes_file_and_logs(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """Write diagram to disk and log the CLI invocation."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
@@ -46,6 +50,7 @@ async def test_render_diagram_writes_file_and_logs(
 async def test_render_diagram_raises_on_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    """Raise ``RuntimeError`` when the CLI reports failure."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
     semaphore = asyncio.Semaphore(1)
@@ -75,6 +80,7 @@ async def test_render_diagram_raises_on_failure(
 
 @pytest.mark.asyncio
 async def test_run_mermaid_cli_rejects_unexpected_executable() -> None:
+    """Reject executables outside the allowed set."""
     semaphore = asyncio.Semaphore(1)
     path = Path("doc.md")
     cmd = ["echo", "hello"]
