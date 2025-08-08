@@ -33,6 +33,8 @@ from pathlib import Path
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
 
+LOGGER = logging.getLogger(__name__)
+
 BLOCK_RE = re.compile(
     r"^```\s*mermaid\s*\n(.*?)\n```[ \t]*$",
     re.DOTALL | re.MULTILINE,
@@ -197,7 +199,7 @@ async def _render_diagram(
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
-    logging.getLogger(__name__).info(shlex.join(cmd))
+    LOGGER.info(shlex.join(cmd))
 
     async with semaphore:
         # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
@@ -268,7 +270,7 @@ async def render_block(
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
-        logging.getLogger(__name__).exception(
+        LOGGER.exception(
             (
                 "Error: '%s' not found. Install Node.js with npx or Bun to use "
                 "@mermaid-js/mermaid-cli."
@@ -276,11 +278,11 @@ async def render_block(
             cli,
         )
     except RuntimeError:
-        logging.getLogger(__name__).exception("Runtime error while rendering diagram")
+        LOGGER.exception("Runtime error while rendering diagram")
     except Exception as exc:
         if isinstance(exc, KeyboardInterrupt | SystemExit):
             raise
-        logging.getLogger(__name__).exception(
+        LOGGER.exception(
             "%s: unexpected error in diagram %s",
             path,
             idx,
@@ -377,7 +379,7 @@ def parse_args() -> argparse.Namespace:
 def cli() -> None:
     """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
-    logger = logging.getLogger(__name__)
+    logger = LOGGER
     if not logger.handlers:
         handler = logging.StreamHandler(stream=sys.stderr)
         handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
