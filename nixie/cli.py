@@ -57,6 +57,13 @@ class ConcurrencyValueError(argparse.ArgumentTypeError):
         super().__init__(f"concurrency must be at least 1 (got {value})")
 
 
+class NoNodeEnvironmentAvailableError(RuntimeError):
+    """Indicates that neither mmdc nor a node environment could be found."""
+
+    def __init__(self) -> None:
+        super().__init__("No node environment available.")
+
+
 def parse_blocks(text: str) -> list[str]:
     """Return all mermaid code blocks found in the text."""
     return BLOCK_RE.findall(text)
@@ -90,15 +97,17 @@ def create_puppeteer_config() -> typ.Generator[Path]:
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
     """Return the command to run mermaid-cli."""
-    cli = "mmdc"
-    if not shutil.which("mmdc"):
-        cli = "bun" if shutil.which("bun") else "npx"
+    for cli in ("mmdc", "bun", "npx"):
+        if shutil.which(cli):
+            break
+    else:
+        raise NoNodeEnvironmentAvailableError
 
     match cli:
         case "npx":
-            cmd = ["npx", "--yes", "@mermaid-js/mermaid-cli", "mmdc"]
+            cmd = ["npx", "--yes", "@mermaid-js/mermaid-cli"]
         case "bun":
-            cmd = ["bun", "x", "--bun", "@mermaid-js/mermaid-cli", "mmdc"]
+            cmd = ["bun", "x", "--bun", "@mermaid-js/mermaid-cli"]
         case _:
             cmd = [cli]
     cmd += ["-p", str(cfg_path), "-i", str(mmd), "-o", str(svg)]

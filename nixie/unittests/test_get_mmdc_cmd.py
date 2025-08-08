@@ -28,7 +28,7 @@ def test_get_mmdc_cmd_with_bun(
             return "/usr/bin/bun"
         return None
 
-    monkeypatch.setattr(shutil, "which", which)
+    monkeypatch.setattr(shutil, "which", lambda cmd: cmd == "bun")
 
     cmd = get_mmdc_cmd(mmd, svg, cfg)
     assert cmd[:3] == ["bun", "x", "--bun"]
@@ -40,7 +40,7 @@ def test_get_mmdc_cmd_with_npx(
     """Fall back to npx when neither Bun nor mmdc is available."""
     mmd, svg, cfg = sample_paths
 
-    monkeypatch.setattr(shutil, "which", lambda cmd: None)
+    monkeypatch.setattr(shutil, "which", lambda cmd: cmd == "npx")
 
     cmd = get_mmdc_cmd(mmd, svg, cfg)
-    assert cmd[:4] == ["npx", "--yes", "@mermaid-js/mermaid-cli", "mmdc"]
+    assert cmd[:3] == ["npx", "--yes", "@mermaid-js/mermaid-cli"]
