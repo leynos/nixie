@@ -366,9 +366,13 @@ def parse_args() -> argparse.Namespace:
 def cli() -> None:
     """Entry point for the ``nixie`` console script."""
     parsed = parse_args()
-    logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
-    if parsed.verbose:
-        logging.getLogger(__name__).setLevel(logging.INFO)
+    logger = logging.getLogger(__name__)
+    if not logger.handlers:
+        handler = logging.StreamHandler(stream=sys.stderr)
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        logger.addHandler(handler)
+        logger.propagate = False
+    logger.setLevel(logging.INFO if parsed.verbose else logging.WARNING)
     sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
 
 

@@ -81,11 +81,13 @@ async def test_render_block_verbose_deprecated(
 
     block = "A-->B"
     logging.getLogger("nixie.cli").setLevel(logging.WARNING)
-    with pytest.warns(DeprecationWarning):
-        with caplog.at_level(logging.WARNING, logger="nixie.cli"):
-            assert await render_block(
-                block, tmp_path, cfg_path, path, 1, semaphore, verbose=True
-            )
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"The 'verbose' parameter is deprecated; configure the 'nixie\.cli' logger level instead\.",
+    ), caplog.at_level(logging.WARNING, logger="nixie.cli"):
+        assert await render_block(
+            block, tmp_path, cfg_path, path, 1, semaphore, verbose=True,
+        )
 
     mmd = tmp_path / "doc_1.mmd"
     svg = mmd.with_suffix(".svg")
@@ -187,8 +189,11 @@ async def test_render_block_logs_unexpected_exception(
     semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
+    class BoomError(Exception):
+        pass
+
     async def raise_exception(*_args: object, **_kwargs: object) -> None:
-        raise Exception("uh oh")
+        raise BoomError("uh oh")
 
     monkeypatch.setattr("nixie.cli._render_diagram", raise_exception)
 
