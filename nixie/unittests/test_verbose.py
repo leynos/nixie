@@ -81,12 +81,21 @@ async def test_render_block_verbose_deprecated(
 
     block = "A-->B"
     logging.getLogger("nixie.cli").setLevel(logging.WARNING)
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"The 'verbose' parameter is deprecated; configure the 'nixie\.cli' logger level instead\.",
-    ), caplog.at_level(logging.WARNING, logger="nixie.cli"):
+    with (
+        pytest.warns(
+            DeprecationWarning,
+            match=r"The 'verbose' parameter is deprecated; configure the 'nixie\.cli' logger level instead\.",
+        ),
+        caplog.at_level(logging.WARNING, logger="nixie.cli"),
+    ):
         assert await render_block(
-            block, tmp_path, cfg_path, path, 1, semaphore, verbose=True,
+            block,
+            tmp_path,
+            cfg_path,
+            path,
+            1,
+            semaphore,
+            verbose=True,
         )
 
     mmd = tmp_path / "doc_1.mmd"

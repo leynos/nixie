@@ -25,7 +25,6 @@ import shlex
 import shutil
 import sys
 import tempfile
-import typing
 import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
@@ -84,7 +83,7 @@ def create_puppeteer_config() -> typ.Generator[Path]:
         yield path
     finally:
         with suppress(OSError):
-            path.unlink()
+            path.unlink(missing_ok=True)
 
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
@@ -201,7 +200,8 @@ async def _render_diagram(
     logging.getLogger(__name__).info(shlex.join(cmd))
 
     async with semaphore:
-        proc = await asyncio.create_subprocess_exec(  # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+        # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+        proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -268,8 +268,11 @@ async def render_block(
         await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
-        logging.getLogger(__name__).error(
-            "Error: '%s' not found. Install Node.js with npx or Bun to use @mermaid-js/mermaid-cli.",
+        logging.getLogger(__name__).exception(
+            (
+                "Error: '%s' not found. Install Node.js with npx or Bun to use "
+                "@mermaid-js/mermaid-cli."
+            ),
             cli,
         )
     except RuntimeError:

@@ -71,7 +71,18 @@ select = [
     "D",
     "ANN",
 ]
-per-file-ignores = {"**/test_*.py" = ["S101"]}
+ignore = ["D205"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/test_*.py" = [
+  "S101",  # allow assert in tests
+  "D",     # skip docstring rules in tests
+  "ANN",   # skip type-annotation rules in tests
+  "TRY003",# allow messages in exceptions for tests
+  "E501",  # allow long lines (e.g., regex) in tests
+  "I001",  # be lenient on import sorting in tests
+]
+"tests/**/conftest.py" = ["D", "ANN", "TRY003"]
 ignore = ["D205"]
 
 [tool.ruff.lint.flake8-import-conventions]

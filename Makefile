@@ -13,8 +13,11 @@ clean: ## Remove build artifacts
 	rm -rf .venv dist/ *.egg-info
 
 build: ## install deps and build bytecode
-	uv venv
-	uv sync --group dev
+	@if [ -x .venv/bin/python ]; then \
+		echo "venv present; skipping uv setup"; \
+	else \
+		uv venv && uv sync --group dev; \
+	fi
 
 test: build ## Run tests
 	$(PYTEST) -v
