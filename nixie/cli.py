@@ -146,7 +146,7 @@ async def wait_for_proc(
     """Wait for a process to complete and return its success status and stderr."""
     try:
         _, stderr = await asyncio.wait_for(proc.communicate(), timeout)
-    except TimeoutError:
+    except asyncio.TimeoutError:  # noqa: UP041
         proc.kill()
         await proc.wait()
         print(f"{path}: diagram {idx} timed out", file=sys.stderr)
@@ -172,8 +172,7 @@ async def _run_mermaid_cli(
             stdout=asyncio_subprocess.PIPE,
             stderr=asyncio_subprocess.PIPE,
         )
-
-    return await wait_for_proc(proc, path, idx, timeout)
+        return await wait_for_proc(proc, path, idx, timeout)
 
 
 async def _render_diagram(
@@ -219,18 +218,8 @@ async def _render_diagram(
     mmd.write_text(block)
 
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
-    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
-        raise UnexpectedExecutableError(cmd[0] if cmd else "")
     LOGGER.info(shlex.join(cmd))
-
-    async with semaphore:
-        # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        success, stderr = await wait_for_proc(proc, path, idx, timeout)
+    success, stderr = await _run_mermaid_cli(cmd, semaphore, path, idx, timeout)
     if not success:
         error_message = (
             f"Error running command {shlex.join(cmd)} for file '{path}' "
@@ -298,6 +287,11 @@ async def render_block(
                 "@mermaid-js/mermaid-cli."
             ),
             cli,
+        )
+    except NoNodeEnvironmentAvailableError:
+        LOGGER.exception(
+            "No supported node environment found. Install mmdc directly, or install "
+            "Node.js (npx) or Bun to use @mermaid-js/mermaid-cli."
         )
     except RuntimeError:
         LOGGER.exception("Runtime error while rendering diagram")
