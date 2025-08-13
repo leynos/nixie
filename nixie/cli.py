@@ -81,10 +81,21 @@ def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
 
 
 @contextmanager
-def create_puppeteer_config() -> typ.Generator[Path]:
-    """Yield a Puppeteer config path and remove it on exit."""
+def create_puppeteer_config() -> typ.Generator[Path | None, None, None]:
+    """Yield a Puppeteer config path and remove it on exit.
+
+    When running as the root user, ``mmdc`` must be invoked with sandboxing
+    disabled. We accomplish this by writing a temporary Puppeteer configuration
+    file that passes ``--no-sandbox`` and ``--disable-setuid-sandbox``. If the
+    current process is not running as root, ``None`` is yielded so callers can
+    omit the extra CLI flag entirely.
+    """
+    geteuid = getattr(os, "geteuid", lambda: 1)
+    if geteuid() != 0:
+        yield None
+        return
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
-        json.dump({"args": ["--no-sandbox"]}, fh)
+        json.dump({"args": ["--no-sandbox", "--disable-setuid-sandbox"]}, fh)
         fh.flush()
         name = fh.name
     path = Path(name)
@@ -95,7 +106,7 @@ def create_puppeteer_config() -> typ.Generator[Path]:
             path.unlink(missing_ok=True)
 
 
-def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
+def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
     """Return the command to run mermaid-cli."""
     for cli in ("mmdc", "bun", "npx"):
         if shutil.which(cli):
@@ -110,7 +121,9 @@ def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path) -> list[str]:
             cmd = ["bun", "x", "--bun", "@mermaid-js/mermaid-cli"]
         case _:
             cmd = [cli]
-    cmd += ["-p", str(cfg_path), "-i", str(mmd), "-o", str(svg)]
+    if cfg_path is not None:
+        cmd += ["--puppeteerConfigFile", str(cfg_path)]
+    cmd += ["-i", str(mmd), "-o", str(svg)]
     return cmd
 
 
@@ -166,7 +179,7 @@ async def _run_mermaid_cli(
 async def _render_diagram(
     block: str,
     tmpdir: Path,
-    cfg_path: Path,
+    cfg_path: Path | None,
     path: Path,
     idx: int,
     semaphore: asyncio.Semaphore,
@@ -184,7 +197,7 @@ async def _render_diagram(
     tmpdir
         Directory for intermediate files.
     cfg_path
-        Puppeteer configuration passed to the CLI.
+        Optional Puppeteer configuration passed to the CLI.
     path
         Markdown file containing the diagram; used for naming only.
     idx
@@ -230,7 +243,7 @@ async def _render_diagram(
 async def render_block(
     block: str,
     tmpdir: Path,
-    cfg_path: Path,
+    cfg_path: Path | None,
     path: Path,
     idx: int,
     semaphore: asyncio.Semaphore,
@@ -246,7 +259,7 @@ async def render_block(
         Mermaid code block to render.
     tmpdir : Path
         Temporary directory for intermediate files.
-    cfg_path : Path
+    cfg_path : Path | None
         Path to the Puppeteer configuration file.
     path : Path
         Markdown file containing the block.
@@ -308,7 +321,7 @@ def default_concurrency() -> int:
 
 async def check_file(
     path: Path,
-    cfg_path: Path,
+    cfg_path: Path | None,
     semaphore: asyncio.Semaphore,
 ) -> bool:
     """Check a single file for Mermaid diagrams."""
