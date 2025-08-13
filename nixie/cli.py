@@ -260,7 +260,7 @@ async def render_block(
     tmpdir : Path
         Temporary directory for intermediate files.
     cfg_path : Path | None
-        Path to the Puppeteer configuration file.
+        Optional path to the Puppeteer configuration file (omit when None).
     path : Path
         Markdown file containing the block.
     idx : int
