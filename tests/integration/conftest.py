@@ -15,7 +15,7 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     async def side_effect(
         block: str,
         tmpdir: Path,
-        cfg_path: Path,
+        cfg_path: Path | None,
         path: Path,
         idx: int,
         semaphore: asyncio.Semaphore,

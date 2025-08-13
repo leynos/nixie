@@ -147,7 +147,7 @@ async def test_cli_handles_file_processing_error(
 
     async def mock_check_file(
         path: Path,
-        cfg_path: Path,
+        cfg_path: Path | None,
         semaphore: asyncio.Semaphore,
         *args: object,
         **kwargs: object,
