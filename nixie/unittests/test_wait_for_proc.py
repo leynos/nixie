@@ -16,12 +16,22 @@ if typ.TYPE_CHECKING:
 
 
 @pytest.mark.asyncio
-async def test_wait_for_proc_times_out(tmp_path: Path) -> None:
-    """Return ``False`` when the process exceeds ``timeout``."""
+async def test_wait_for_proc_handles_asyncio_timeout_error(tmp_path: Path) -> None:
+    """Handle :class:`asyncio.TimeoutError` raised by ``asyncio.wait_for``."""
+    cmd = [sys.executable, "-c", "import time; time.sleep(1)"]
+
     proc = await asyncio.create_subprocess_exec(
-        sys.executable,
-        "-c",
-        "import time; time.sleep(1)",
+        *cmd,
+        stdout=asyncio_subprocess.PIPE,
+        stderr=asyncio_subprocess.PIPE,
+    )
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(proc.communicate(), 0.01)
+    proc.kill()
+    await proc.wait()
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
         stdout=asyncio_subprocess.PIPE,
         stderr=asyncio_subprocess.PIPE,
     )
