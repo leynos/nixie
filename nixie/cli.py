@@ -289,7 +289,7 @@ async def render_block(
             cli,
         )
     except NoNodeEnvironmentAvailableError:
-        LOGGER.exception(
+        LOGGER.error(  # noqa: TRY400
             "No supported node environment found. Install mmdc directly, or install "
             "Node.js (npx) or Bun to use @mermaid-js/mermaid-cli."
         )
