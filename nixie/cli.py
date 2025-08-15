@@ -146,7 +146,7 @@ async def wait_for_proc(
     """Wait for a process to complete and return its success status and stderr."""
     try:
         _, stderr = await asyncio.wait_for(proc.communicate(), timeout)
-    except asyncio.TimeoutError:  # noqa: UP041
+    except asyncio.TimeoutError:  # noqa: UP041  # https://github.com/astral-sh/ruff/issues/8565
         proc.kill()
         await proc.wait()
         print(f"{path}: diagram {idx} timed out", file=sys.stderr)
@@ -289,9 +289,10 @@ async def render_block(
             cli,
         )
     except NoNodeEnvironmentAvailableError:
-        LOGGER.error(  # noqa: TRY400
+        LOGGER.error(  # noqa: TRY400  # user-facing error; suppress stack trace
             "No supported node environment found. Install mmdc directly, or install "
-            "Node.js (npx) or Bun to use @mermaid-js/mermaid-cli."
+            "Node.js (npx) or Bun to use @mermaid-js/mermaid-cli.",
+            exc_info=False,
         )
     except RuntimeError:
         LOGGER.exception("Runtime error while rendering diagram")
