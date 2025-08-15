@@ -146,7 +146,7 @@ async def wait_for_proc(
     """Wait for a process to complete and return its success status and stderr."""
     try:
         _, stderr = await asyncio.wait_for(proc.communicate(), timeout)
-    except asyncio.TimeoutError:  # noqa: UP041  # https://github.com/astral-sh/ruff/issues/8565
+    except asyncio.TimeoutError:  # noqa: UP041  # TODO(leynos): remove once ruff issue 8565 is fixed https://github.com/astral-sh/ruff/issues/8565
         proc.kill()
         await proc.wait()
         print(f"{path}: diagram {idx} timed out", file=sys.stderr)
