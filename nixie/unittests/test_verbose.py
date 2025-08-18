@@ -27,6 +27,7 @@ async def test_render_block_emits_command(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
+    fake_home_cwd: Path,
 ) -> None:
     """Log the CLI command when verbose logging is enabled."""
     cfg_path = tmp_path / "cfg.json"
@@ -42,9 +43,6 @@ async def test_render_block_emits_command(
     ) -> tuple[bool, bytes]:
         return True, b""
 
-    home = tmp_path / "home"
-    monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
@@ -64,6 +62,7 @@ async def test_render_block_verbose_deprecated(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
+    fake_home_cwd: Path,
 ) -> None:
     """Test deprecated verbose parameter still works but warns."""
     cfg_path = tmp_path / "cfg.json"
@@ -79,9 +78,6 @@ async def test_render_block_verbose_deprecated(
     ) -> tuple[bool, bytes]:
         return True, b""
 
-    home = tmp_path / "home"
-    monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
@@ -119,6 +115,7 @@ async def test_render_block_silent_without_verbose(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
+    fake_home_cwd: Path,
 ) -> None:
     """Avoid emitting command when only warnings are logged."""
     cfg_path = tmp_path / "cfg.json"
@@ -134,9 +131,6 @@ async def test_render_block_silent_without_verbose(
     ) -> tuple[bool, bytes]:
         return True, b""
 
-    home = tmp_path / "home"
-    monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
@@ -156,6 +150,7 @@ async def test_render_block_logs_missing_cli(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
+    fake_home_cwd: Path,
 ) -> None:
     """Log error when CLI tool is missing."""
     cfg_path = tmp_path / "cfg.json"
@@ -166,9 +161,6 @@ async def test_render_block_logs_missing_cli(
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         raise FileNotFoundError(2, "No such file or directory", _cmd[0])
 
-    home = tmp_path / "home"
-    monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
 

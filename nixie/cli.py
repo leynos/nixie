@@ -112,7 +112,8 @@ def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
     The Mermaid CLI can be installed in several common locations. We first
     check these explicit paths so that users do not need to modify ``PATH``
     just to run ``nixie``. Only if ``mmdc`` is not found do we fall back to
-    ``bunx`` or ``npx``.
+    ``bun`` or ``npx``. Absolute paths to ``mmdc`` are valid and are invoked
+    directly.
     """
     home = Path.home()
     cwd = Path.cwd()
@@ -122,22 +123,25 @@ def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
         home / ".npm-global" / "bin" / "mmdc",
     ):
         if path.is_file():
-            cli = str(path)
-            break
+            if os.access(path, os.X_OK):
+                cli = str(path)
+                break
+            LOGGER.debug("Skipping non-executable %s", path)
     else:
         for exe in ("mmdc", "bun", "npx"):
             found = shutil.which(exe)
             if found:
-                cli = found if exe == "mmdc" else exe
+                cli = found
                 break
         else:
             raise NoNodeEnvironmentAvailableError
 
-    match cli:
+    name = Path(cli).name
+    match name:
         case "npx":
-            cmd = ["npx", "--yes", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "--yes", "@mermaid-js/mermaid-cli"]
         case "bun":
-            cmd = ["bun", "x", "--bun", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "x", "--bun", "@mermaid-js/mermaid-cli"]
         case _:
             cmd = [cli]
     if cfg_path is not None:

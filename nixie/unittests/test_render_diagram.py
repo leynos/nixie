@@ -15,7 +15,10 @@ from nixie.cli import _render_diagram, _run_mermaid_cli, get_mmdc_cmd
 
 @pytest.mark.asyncio
 async def test_render_diagram_writes_file_and_logs(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    fake_home_cwd: Path,
 ) -> None:
     """Write diagram to disk and log the CLI invocation."""
     cfg_path = tmp_path / "cfg.json"
@@ -33,9 +36,6 @@ async def test_render_diagram_writes_file_and_logs(
         assert semaphore.locked()
         return True, b""
 
-    home = tmp_path / "home"
-    monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
@@ -52,7 +52,9 @@ async def test_render_diagram_writes_file_and_logs(
 
 @pytest.mark.asyncio
 async def test_render_diagram_raises_on_failure(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    fake_home_cwd: Path,
 ) -> None:
     """Raise ``RuntimeError`` when the CLI reports failure."""
     cfg_path = tmp_path / "cfg.json"
@@ -70,9 +72,6 @@ async def test_render_diagram_raises_on_failure(
         assert semaphore.locked()
         return False, b"Parse error on line 1:\nfoo\n^\n"
 
-    home = tmp_path / "home"
-    monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
