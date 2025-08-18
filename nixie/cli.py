@@ -107,12 +107,31 @@ def create_puppeteer_config() -> typ.Generator[Path | None, None, None]:
 
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
-    """Return the command to run mermaid-cli."""
-    for cli in ("mmdc", "bun", "npx"):
-        if shutil.which(cli):
+    """Return the command to run mermaid-cli.
+
+    The Mermaid CLI can be installed in several common locations. We first
+    check these explicit paths so that users do not need to modify ``PATH``
+    just to run ``nixie``. Only if ``mmdc`` is not found do we fall back to
+    ``bunx`` or ``npx``.
+    """
+    home = Path.home()
+    cwd = Path.cwd()
+    for path in (
+        home / ".bun" / "bin" / "mmdc",
+        cwd / "node_modules" / ".bin" / "mmdc",
+        home / ".npm-global" / "bin" / "mmdc",
+    ):
+        if path.is_file():
+            cli = str(path)
             break
     else:
-        raise NoNodeEnvironmentAvailableError
+        for exe in ("mmdc", "bun", "npx"):
+            found = shutil.which(exe)
+            if found:
+                cli = found if exe == "mmdc" else exe
+                break
+        else:
+            raise NoNodeEnvironmentAvailableError
 
     match cli:
         case "npx":
@@ -162,7 +181,8 @@ async def _run_mermaid_cli(
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
-    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
+    exe = Path(cmd[0]).name if cmd else ""
+    if exe not in ALLOWED_EXECUTABLES:
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
 
     async with sem:

@@ -33,6 +33,9 @@ async def test_render_diagram_writes_file_and_logs(
         assert semaphore.locked()
         return True, b""
 
+    home = tmp_path / "home"
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
@@ -67,6 +70,9 @@ async def test_render_diagram_raises_on_failure(
         assert semaphore.locked()
         return False, b"Parse error on line 1:\nfoo\n^\n"
 
+    home = tmp_path / "home"
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
     monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
