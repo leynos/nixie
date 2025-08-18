@@ -88,6 +88,33 @@ def test_get_mmdc_cmd_custom_paths(
     assert cmd[0] == str(mmdc_path)
 
 
+def test_get_mmdc_cmd_ignores_non_executable(
+    monkeypatch: pytest.MonkeyPatch,
+    sample_paths: tuple[Path, Path, Path],
+    tmp_path: Path,
+    fake_home_cwd: Path,
+) -> None:
+    """Fallback when a candidate exists but lacks execute permission."""
+    mmd, svg, cfg = sample_paths
+    home = fake_home_cwd
+    project = tmp_path / "project"
+    bun_bin = home / ".bun" / "bin"
+    bun_bin.mkdir(parents=True, exist_ok=True)
+
+    mmdc_path = bun_bin / "mmdc"
+    mmdc_path.write_text("")
+    mmdc_path.chmod(0o644)  # not executable
+
+    project.mkdir()
+    monkeypatch.chdir(project)
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/npx" if cmd == "npx" else None
+    )
+
+    cmd = get_mmdc_cmd(mmd, svg, cfg)
+    assert cmd[:3] == ["/usr/bin/npx", "--yes", "@mermaid-js/mermaid-cli"]
+
+
 def test_get_mmdc_cmd_errors_without_environment(
     monkeypatch: pytest.MonkeyPatch,
     sample_paths: tuple[Path, Path, Path],

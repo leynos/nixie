@@ -117,24 +117,26 @@ def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
     """
     home = Path.home()
     cwd = Path.cwd()
-    for path in (
+    candidates: list[Path | str | None] = [
         home / ".bun" / "bin" / "mmdc",
         cwd / "node_modules" / ".bin" / "mmdc",
         home / ".npm-global" / "bin" / "mmdc",
-    ):
-        if path.is_file():
-            if os.access(path, os.X_OK):
-                cli = str(path)
-                break
-            LOGGER.debug("Skipping non-executable %s", path)
+        shutil.which("mmdc"),
+        shutil.which("bun"),
+        shutil.which("npx"),
+    ]
+    for candidate in candidates:
+        if isinstance(candidate, Path):
+            if candidate.is_file():
+                if os.access(candidate, os.X_OK):
+                    cli = str(candidate)
+                    break
+                LOGGER.debug("Skipping non-executable %s", candidate)
+        elif candidate:
+            cli = candidate
+            break
     else:
-        for exe in ("mmdc", "bun", "npx"):
-            found = shutil.which(exe)
-            if found:
-                cli = found
-                break
-        else:
-            raise NoNodeEnvironmentAvailableError
+        raise NoNodeEnvironmentAvailableError
 
     name = Path(cli).name
     match name:
