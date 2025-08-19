@@ -129,6 +129,46 @@ async def test_cli_marks_file_boundaries(
 
 
 @pytest.mark.asyncio
+async def test_cli_reports_diagram_schemas(
+    tmp_path: Path, stub_render: AsyncMock, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Show schema names and line numbers for each diagram."""
+    file = tmp_path / "a.md"
+    file.write_text(
+        "\n".join(
+            [
+                "preamble",
+                "```mermaid",
+                "sequenceDiagram",
+                "A->B",
+                "```",
+                "",
+                "```mermaid",
+                "classDiagram",
+                "A--|>B",
+                "```",
+            ]
+        )
+    )
+
+    exit_code = await main([file], 2)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    lines = captured.out.splitlines()
+    markers = [
+        "--> line 3: sequenceDiagram",
+        "<-- line 5: sequenceDiagram",
+        "--> line 8: classDiagram",
+        "<-- line 10: classDiagram",
+    ]
+    for marker in markers:
+        assert lines.count(marker) == 1
+    positions = [lines.index(marker) for marker in markers]
+    assert positions == sorted(positions)
+
+
+@pytest.mark.asyncio
 async def test_cli_handles_file_processing_error(
     tmp_path: Path,
     stub_render: AsyncMock,

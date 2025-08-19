@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import asyncio.subprocess as asyncio_subprocess
+import dataclasses as dc
 import json
 import logging
 import os
@@ -72,9 +73,28 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
         super().__init__("No node environment available.")
 
 
-def parse_blocks(text: str) -> list[str]:
-    """Return all mermaid code blocks found in the text."""
-    return BLOCK_RE.findall(text)
+@dc.dataclass(slots=True)
+class Diagram:
+    """Mermaid diagram extracted from a Markdown file."""
+
+    source: str
+    line_start: int
+    line_end: int
+    schema: str
+
+
+def parse_blocks(text: str) -> list[Diagram]:
+    """Return all mermaid code blocks found in ``text``."""
+    diagrams: list[Diagram] = []
+    for match in BLOCK_RE.finditer(text):
+        block = match.group(1)
+        line_start = text.count("\n", 0, match.start(1)) + 1
+        lines = block.splitlines()
+        line_end = line_start + len(lines)
+        first_line = lines[0].strip() if lines else ""
+        schema = first_line.split()[0] if first_line else ""
+        diagrams.append(Diagram(block, line_start, line_end, schema))
+    return diagrams
 
 
 def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
@@ -398,23 +418,28 @@ async def check_file(
     semaphore: asyncio.Semaphore,
 ) -> bool:
     """Check a single file for Mermaid diagrams."""
-    blocks = parse_blocks(path.read_text(encoding="utf-8"))
-    if not blocks:
+    diagrams = parse_blocks(path.read_text(encoding="utf-8"))
+    if not diagrams:
         return True
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
-        tasks = [
-            render_block(
-                block,
-                tmp_path,
-                cfg_path,
-                path,
-                idx,
-                semaphore,
-            )
-            for idx, block in enumerate(blocks, 1)
-        ]
+
+        async def process(idx: int, diagram: Diagram) -> bool:
+            print(f"--> line {diagram.line_start}: {diagram.schema}")
+            try:
+                return await render_block(
+                    diagram.source,
+                    tmp_path,
+                    cfg_path,
+                    path,
+                    idx,
+                    semaphore,
+                )
+            finally:
+                print(f"<-- line {diagram.line_end}: {diagram.schema}")
+
+        tasks = [process(idx, diagram) for idx, diagram in enumerate(diagrams, 1)]
         results = await asyncio.gather(*tasks, return_exceptions=True)
     return all(result is True for result in results)
 

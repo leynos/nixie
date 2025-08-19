@@ -62,12 +62,18 @@ with `--disable-setuid-sandbox`, `--disable-gpu`, and
 to also pass `--no-sandbox` to Chromium.
 
 When multiple files are provided, nixie prints markers that show where the
-output for each file starts and ends:
+output for each file starts and ends. Each Mermaid diagram is also bracketed
+with its line numbers and schema name:
 
 ```text
 ==> path/to/file.md
+--> line 10: sequenceDiagram
+<-- line 20: sequenceDiagram
 <== path/to/file.md
 ```
+
+Errors reported while rendering a diagram appear between the `-->` and `<--`
+lines for that diagram.
 
 Example:
 
