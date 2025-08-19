@@ -1,4 +1,13 @@
-"""Tests for Markdown file discovery helpers."""
+"""Tests for Markdown file discovery helpers.
+
+These tests exercise Gitignore-aware Markdown discovery helpers:
+
+- Only the repository root ``.gitignore`` is honoured; nested ``.gitignore`` files
+  are ignored.
+- Discovery yields results deterministically, sorted by path.
+- Both implicit discovery (CWD) and explicit directory expansion behave
+  consistently.
+"""
 
 from __future__ import annotations
 
