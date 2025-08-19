@@ -61,7 +61,9 @@ def test_discover_markdown_files_handles_negation_and_order(cwd_tmp: Path) -> No
     (cwd_tmp / ".gitignore").write_text("ignored/\n!ignored/keep.md\n")
 
     found = list(discover_markdown_files())
-    assert found == [reincluded, root]
+    assert found == [reincluded, root], (
+        "Should re-include negated pattern and maintain sorted-by-path order"
+    )
 
 
 def test_discover_markdown_files_empty_directory(cwd_tmp: Path) -> None:
@@ -69,7 +71,7 @@ def test_discover_markdown_files_empty_directory(cwd_tmp: Path) -> None:
     (cwd_tmp / ".gitignore").write_text("\n")
 
     found = list(discover_markdown_files())
-    assert found == []
+    assert found == [], "Should yield no paths in an empty directory"
 
 
 def test_discover_markdown_files_ignores_nested_gitignore(cwd_tmp: Path) -> None:
@@ -83,7 +85,9 @@ def test_discover_markdown_files_ignores_nested_gitignore(cwd_tmp: Path) -> None
     (sub / ".gitignore").write_text("skip.md\n")
 
     found = list(discover_markdown_files())
-    assert set(found) == {keep, skip}
+    assert set(found) == {keep, skip}, (
+        "Should ignore nested .gitignore and include both files"
+    )
 
 
 def test_collect_markdown_files_respects_gitignore(cwd_tmp: Path) -> None:
@@ -97,4 +101,4 @@ def test_collect_markdown_files_respects_gitignore(cwd_tmp: Path) -> None:
     (cwd_tmp / ".gitignore").write_text("ignored/\n")
 
     found = list(collect_markdown_files([cwd_tmp]))
-    assert found == [keep]
+    assert found == [keep], "Should ignore ignored/ when expanding explicit directories"

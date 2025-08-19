@@ -88,6 +88,9 @@ def discover_markdown_files() -> cabc.Generator[Path]:
     # Use rglob with explicit sorting for deterministic results
     paths = sorted(root.rglob("*.md"))
     for path in paths:
+        # Skip VCS metadata directories
+        if ".git" in path.parts:
+            continue
         rel_path = path.relative_to(root).as_posix()
         if spec and spec.match_file(rel_path):
             continue
@@ -113,6 +116,9 @@ def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
                 rel_path = p.resolve().relative_to(root).as_posix()
             except ValueError:
                 rel_path = None
+            # Only process Markdown files when an explicit file is provided
+            if p.suffix.lower() != ".md":
+                continue
             if spec and rel_path and spec.match_file(rel_path):
                 continue
             yield p
