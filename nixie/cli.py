@@ -151,18 +151,43 @@ def create_puppeteer_config() -> typ.Generator[Path | None, None, None]:
 
 
 def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
-    """Return the command to run mermaid-cli."""
-    for cli in ("mmdc", "bun", "npx"):
-        if shutil.which(cli):
+    """Return the command to run mermaid-cli.
+
+    The Mermaid CLI can be installed in several common locations. We first
+    check these explicit paths so that users do not need to modify ``PATH``
+    just to run ``nixie``. Only if ``mmdc`` is not found do we fall back to
+    ``bun`` or ``npx``. Absolute paths to ``mmdc`` are valid and are invoked
+    directly.
+    """
+    home = Path.home()
+    cwd = Path.cwd()
+    candidates: list[Path | str | None] = [
+        home / ".bun" / "bin" / "mmdc",
+        cwd / "node_modules" / ".bin" / "mmdc",
+        home / ".npm-global" / "bin" / "mmdc",
+        shutil.which("mmdc"),
+        shutil.which("bun"),
+        shutil.which("npx"),
+    ]
+    for candidate in candidates:
+        if isinstance(candidate, Path):
+            if candidate.is_file():
+                if os.access(candidate, os.X_OK):
+                    cli = str(candidate)
+                    break
+                LOGGER.debug("Skipping non-executable %s", candidate)
+        elif candidate:
+            cli = candidate
             break
     else:
         raise NoNodeEnvironmentAvailableError
 
-    match cli:
+    name = Path(cli).name
+    match name:
         case "npx":
-            cmd = ["npx", "--yes", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "--yes", "@mermaid-js/mermaid-cli"]
         case "bun":
-            cmd = ["bun", "x", "--bun", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "x", "--bun", "@mermaid-js/mermaid-cli"]
         case _:
             cmd = [cli]
     if cfg_path is not None:
@@ -206,7 +231,8 @@ async def _run_mermaid_cli(
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
-    if not cmd or cmd[0] not in ALLOWED_EXECUTABLES:
+    exe = Path(cmd[0]).name if cmd else ""
+    if exe not in ALLOWED_EXECUTABLES:
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
 
     async with sem:
