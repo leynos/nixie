@@ -6,7 +6,7 @@ them with the `mermaid-cli` tool. It supports concurrent rendering via
 `asyncio` and falls back between `mmdc`, `npx`, and `bun` executables.
 
 Usage:
-    nixie [--concurrency N] [--verbose] path1.md [path2.md ...]
+    nixie [--concurrency N] [--verbose] [FILE ...]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
 underlying ``mermaid-cli`` commands.
@@ -29,6 +29,8 @@ import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
+
+import pathspec
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
@@ -69,14 +71,56 @@ def parse_blocks(text: str) -> list[str]:
     return BLOCK_RE.findall(text)
 
 
+def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
+    """Return a ``PathSpec`` built from ``root/.gitignore`` if it exists."""
+    gitignore = root / ".gitignore"
+    if gitignore.is_file():
+        return pathspec.PathSpec.from_lines(
+            "gitwildmatch", gitignore.read_text(encoding="utf-8").splitlines()
+        )
+    return None
+
+
+def discover_markdown_files() -> cabc.Generator[Path]:
+    """Yield Markdown files under the current directory respecting ``.gitignore``."""
+    root = Path.cwd()
+    spec = _load_gitignore_spec(root)
+    # Use rglob with explicit sorting for deterministic results
+    paths = sorted(root.rglob("*.md"))
+    for path in paths:
+        # Skip VCS metadata directories
+        if ".git" in path.parts:
+            continue
+        rel_path = path.relative_to(root).as_posix()
+        if spec and spec.match_file(rel_path):
+            continue
+        yield path
+
+
 def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
-    """Expand directories into Markdown files recursively."""
+    """Yield Markdown files under ``paths`` while honouring ``.gitignore``."""
+    root = Path.cwd()
+    spec = _load_gitignore_spec(root)
     for p in paths:
         if p.is_dir():
-            for md in p.rglob("*"):
-                if md.is_file() and md.suffix.lower() == ".md":
-                    yield md
+            for path in sorted(p.rglob("*.md")):
+                try:
+                    rel_path = path.resolve().relative_to(root).as_posix()
+                except ValueError:
+                    rel_path = None
+                if spec and rel_path and spec.match_file(rel_path):
+                    continue
+                yield path
         else:
+            try:
+                rel_path = p.resolve().relative_to(root).as_posix()
+            except ValueError:
+                rel_path = None
+            # Only process Markdown files when an explicit file is provided
+            if p.suffix.lower() != ".md":
+                continue
+            if spec and rel_path and spec.match_file(rel_path):
+                continue
             yield p
 
 
@@ -402,8 +446,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "paths",
         type=Path,
-        nargs="+",
-        help="Markdown files to validate",
+        nargs="*",
+        help=(
+            "Markdown files or directories to validate. When omitted, scans the "
+            "current directory for .md files (honouring the top-level .gitignore; "
+            "nested .gitignore files are ignored)."
+        ),
     )
     parser.add_argument(
         "--concurrency",
@@ -429,7 +477,14 @@ def cli() -> None:
         logger.addHandler(handler)
         logger.propagate = False
     logger.setLevel(logging.INFO if parsed.verbose else logging.WARNING)
-    sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
+    if parsed.paths:
+        paths = list(parsed.paths)
+    else:
+        paths = list(discover_markdown_files())
+        if not paths:
+            print("No Markdown files found.", file=sys.stderr)
+            sys.exit(0)
+    sys.exit(asyncio.run(main(paths, parsed.concurrency)))
 
 
 if __name__ == "__main__":
