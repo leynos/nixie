@@ -414,9 +414,9 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         nargs="*",
         help=(
-            "Markdown files to validate. Defaults to all .md files in the "
-            "current directory. Files ignored by .gitignore are excluded from "
-            "discovery."
+            "Markdown files or directories to validate. Defaults to all .md "
+            "files in the current directory, excluding paths ignored by "
+            ".gitignore."
         ),
     )
     parser.add_argument(
