@@ -4,9 +4,9 @@
 
 ## Features
 
-- Recursively searches directories for Markdown files
-- Scans the current directory for Markdown files when run without arguments,
-  honouring `.gitignore`
+- Recursively searches directories for Markdown files while honouring
+  `.gitignore`
+- Scans the current directory for Markdown files when run without arguments
 - Parses `mermaid` code blocks and uses `@mermaid-js/mermaid-cli` to validate
 - Runs checks concurrently for faster feedback
 - Prints clear error messages for failing diagrams
@@ -47,9 +47,9 @@ nixie [--concurrency N] [--verbose] [FILE ...]
 
 `--concurrency` controls how many diagrams are processed in parallel (defaults
 to the number of CPU cores or `4` if this cannot be determined). Paths can be
-files or directories. If no files are provided, nixie searches the current
-working directory for Markdown files, excluding directories listed in
-`.gitignore`.
+files or directories, and directory traversal honours `.gitignore`. If no files
+are provided, nixie searches the current working directory for Markdown files
+using the same ignore rules.
 
 `--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact
 `mermaid-cli` command for each diagram.

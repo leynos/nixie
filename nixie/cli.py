@@ -71,41 +71,60 @@ def parse_blocks(text: str) -> list[str]:
     return BLOCK_RE.findall(text)
 
 
-def discover_markdown_files() -> cabc.Generator[Path]:
-    """Yield Markdown files under the current directory respecting ``.gitignore``."""
-    root = Path.cwd()
-    spec: pathspec.PathSpec | None = None
+def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
+    """Return a ``PathSpec`` built from ``root/.gitignore`` if it exists."""
     gitignore = root / ".gitignore"
     if gitignore.is_file():
-        spec = pathspec.PathSpec.from_lines(
+        return pathspec.PathSpec.from_lines(
             "gitwildmatch", gitignore.read_text().splitlines()
         )
-    for dirpath, dirnames, filenames in os.walk(root):
-        rel_dir = Path(dirpath).relative_to(root)
-        dirnames[:] = [
-            d
-            for d in dirnames
-            if d != ".git"
-            and not (spec and spec.match_file(f"{(rel_dir / d).as_posix()}/"))
-        ]
-        for name in filenames:
-            if not name.lower().endswith(".md"):
-                continue
-            path = Path(dirpath) / name
-            rel_path = path.relative_to(root).as_posix()
-            if spec and spec.match_file(rel_path):
-                continue
-            yield path
+    return None
+
+
+def discover_markdown_files() -> cabc.Generator[Path]:
+    """Yield Markdown files under the current directory respecting ``.gitignore``."""
+    yield from collect_markdown_files([Path.cwd()])
 
 
 def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
-    """Expand directories into Markdown files recursively."""
+    """Yield Markdown files under ``paths`` while honouring ``.gitignore``."""
+    root = Path.cwd()
+    spec = _load_gitignore_spec(root)
     for p in paths:
         if p.is_dir():
-            for md in p.rglob("*"):
-                if md.is_file() and md.suffix.lower() == ".md":
-                    yield md
+            for dirpath, dirnames, filenames in os.walk(p):
+                try:
+                    rel_dir = Path(dirpath).resolve().relative_to(root)
+                except ValueError:
+                    rel_dir = None
+                dirnames[:] = [
+                    d
+                    for d in dirnames
+                    if d != ".git"
+                    and not (
+                        spec
+                        and rel_dir
+                        and spec.match_file(f"{(rel_dir / d).as_posix()}/")
+                    )
+                ]
+                for name in filenames:
+                    if not name.lower().endswith(".md"):
+                        continue
+                    path = Path(dirpath) / name
+                    try:
+                        rel_path = path.resolve().relative_to(root).as_posix()
+                    except ValueError:
+                        rel_path = None
+                    if spec and rel_path and spec.match_file(rel_path):
+                        continue
+                    yield path
         else:
+            try:
+                rel_path = p.resolve().relative_to(root).as_posix()
+            except ValueError:
+                rel_path = None
+            if spec and rel_path and spec.match_file(rel_path):
+                continue
             yield p
 
 

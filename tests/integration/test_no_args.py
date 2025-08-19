@@ -38,6 +38,6 @@ def test_cli_scans_cwd_when_no_args(
     with pytest.raises(SystemExit) as excinfo:
         cli_module.cli()
 
-    exc = typ.cast(SystemExit, excinfo.value)
+    exc = typ.cast("SystemExit", excinfo.value)
     assert exc.code == 0
     assert captured == [keep]

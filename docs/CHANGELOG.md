@@ -8,5 +8,6 @@
    instead.
 - When run as root, nixie now invokes `mmdc` with a Puppeteer configuration
   that disables the sandbox (`--no-sandbox` and `--disable-setuid-sandbox`).
-- Running `nixie` without arguments now scans the current directory for Markdown
-  files, skipping paths matched by `.gitignore`.
+- Directory traversal now respects `.gitignore` patterns. When run without
+  arguments, nixie scans the current directory for Markdown files using the same
+  ignore rules.
