@@ -46,13 +46,16 @@ def test_cli_scans_cwd_when_no_args(
 
 
 def test_cli_handles_empty_directory(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Exit successfully when no Markdown files are present."""
-    captured: list[Path] = []
+    called = False
 
     async def fake_main(paths: cabc.Iterable[Path], _concurrency: int) -> int:
-        captured.extend(paths)
+        nonlocal called
+        called = True
         return 0
 
     monkeypatch.setattr(cli_module, "main", fake_main)
@@ -66,6 +69,7 @@ def test_cli_handles_empty_directory(
     assert exc.code == 0, (
         "cli() must exit with code 0 when no Markdown files are present"
     )
-    assert captured == [], (
-        "cli() must pass no paths to main() when no Markdown files are found"
-    )
+    assert not called, "cli() must not invoke main() when no Markdown files exist"
+    captured = capsys.readouterr()
+    assert captured.err.strip() == "No Markdown files found."
+    assert captured.out == ""

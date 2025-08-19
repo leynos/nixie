@@ -85,7 +85,9 @@ def discover_markdown_files() -> cabc.Generator[Path]:
     """Yield Markdown files under the current directory respecting ``.gitignore``."""
     root = Path.cwd()
     spec = _load_gitignore_spec(root)
-    for path in sorted(root.rglob("*.md")):
+    # Use rglob with explicit sorting for deterministic results
+    paths = sorted(root.rglob("*.md"))
+    for path in paths:
         rel_path = path.relative_to(root).as_posix()
         if spec and spec.match_file(rel_path):
             continue
@@ -443,7 +445,13 @@ def cli() -> None:
         logger.addHandler(handler)
         logger.propagate = False
     logger.setLevel(logging.INFO if parsed.verbose else logging.WARNING)
-    paths = parsed.paths or discover_markdown_files()
+    if parsed.paths:
+        paths = list(parsed.paths)
+    else:
+        paths = list(discover_markdown_files())
+        if not paths:
+            print("No Markdown files found.", file=sys.stderr)
+            sys.exit(0)
     sys.exit(asyncio.run(main(paths, parsed.concurrency)))
 
 
