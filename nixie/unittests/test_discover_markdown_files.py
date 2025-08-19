@@ -46,7 +46,10 @@ def test_discover_markdown_files_skips_root_file(cwd_tmp: Path) -> None:
 
 
 def test_discover_markdown_files_handles_negation_and_order(cwd_tmp: Path) -> None:
-    """Re-include negated patterns and yield results sorted by path (deterministic)."""
+    """Re-include negated patterns and yield results sorted by path (deterministic).
+
+    Deterministic ordering keeps assertions stable.
+    """
     ignored_dir = cwd_tmp / "ignored"
     ignored_dir.mkdir()
     reincluded = ignored_dir / "keep.md"
