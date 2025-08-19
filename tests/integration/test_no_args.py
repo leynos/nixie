@@ -1,0 +1,43 @@
+"""Integration tests for running ``nixie`` without arguments."""
+
+from __future__ import annotations
+
+import sys
+import typing as typ
+
+import pytest
+
+from nixie import cli as cli_module
+
+if typ.TYPE_CHECKING:
+    import collections.abc as cabc
+    from pathlib import Path
+
+
+def test_cli_scans_cwd_when_no_args(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Discover Markdown files in CWD when no paths are supplied."""
+    keep = tmp_path / "keep.md"
+    ignored = tmp_path / "ignored"
+    ignored.mkdir()
+    (ignored / "skip.md").write_text("ignored")
+    keep.write_text("ok")
+    (tmp_path / ".gitignore").write_text("ignored/\n")
+
+    captured: list[Path] = []
+
+    async def fake_main(paths: cabc.Iterable[Path], _concurrency: int) -> int:
+        captured.extend(paths)
+        return 0
+
+    monkeypatch.setattr(cli_module, "main", fake_main)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["nixie"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        cli_module.cli()
+
+    exc = typ.cast(SystemExit, excinfo.value)
+    assert exc.code == 0
+    assert captured == [keep]

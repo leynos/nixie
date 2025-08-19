@@ -6,7 +6,7 @@ them with the `mermaid-cli` tool. It supports concurrent rendering via
 `asyncio` and falls back between `mmdc`, `npx`, and `bun` executables.
 
 Usage:
-    nixie [--concurrency N] [--verbose] path1.md [path2.md ...]
+    nixie [--concurrency N] [--verbose] [path1.md [path2.md ...]]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
 underlying ``mermaid-cli`` commands.
@@ -29,6 +29,8 @@ import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
+
+import pathspec
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
@@ -67,6 +69,33 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
 def parse_blocks(text: str) -> list[str]:
     """Return all mermaid code blocks found in the text."""
     return BLOCK_RE.findall(text)
+
+
+def discover_markdown_files() -> cabc.Generator[Path]:
+    """Yield Markdown files under the current directory respecting ``.gitignore``."""
+    root = Path.cwd()
+    spec: pathspec.PathSpec | None = None
+    gitignore = root / ".gitignore"
+    if gitignore.is_file():
+        spec = pathspec.PathSpec.from_lines(
+            "gitwildmatch", gitignore.read_text().splitlines()
+        )
+    for dirpath, dirnames, filenames in os.walk(root):
+        rel_dir = Path(dirpath).relative_to(root)
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d != ".git"
+            and not (spec and spec.match_file(f"{(rel_dir / d).as_posix()}/"))
+        ]
+        for name in filenames:
+            if not name.lower().endswith(".md"):
+                continue
+            path = Path(dirpath) / name
+            rel_path = path.relative_to(root).as_posix()
+            if spec and spec.match_file(rel_path):
+                continue
+            yield path
 
 
 def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
@@ -376,8 +405,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "paths",
         type=Path,
-        nargs="+",
-        help="Markdown files to validate",
+        nargs="*",
+        help=(
+            "Markdown files to validate. Defaults to all Markdown files in the "
+            "current directory."
+        ),
     )
     parser.add_argument(
         "--concurrency",
@@ -403,7 +435,8 @@ def cli() -> None:
         logger.addHandler(handler)
         logger.propagate = False
     logger.setLevel(logging.INFO if parsed.verbose else logging.WARNING)
-    sys.exit(asyncio.run(main(parsed.paths, parsed.concurrency)))
+    paths = parsed.paths or discover_markdown_files()
+    sys.exit(asyncio.run(main(paths, parsed.concurrency)))
 
 
 if __name__ == "__main__":
