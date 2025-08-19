@@ -83,7 +83,13 @@ def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
 
 def discover_markdown_files() -> cabc.Generator[Path]:
     """Yield Markdown files under the current directory respecting ``.gitignore``."""
-    yield from collect_markdown_files([Path.cwd()])
+    root = Path.cwd()
+    spec = _load_gitignore_spec(root)
+    for path in sorted(root.rglob("*.md")):
+        rel_path = path.relative_to(root).as_posix()
+        if spec and spec.match_file(rel_path):
+            continue
+        yield path
 
 
 def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
@@ -92,32 +98,14 @@ def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
     spec = _load_gitignore_spec(root)
     for p in paths:
         if p.is_dir():
-            for dirpath, dirnames, filenames in os.walk(p):
+            for path in sorted(p.rglob("*.md")):
                 try:
-                    rel_dir = Path(dirpath).resolve().relative_to(root)
+                    rel_path = path.resolve().relative_to(root).as_posix()
                 except ValueError:
-                    rel_dir = None
-                dirnames[:] = [
-                    d
-                    for d in dirnames
-                    if d != ".git"
-                    and not (
-                        spec
-                        and rel_dir
-                        and spec.match_file(f"{(rel_dir / d).as_posix()}/")
-                    )
-                ]
-                for name in filenames:
-                    if not name.lower().endswith(".md"):
-                        continue
-                    path = Path(dirpath) / name
-                    try:
-                        rel_path = path.resolve().relative_to(root).as_posix()
-                    except ValueError:
-                        rel_path = None
-                    if spec and rel_path and spec.match_file(rel_path):
-                        continue
-                    yield path
+                    rel_path = None
+                if spec and rel_path and spec.match_file(rel_path):
+                    continue
+                yield path
         else:
             try:
                 rel_path = p.resolve().relative_to(root).as_posix()
@@ -427,7 +415,8 @@ def parse_args() -> argparse.Namespace:
         nargs="*",
         help=(
             "Markdown files to validate. Defaults to all Markdown files in the "
-            "current directory."
+            "current directory. Files ignored by .gitignore are excluded from "
+            "discovery."
         ),
     )
     parser.add_argument(

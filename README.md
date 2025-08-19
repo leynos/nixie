@@ -47,9 +47,12 @@ nixie [--concurrency N] [--verbose] [FILE ...]
 
 `--concurrency` controls how many diagrams are processed in parallel (defaults
 to the number of CPU cores or `4` if this cannot be determined). Paths can be
-files or directories, and directory traversal honours `.gitignore`. If no files
-are provided, nixie searches the current working directory for Markdown files
-using the same ignore rules.
+files or directories. If no files are provided, nixie searches the current
+working directory for Markdown files, excluding paths matched by `.gitignore` in
+that directory.
+
+Only the `.gitignore` file in the working directory is used; nested
+`.gitignore` files are ignored.
 
 `--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact
 `mermaid-cli` command for each diagram.

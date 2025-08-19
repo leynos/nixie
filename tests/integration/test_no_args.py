@@ -39,5 +39,33 @@ def test_cli_scans_cwd_when_no_args(
         cli_module.cli()
 
     exc = typ.cast("SystemExit", excinfo.value)
-    assert exc.code == 0
-    assert captured == [keep]
+    assert exc.code == 0, "cli() must exit with code 0 when run without arguments"
+    assert captured == [keep], (
+        "cli() must pass exactly the discovered Markdown file(s) to main()"
+    )
+
+
+def test_cli_handles_empty_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exit successfully when no Markdown files are present."""
+    captured: list[Path] = []
+
+    async def fake_main(paths: cabc.Iterable[Path], _concurrency: int) -> int:
+        captured.extend(paths)
+        return 0
+
+    monkeypatch.setattr(cli_module, "main", fake_main)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["nixie"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        cli_module.cli()
+
+    exc = typ.cast("SystemExit", excinfo.value)
+    assert exc.code == 0, (
+        "cli() must exit with code 0 when no Markdown files are present"
+    )
+    assert captured == [], (
+        "cli() must pass no paths to main() when no Markdown files are found"
+    )
