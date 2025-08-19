@@ -49,7 +49,8 @@ nixie [--concurrency N] [--verbose] [FILE ...]
 to the number of CPU cores or `4` if this cannot be determined). Paths can be
 files or directories. If no files are provided, nixie searches the current
 working directory for Markdown files, excluding paths matched by `.gitignore` in
-that directory.
+that directory. Discovery includes files with the `.md` extension
+(case-sensitive).
 
 Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.

@@ -6,7 +6,7 @@ them with the `mermaid-cli` tool. It supports concurrent rendering via
 `asyncio` and falls back between `mmdc`, `npx`, and `bun` executables.
 
 Usage:
-    nixie [--concurrency N] [--verbose] [path1.md [path2.md ...]]
+    nixie [--concurrency N] [--verbose] [FILE ...]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
 underlying ``mermaid-cli`` commands.
@@ -76,7 +76,7 @@ def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
     gitignore = root / ".gitignore"
     if gitignore.is_file():
         return pathspec.PathSpec.from_lines(
-            "gitwildmatch", gitignore.read_text().splitlines()
+            "gitwildmatch", gitignore.read_text(encoding="utf-8").splitlines()
         )
     return None
 
@@ -414,7 +414,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         nargs="*",
         help=(
-            "Markdown files to validate. Defaults to all Markdown files in the "
+            "Markdown files to validate. Defaults to all .md files in the "
             "current directory. Files ignored by .gitignore are excluded from "
             "discovery."
         ),
