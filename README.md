@@ -42,7 +42,7 @@ uv sync --include dev
 ## Usage
 
 ```bash
-nixie [--concurrency N] [--verbose] [FILE ...]
+nixie [--concurrency N] [--verbose] [--no-sandbox] [FILE ...]
 ```
 
 `--concurrency` controls how many diagrams are processed in parallel (defaults
@@ -56,7 +56,10 @@ Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.
 
 `--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact
-`mermaid-cli` command for each diagram.
+`mermaid-cli` command for each diagram. By default, nixie launches Puppeteer
+with `--disable-setuid-sandbox`, `--disable-gpu`, and
+`--disable-dev-shm-usage` for reliable headless operation. Use `--no-sandbox`
+to also pass `--no-sandbox` to Chromium.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends:

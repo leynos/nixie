@@ -13,3 +13,6 @@
   using those ignore rules (nested `.gitignore` files are ignored).
 - `nixie` searches common install locations for `mmdc` before falling back to
   `bun` or `npx`.
+- `nixie` always passes `--disable-setuid-sandbox`, `--disable-gpu`, and
+   `--disable-dev-shm-usage` to Puppeteer and exposes a `--no-sandbox` flag to
+   disable Chromium's sandbox when needed.

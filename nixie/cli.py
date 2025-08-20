@@ -125,21 +125,28 @@ def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
 
 
 @contextmanager
-def create_puppeteer_config() -> typ.Generator[Path | None, None, None]:
+def create_puppeteer_config(
+    *,
+    force_no_sandbox: bool = False,
+) -> typ.Generator[Path, None, None]:
     """Yield a Puppeteer config path and remove it on exit.
 
-    When running as the root user, ``mmdc`` must be invoked with sandboxing
-    disabled. We accomplish this by writing a temporary Puppeteer configuration
-    file that passes ``--no-sandbox`` and ``--disable-setuid-sandbox``. If the
-    current process is not running as root, ``None`` is yielded so callers can
-    omit the extra CLI flag entirely.
+    ``mmdc`` relies on Chromium, which benefits from several default flags to
+    operate reliably in diverse environments. We always include flags that
+    disable setuid sandboxing, GPU usage and shared memory consumption. The
+    ``--no-sandbox`` flag is added automatically when running as ``root`` or
+    when ``force_no_sandbox`` is ``True``.
     """
+    args = [
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+    ]
     geteuid = getattr(os, "geteuid", lambda: 1)
-    if geteuid() != 0:
-        yield None
-        return
+    if force_no_sandbox or geteuid() == 0:
+        args.append("--no-sandbox")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
-        json.dump({"args": ["--no-sandbox", "--disable-setuid-sandbox"]}, fh)
+        json.dump({"args": args}, fh)
         fh.flush()
         name = fh.name
     path = Path(name)
@@ -411,10 +418,15 @@ async def check_file(
     return all(result is True for result in results)
 
 
-async def main(paths: cabc.Iterable[Path], max_concurrent: int) -> int:
+async def main(
+    paths: cabc.Iterable[Path],
+    max_concurrent: int,
+    *,
+    no_sandbox: bool = False,
+) -> int:
     """Run the CLI entry point."""
     semaphore = asyncio.Semaphore(max_concurrent)
-    with create_puppeteer_config() as cfg_path:
+    with create_puppeteer_config(force_no_sandbox=no_sandbox) as cfg_path:
         all_success = True
         for path in collect_markdown_files(paths):
             print(f"==> {path}")
@@ -464,6 +476,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Log mermaid-cli commands for each diagram",
     )
+    parser.add_argument(
+        "--no-sandbox",
+        action="store_true",
+        help="Force Puppeteer to disable its sandbox",
+    )
     return parser.parse_args()
 
 
@@ -484,7 +501,7 @@ def cli() -> None:
         if not paths:
             print("No Markdown files found.", file=sys.stderr)
             sys.exit(0)
-    sys.exit(asyncio.run(main(paths, parsed.concurrency)))
+    sys.exit(asyncio.run(main(paths, parsed.concurrency, no_sandbox=parsed.no_sandbox)))
 
 
 if __name__ == "__main__":

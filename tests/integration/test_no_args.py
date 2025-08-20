@@ -27,7 +27,12 @@ def test_cli_scans_cwd_when_no_args(
 
     captured: list[Path] = []
 
-    async def fake_main(paths: cabc.Iterable[Path], _concurrency: int) -> int:
+    async def fake_main(
+        paths: cabc.Iterable[Path],
+        _concurrency: int,
+        *,
+        no_sandbox: bool = False,
+    ) -> int:
         captured.extend(paths)
         return 0
 
@@ -53,7 +58,12 @@ def test_cli_handles_empty_directory(
     """Exit successfully when no Markdown files are present."""
     called = False
 
-    async def fake_main(paths: cabc.Iterable[Path], _concurrency: int) -> int:
+    async def fake_main(
+        paths: cabc.Iterable[Path],
+        _concurrency: int,
+        *,
+        no_sandbox: bool = False,
+    ) -> int:
         nonlocal called
         called = True
         return 0

@@ -15,20 +15,48 @@ if typ.TYPE_CHECKING:
 
 
 def test_create_puppeteer_config_as_root(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Include sandbox-disabling args when running as root."""
+    """Include sandbox args automatically for the root user."""
     monkeypatch.setattr(os, "geteuid", lambda: 0)
     path: Path | None = None
     with create_puppeteer_config() as cfg:
-        assert cfg is not None
         path = cfg
         data = json.loads(cfg.read_text())
-        assert data["args"] == ["--no-sandbox", "--disable-setuid-sandbox"]
+        assert data["args"] == [
+            "--disable-setuid-sandbox",
+            "--disable-gpu",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+        ]
     assert path is not None
     assert not path.exists()
 
 
 def test_create_puppeteer_config_non_root(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Omit the config file when not running as root."""
+    """Provide default flags even when not running as root."""
     monkeypatch.setattr(os, "geteuid", lambda: 1)
+    path: Path | None = None
     with create_puppeteer_config() as cfg:
-        assert cfg is None
+        path = cfg
+        data = json.loads(cfg.read_text())
+        assert data["args"] == [
+            "--disable-setuid-sandbox",
+            "--disable-gpu",
+            "--disable-dev-shm-usage",
+        ]
+    assert path is not None
+    assert not path.exists()
+
+
+def test_create_puppeteer_config_force_no_sandbox(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Allow users to explicitly disable the sandbox."""
+    monkeypatch.setattr(os, "geteuid", lambda: 1)
+    with create_puppeteer_config(force_no_sandbox=True) as cfg:
+        data = json.loads(cfg.read_text())
+        assert data["args"] == [
+            "--disable-setuid-sandbox",
+            "--disable-gpu",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+        ]
