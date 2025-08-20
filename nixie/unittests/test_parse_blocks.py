@@ -2,7 +2,7 @@
 
 import pytest
 
-from nixie.cli import parse_blocks
+from nixie.cli import UNKNOWN_SCHEMA, parse_blocks
 
 
 @pytest.mark.parametrize(
@@ -26,6 +26,9 @@ def test_parse_blocks_multiple() -> None:
     content = "```mermaid\nA-->B\n```\n\n```mermaid\nC-->D\n```"
     diagrams = parse_blocks(content)
     assert [d.source for d in diagrams] == ["A-->B", "C-->D"]
+    assert [d.schema for d in diagrams] == ["A-->B", "C-->D"]
+    assert [d.line_start for d in diagrams] == [2, 6]
+    assert [d.line_end for d in diagrams] == [3, 7]
 
 
 def test_parse_blocks_none() -> None:
@@ -36,3 +39,22 @@ def test_parse_blocks_none() -> None:
 def test_parse_blocks_empty() -> None:
     """Return an empty list for empty input."""
     assert parse_blocks("") == []
+
+
+def test_parse_blocks_empty_and_whitespace() -> None:
+    """Handle diagrams with missing or whitespace-only schema lines."""
+    content_empty = "```mermaid\n\n```"
+    diag_empty = parse_blocks(content_empty)
+    assert len(diag_empty) == 1
+    assert diag_empty[0].schema == UNKNOWN_SCHEMA
+    assert diag_empty[0].source == ""
+
+    content_ws = "```mermaid\n   \n```"
+    diag_ws = parse_blocks(content_ws)
+    assert len(diag_ws) == 1
+    assert diag_ws[0].schema == UNKNOWN_SCHEMA
+    assert diag_ws[0].source == "   "
+
+    content_comment = "```mermaid\n%% a comment\nsequenceDiagram\nA->B\n```"
+    diag_comment = parse_blocks(content_comment)
+    assert diag_comment[0].schema == "sequenceDiagram"

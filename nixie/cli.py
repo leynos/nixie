@@ -73,14 +73,45 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
         super().__init__("No node environment available.")
 
 
-@dc.dataclass(slots=True)
+@dc.dataclass(slots=True, frozen=True)
 class Diagram:
-    """Mermaid diagram extracted from a Markdown file."""
+    """Mermaid diagram extracted from a Markdown file.
+
+    Attributes
+    ----------
+    source
+        Raw Mermaid source inside the fenced code block (without backticks).
+    line_start
+        1-based line number for the first line of the block content.
+    line_end
+        1-based line number for the closing fence line.
+    schema
+        The diagram schema/name (e.g., ``sequenceDiagram``, ``classDiagram``,
+        ``graph``).
+    """
 
     source: str
     line_start: int
     line_end: int
     schema: str
+
+
+UNKNOWN_SCHEMA = "<unknown>"
+
+
+def _extract_schema(lines: list[str]) -> str:
+    """Return the schema name from ``lines``.
+
+    Mermaid diagrams may start with empty lines or comments beginning with
+    ``%%``. Skip these until a meaningful line is found. If no schema can be
+    determined, return ``UNKNOWN_SCHEMA``.
+    """
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("%%"):
+            continue
+        return stripped.split()[0]
+    return UNKNOWN_SCHEMA
 
 
 def parse_blocks(text: str) -> list[Diagram]:
@@ -91,10 +122,19 @@ def parse_blocks(text: str) -> list[Diagram]:
         line_start = text.count("\n", 0, match.start(1)) + 1
         lines = block.splitlines()
         line_end = line_start + len(lines)
-        first_line = lines[0].strip() if lines else ""
-        schema = first_line.split()[0] if first_line else ""
+        schema = _extract_schema(lines)
         diagrams.append(Diagram(block, line_start, line_end, schema))
     return diagrams
+
+
+@contextmanager
+def diagram_markers(diagram: Diagram) -> typ.Generator[None, None, None]:
+    """Print markers bracketing ``diagram`` processing."""
+    print(f"--> line {diagram.line_start}: {diagram.schema}")
+    try:
+        yield
+    finally:
+        print(f"<-- line {diagram.line_end}: {diagram.schema}")
 
 
 def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
@@ -424,24 +464,24 @@ async def check_file(
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
-
-        async def process(idx: int, diagram: Diagram) -> bool:
-            print(f"--> line {diagram.line_start}: {diagram.schema}")
-            try:
-                return await render_block(
-                    diagram.source,
-                    tmp_path,
-                    cfg_path,
-                    path,
-                    idx,
-                    semaphore,
-                )
-            finally:
-                print(f"<-- line {diagram.line_end}: {diagram.schema}")
-
-        tasks = [process(idx, diagram) for idx, diagram in enumerate(diagrams, 1)]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-    return all(result is True for result in results)
+        all_success = True
+        for idx, diagram in enumerate(diagrams, 1):
+            with diagram_markers(diagram):
+                try:
+                    success = await render_block(
+                        diagram.source,
+                        tmp_path,
+                        cfg_path,
+                        path,
+                        idx,
+                        semaphore,
+                    )
+                except Exception:  # pragma: no cover - unexpected
+                    LOGGER.exception("%s: unexpected error in diagram %s", path, idx)
+                    success = False
+            if not success:
+                all_success = False
+    return all_success
 
 
 async def main(

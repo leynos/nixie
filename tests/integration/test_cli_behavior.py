@@ -151,7 +151,7 @@ async def test_cli_reports_diagram_schemas(
         )
     )
 
-    exit_code = await main([file], 2)
+    exit_code = await main([file], 1)
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -166,6 +166,14 @@ async def test_cli_reports_diagram_schemas(
         assert lines.count(marker) == 1
     positions = [lines.index(marker) for marker in markers]
     assert positions == sorted(positions)
+
+    # Under higher concurrency, markers should still appear, though order is
+    # undefined.
+    exit_code = await main([file], 2)
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    for marker in markers:
+        assert marker in captured.out
 
 
 @pytest.mark.asyncio

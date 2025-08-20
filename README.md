@@ -73,7 +73,9 @@ with its line numbers and schema name:
 ```
 
 Errors reported while rendering a diagram appear between the `-->` and `<--`
-lines for that diagram.
+lines for that diagram. Markers are printed on stdout; messages from
+`mermaid-cli` are emitted on stderr. Most terminals interleave these streams by
+write order, so the error lines will typically appear between the markers.
 
 Example:
 
