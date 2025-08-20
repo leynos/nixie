@@ -44,6 +44,12 @@ BLOCK_RE = re.compile(
 
 ALLOWED_EXECUTABLES: typ.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
 
+DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
+    "--disable-setuid-sandbox",
+    "--disable-gpu",
+    "--disable-dev-shm-usage",
+)
+
 
 class UnexpectedExecutableError(ValueError):
     """Raised when an executable outside the allowed set is requested."""
@@ -129,19 +135,14 @@ def create_puppeteer_config(
     *,
     force_no_sandbox: bool = False,
 ) -> typ.Generator[Path, None, None]:
-    """Yield a Puppeteer config path and remove it on exit.
+    """Yield a temporary Puppeteer config ``Path`` and remove it on exit.
 
-    ``mmdc`` relies on Chromium, which benefits from several default flags to
-    operate reliably in diverse environments. We always include flags that
-    disable setuid sandboxing, GPU usage and shared memory consumption. The
-    ``--no-sandbox`` flag is added automatically when running as ``root`` or
-    when ``force_no_sandbox`` is ``True``.
+    ``mmdc`` relies on Chromium, which operates more reliably with a handful of
+    default flags. We always include :data:`DEFAULT_PUPPETEER_ARGS` and append
+    ``--no-sandbox`` when running as ``root`` or when
+    ``force_no_sandbox`` is ``True``.
     """
-    args = [
-        "--disable-setuid-sandbox",
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-    ]
+    args = list(DEFAULT_PUPPETEER_ARGS)
     geteuid = getattr(os, "geteuid", lambda: 1)
     if force_no_sandbox or geteuid() == 0:
         args.append("--no-sandbox")
@@ -479,7 +480,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--no-sandbox",
         action="store_true",
-        help="Force Puppeteer to disable its sandbox",
+        help=(
+            "Force Puppeteer to disable its sandbox (useful in Docker or when "
+            "running as root)"
+        ),
     )
     return parser.parse_args()
 

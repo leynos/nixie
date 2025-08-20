@@ -83,3 +83,35 @@ def test_cli_handles_empty_directory(
     captured = capsys.readouterr()
     assert captured.err.strip() == "No Markdown files found."
     assert captured.out == ""
+
+
+def test_cli_accepts_no_sandbox_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pass ``--no-sandbox`` through to :func:`main`."""
+    (tmp_path / "file.md").write_text("ok")
+
+    received_no_sandbox = False
+
+    async def fake_main(
+        paths: cabc.Iterable[Path],
+        _concurrency: int,
+        *,
+        no_sandbox: bool = False,
+    ) -> int:
+        nonlocal received_no_sandbox
+        received_no_sandbox = no_sandbox
+        return 0
+
+    monkeypatch.setattr(cli_module, "main", fake_main)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["nixie", "--no-sandbox"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        cli_module.cli()
+
+    exc = typ.cast("SystemExit", excinfo.value)
+    assert exc.code == 0, "cli() must exit with code 0 when --no-sandbox is set"
+    assert received_no_sandbox is True, (
+        "cli() must pass no_sandbox=True to main() when --no-sandbox is used"
+    )
