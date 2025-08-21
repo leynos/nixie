@@ -22,6 +22,14 @@ def test_parse_args_verbose(monkeypatch: pytest.MonkeyPatch) -> None:
     assert parsed.paths == [Path("file.md")]
 
 
+def test_parse_args_no_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Parse the ``--no-sandbox`` flag into the argument namespace."""
+    monkeypatch.setattr(sys, "argv", ["nixie", "--no-sandbox", "file.md"])
+    parsed = parse_args()
+    assert parsed.no_sandbox is True
+    assert parsed.paths == [Path("file.md")]
+
+
 @pytest.mark.asyncio
 async def test_render_block_emits_command(
     monkeypatch: pytest.MonkeyPatch,
