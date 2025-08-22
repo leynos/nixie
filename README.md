@@ -43,14 +43,14 @@ uv sync --include dev
 ## Usage
 
 ```bash
-nixie [--concurrency N] [--verbose] [--no-sandbox] [FILE ...]
+nixie [--verbose] [--no-sandbox] [FILE ...]
 ```
 
-`--concurrency` is reserved for future use. Diagrams are processed sequentially
-within each file to keep output stable. Paths can be files or directories. If
-no files are provided, nixie searches the current working directory for
-Markdown files, excluding paths matched by `.gitignore` in that directory.
-Discovery includes files with the `.md` extension (case-sensitive).
+Diagrams are processed sequentially within each file to keep output stable.
+Paths can be files or directories. If no files are provided, nixie searches the
+current working directory for Markdown files, excluding paths matched by
+`.gitignore` in that directory. Discovery includes files with the `.md`
+extension (case-sensitive).
 
 Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.

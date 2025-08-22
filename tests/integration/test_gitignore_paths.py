@@ -27,7 +27,7 @@ async def test_main_skips_ignored_entries_when_paths_given(
 
     monkeypatch.chdir(tmp_path)
 
-    exit_code = await main([Path(".")], 2)  # noqa: PTH201 - explicit current directory
+    exit_code = await main([Path(".")])  # noqa: PTH201 - explicit current directory
     assert exit_code == 0
     assert stub_render.await_count == 1
     rendered_path = stub_render.await_args_list[0].args[3]  # path argument to renderer
@@ -47,7 +47,7 @@ async def test_main_skips_root_ignored_file_when_paths_given(
 
     monkeypatch.chdir(tmp_path)
 
-    exit_code = await main([Path(".")], 2)  # noqa: PTH201 - explicit current directory
+    exit_code = await main([Path(".")])  # noqa: PTH201 - explicit current directory
     assert exit_code == 0
     assert stub_render.await_count == 1
     rendered_path = stub_render.await_args_list[0].args[3]  # path argument to renderer

@@ -1,6 +1,5 @@
 """Integration tests for the CLI's high-level behaviour."""
 
-import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -84,7 +83,7 @@ async def test_cli_behavior(
         dest.write_text(content)
 
     paths = [tmp_path / p for p in inputs]
-    exit_code = await main(paths, 2)
+    exit_code = await main(paths)
     captured = capsys.readouterr()
     assert exit_code == expected_exit
     if error_substring is None:
@@ -111,7 +110,7 @@ async def test_cli_marks_file_boundaries(
     file_a.write_text("```mermaid\nA-->B\n```")
     file_b.write_text("No diagrams here")
 
-    exit_code = await main([file_a, file_b], 2)
+    exit_code = await main([file_a, file_b])
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -151,7 +150,7 @@ async def test_cli_reports_diagram_schemas(
         )
     )
 
-    exit_code = await main([file], 1)
+    exit_code = await main([file])
     captured = capsys.readouterr()
 
     assert exit_code == 0, "CLI should succeed for valid diagrams"
@@ -165,19 +164,7 @@ async def test_cli_reports_diagram_schemas(
     for marker in markers:
         assert lines.count(marker) == 1, f"Expected exactly one '{marker}'"
     positions = [lines.index(marker) for marker in markers]
-    assert positions == sorted(positions), (
-        "Markers must appear in order at concurrency=1"
-    )
-
-    # Under higher concurrency, markers should still appear, though order is
-    # undefined.
-    exit_code = await main([file], 2)
-    captured = capsys.readouterr()
-    assert exit_code == 0, "CLI should succeed for valid diagrams (concurrency=2)"
-    for marker in markers:
-        assert captured.out.count(marker) == 1, (
-            f"Expected '{marker}' to appear exactly once"
-        )
+    assert positions == sorted(positions), "Markers must appear in order"
 
 
 @pytest.mark.asyncio
@@ -200,17 +187,16 @@ async def test_cli_handles_file_processing_error(
     async def mock_check_file(
         path: Path,
         cfg_path: Path | None,
-        semaphore: asyncio.Semaphore,
         *args: object,
         **kwargs: object,
     ) -> bool:
         if path == file_b:
             raise SimulatedProcessingError()  # noqa: RSE102 - explicit instance for clarity
-        return await original_check_file(path, cfg_path, semaphore, *args, **kwargs)
+        return await original_check_file(path, cfg_path, *args, **kwargs)
 
     monkeypatch.setattr(cli_module, "check_file", mock_check_file)
 
-    exit_code = await main([file_a, file_b], 2)
+    exit_code = await main([file_a, file_b])
     captured = capsys.readouterr()
 
     assert exit_code == 1

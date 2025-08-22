@@ -40,7 +40,6 @@ async def test_render_block_emits_command(
     """Log the CLI command when verbose logging is enabled."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
@@ -57,7 +56,7 @@ async def test_render_block_emits_command(
 
     block = "A-->B"
     with caplog.at_level(logging.INFO, logger="nixie.cli"):
-        assert await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+        assert await render_block(block, tmp_path, cfg_path, path, 1)
 
     mmd = tmp_path / "doc_1.mmd"
     svg = mmd.with_suffix(".svg")
@@ -75,7 +74,6 @@ async def test_render_block_verbose_deprecated(
     """Test deprecated verbose parameter still works but warns."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
@@ -108,7 +106,6 @@ async def test_render_block_verbose_deprecated(
             cfg_path,
             path,
             1,
-            semaphore,
             verbose=True,
         )
 
@@ -128,7 +125,6 @@ async def test_render_block_silent_without_verbose(
     """Avoid emitting command when only warnings are logged."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
@@ -145,7 +141,7 @@ async def test_render_block_silent_without_verbose(
 
     block = "A-->B"
     with caplog.at_level(logging.WARNING, logger="nixie.cli"):
-        assert await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+        assert await render_block(block, tmp_path, cfg_path, path, 1)
 
     mmd = tmp_path / "doc_1.mmd"
     svg = mmd.with_suffix(".svg")
@@ -163,7 +159,6 @@ async def test_render_block_logs_missing_cli(
     """Log error when CLI tool is missing."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
@@ -174,7 +169,7 @@ async def test_render_block_logs_missing_cli(
 
     block = "A-->B"
     with caplog.at_level(logging.ERROR, logger="nixie.cli"):
-        result = await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+        result = await render_block(block, tmp_path, cfg_path, path, 1)
 
     assert result is False
     assert "not found" in caplog.text
@@ -189,7 +184,6 @@ async def test_render_block_logs_runtime_error(
     """Log runtime errors during diagram rendering."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     async def raise_runtime_error(*_args: object, **_kwargs: object) -> None:
@@ -199,7 +193,7 @@ async def test_render_block_logs_runtime_error(
 
     block = "A-->B"
     with caplog.at_level(logging.ERROR, logger="nixie.cli"):
-        result = await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+        result = await render_block(block, tmp_path, cfg_path, path, 1)
 
     assert result is False
     assert "Runtime error while rendering diagram" in caplog.text
@@ -214,7 +208,6 @@ async def test_render_block_logs_unexpected_exception(
     """Log unexpected exceptions during diagram rendering."""
     cfg_path = tmp_path / "cfg.json"
     cfg_path.write_text("{}")
-    semaphore = asyncio.Semaphore(1)
     path = tmp_path / "doc.md"
 
     class BoomError(Exception):
@@ -227,7 +220,7 @@ async def test_render_block_logs_unexpected_exception(
 
     block = "A-->B"
     with caplog.at_level(logging.ERROR, logger="nixie.cli"):
-        result = await render_block(block, tmp_path, cfg_path, path, 1, semaphore)
+        result = await render_block(block, tmp_path, cfg_path, path, 1)
 
     assert result is False
     assert "unexpected error in diagram" in caplog.text
