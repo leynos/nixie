@@ -130,11 +130,11 @@ def parse_blocks(text: str) -> list[Diagram]:
 @contextmanager
 def diagram_markers(diagram: Diagram) -> typ.Generator[None, None, None]:
     """Print markers bracketing ``diagram`` processing."""
-    print(f"--> line {diagram.line_start}: {diagram.schema}")
+    print(f"--> line {diagram.line_start}: {diagram.schema}", flush=True)
     try:
         yield
     finally:
-        print(f"<-- line {diagram.line_end}: {diagram.schema}")
+        print(f"<-- line {diagram.line_end}: {diagram.schema}", flush=True)
 
 
 def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
