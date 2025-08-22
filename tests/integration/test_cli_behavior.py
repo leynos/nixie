@@ -168,6 +168,37 @@ async def test_cli_reports_diagram_schemas(
 
 
 @pytest.mark.asyncio
+async def test_cli_reports_unknown_schema(
+    tmp_path: Path, stub_render: AsyncMock, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report ``UNKNOWN_SCHEMA`` when no schema token is found."""
+    file = tmp_path / "unknown.md"
+    file.write_text(
+        "\n".join(
+            [
+                "```mermaid",
+                "   ",  # blank
+                "%% comment",  # comment line
+                "A-->B",  # no explicit schema token on first meaningful line
+                "```",
+            ]
+        )
+    )
+
+    exit_code = await main([file])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, "CLI should succeed for structurally valid diagram"
+    out = captured.out
+    lines = out.splitlines()
+    start_markers = [line for line in lines if line.startswith("-->")]
+    end_markers = [line for line in lines if line.startswith("<--")]
+    assert len(start_markers) == 1, "Expected one start marker"
+    assert len(end_markers) == 1, "Expected one end marker"
+    assert "<unknown>" in out, "Expected <unknown> when no schema token is found"
+
+
+@pytest.mark.asyncio
 async def test_cli_handles_file_processing_error(
     tmp_path: Path,
     stub_render: AsyncMock,
@@ -191,7 +222,7 @@ async def test_cli_handles_file_processing_error(
         **kwargs: object,
     ) -> bool:
         if path == file_b:
-            raise SimulatedProcessingError()  # noqa: RSE102 - explicit instance for clarity
+            raise SimulatedProcessingError
         return await original_check_file(path, cfg_path, *args, **kwargs)
 
     monkeypatch.setattr(cli_module, "check_file", mock_check_file)
@@ -212,3 +243,8 @@ async def test_cli_handles_file_processing_error(
     positions = [lines.index(marker) for marker in markers]
     assert positions == sorted(positions)
     assert "Simulated processing error" in captured.out
+    # Markers should bracket the failing diagram as well.
+    start_markers = [line for line in lines if line.startswith("--> line ")]
+    end_markers = [line for line in lines if line.startswith("<-- line ")]
+    assert len(start_markers) == 1, "Expected one start marker despite the failure"
+    assert len(end_markers) == 1, "Expected one end marker despite the failure"

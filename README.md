@@ -50,7 +50,13 @@ Diagrams are processed sequentially within each file to keep output stable.
 Paths can be files or directories. If no files are provided, nixie searches the
 current working directory for Markdown files, excluding paths matched by
 `.gitignore` in that directory. Discovery includes files with the `.md`
-extension (case-sensitive).
+extension (case-sensitive). Files are processed in the order provided on the
+command line.
+
+### Exit codes
+
+- 0 — All diagrams in processed files validated successfully.
+- 1 — At least one diagram failed to render or a processing error occurred.
 
 Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.
@@ -65,7 +71,9 @@ When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed
 with its line numbers and schema name. The start marker’s line number is the
 first content line inside the fenced block; the end marker’s line number is the
-closing fence line:
+closing fence line. The schema is derived from the first non-blank, non-comment
+line inside the diagram. If that line contains no alphabetic token, the schema
+is reported as `<unknown>`:
 
 ```text
 ==> path/to/file.md

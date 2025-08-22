@@ -105,7 +105,8 @@ def _extract_schema(lines: list[str]) -> str:
         stripped = line.strip()
         if not stripped or stripped.startswith("%%"):
             continue
-        return stripped.split()[0]
+        token = stripped.split()[0]
+        return token if token.isalpha() else UNKNOWN_SCHEMA
     return UNKNOWN_SCHEMA
 
 
@@ -119,9 +120,9 @@ def parse_blocks(text: str) -> list[Diagram]:
         block = match.group(1)
         line_start = bisect.bisect_left(newline_offsets, match.start(1)) + 1
         lines = block.splitlines()
-        # ``splitlines`` returns ``[]`` for an empty block, so ensure the
-        # closing fence line is still counted by taking at least one line.
-        line_end = line_start + max(len(lines), 1)
+        # ``splitlines`` returns ``[]`` for an empty block; in that case the
+        # closing fence is on the same line as ``line_start``.
+        line_end = line_start + len(lines)
         schema = _extract_schema(lines)
         diagrams.append(Diagram(block, line_start, line_end, schema))
     return diagrams

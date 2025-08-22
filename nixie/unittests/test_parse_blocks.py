@@ -18,7 +18,7 @@ def test_parse_blocks_variations(text: str) -> None:
     """Handle minor formatting variations around Mermaid blocks."""
     diagrams = parse_blocks(text)
     assert [d.source for d in diagrams] == ["A-->B"]
-    assert [d.schema for d in diagrams] == ["A-->B"]
+    assert [d.schema for d in diagrams] == [UNKNOWN_SCHEMA]
 
 
 def test_parse_blocks_multiple() -> None:
@@ -26,7 +26,7 @@ def test_parse_blocks_multiple() -> None:
     content = "```mermaid\nA-->B\n```\n\n```mermaid\nC-->D\n```"
     diagrams = parse_blocks(content)
     assert [d.source for d in diagrams] == ["A-->B", "C-->D"]
-    assert [d.schema for d in diagrams] == ["A-->B", "C-->D"]
+    assert [d.schema for d in diagrams] == [UNKNOWN_SCHEMA, UNKNOWN_SCHEMA]
     assert [d.line_start for d in diagrams] == [2, 6]
     assert [d.line_end for d in diagrams] == [3, 7]
 
@@ -49,7 +49,7 @@ def test_parse_blocks_empty_and_whitespace() -> None:
     assert diag_empty[0].schema == UNKNOWN_SCHEMA
     assert diag_empty[0].source == ""
     assert diag_empty[0].line_start == 2
-    assert diag_empty[0].line_end == 3
+    assert diag_empty[0].line_end == 2
 
     content_ws = "```mermaid\n   \n```"
     diag_ws = parse_blocks(content_ws)
