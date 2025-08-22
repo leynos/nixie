@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import asyncio.subprocess as asyncio_subprocess
+import bisect
 import dataclasses as dc
 import json
 import logging
@@ -96,7 +97,7 @@ class Diagram:
     schema: str
 
 
-UNKNOWN_SCHEMA = "<unknown>"
+UNKNOWN_SCHEMA: typ.Final[str] = "<unknown>"
 
 
 def _extract_schema(lines: list[str]) -> str:
@@ -117,11 +118,16 @@ def _extract_schema(lines: list[str]) -> str:
 def parse_blocks(text: str) -> list[Diagram]:
     """Return all mermaid code blocks found in ``text``."""
     diagrams: list[Diagram] = []
+    # Precompute newline offsets to avoid quadratic ``text.count`` calls when
+    # deriving line numbers for each block.
+    newline_offsets = [m.start() for m in re.finditer("\n", text)]
     for match in BLOCK_RE.finditer(text):
         block = match.group(1)
-        line_start = text.count("\n", 0, match.start(1)) + 1
+        line_start = bisect.bisect_left(newline_offsets, match.start(1)) + 1
         lines = block.splitlines()
-        line_end = line_start + len(lines)
+        # ``splitlines`` returns ``[]`` for an empty block, so ensure the
+        # closing fence line is still counted by taking at least one line.
+        line_end = line_start + max(len(lines), 1)
         schema = _extract_schema(lines)
         diagrams.append(Diagram(block, line_start, line_end, schema))
     return diagrams

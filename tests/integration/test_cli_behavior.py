@@ -154,7 +154,7 @@ async def test_cli_reports_diagram_schemas(
     exit_code = await main([file], 1)
     captured = capsys.readouterr()
 
-    assert exit_code == 0
+    assert exit_code == 0, "CLI should succeed for valid diagrams"
     lines = captured.out.splitlines()
     markers = [
         "--> line 3: sequenceDiagram",
@@ -163,17 +163,21 @@ async def test_cli_reports_diagram_schemas(
         "<-- line 10: classDiagram",
     ]
     for marker in markers:
-        assert lines.count(marker) == 1
+        assert lines.count(marker) == 1, f"Expected exactly one '{marker}'"
     positions = [lines.index(marker) for marker in markers]
-    assert positions == sorted(positions)
+    assert positions == sorted(positions), (
+        "Markers must appear in order at concurrency=1"
+    )
 
     # Under higher concurrency, markers should still appear, though order is
     # undefined.
     exit_code = await main([file], 2)
     captured = capsys.readouterr()
-    assert exit_code == 0
+    assert exit_code == 0, "CLI should succeed for valid diagrams (concurrency=2)"
     for marker in markers:
-        assert marker in captured.out
+        assert captured.out.count(marker) == 1, (
+            f"Expected '{marker}' to appear exactly once"
+        )
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,8 @@
   `.gitignore`
 - Scans the current directory for Markdown files when run without arguments
 - Parses `mermaid` code blocks and uses `@mermaid-js/mermaid-cli` to validate
-- Runs checks concurrently for faster feedback
+- Processes diagrams sequentially within each file to guarantee stable,
+  bracketed output
 - Prints clear error messages for failing diagrams
 
 ## Requirements
@@ -45,12 +46,11 @@ uv sync --include dev
 nixie [--concurrency N] [--verbose] [--no-sandbox] [FILE ...]
 ```
 
-`--concurrency` controls how many diagrams are processed in parallel (defaults
-to the number of CPU cores or `4` if this cannot be determined). Paths can be
-files or directories. If no files are provided, nixie searches the current
-working directory for Markdown files, excluding paths matched by `.gitignore` in
-that directory. Discovery includes files with the `.md` extension
-(case-sensitive).
+`--concurrency` is reserved for future use. Diagrams are processed sequentially
+within each file to keep output stable. Paths can be files or directories. If
+no files are provided, nixie searches the current working directory for
+Markdown files, excluding paths matched by `.gitignore` in that directory.
+Discovery includes files with the `.md` extension (case-sensitive).
 
 Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.
@@ -63,7 +63,9 @@ to also pass `--no-sandbox` to Chromium.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed
-with its line numbers and schema name:
+with its line numbers and schema name. The start marker’s line number is the
+first content line inside the fenced block; the end marker’s line number is the
+closing fence line:
 
 ```text
 ==> path/to/file.md

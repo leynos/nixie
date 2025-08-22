@@ -48,13 +48,19 @@ def test_parse_blocks_empty_and_whitespace() -> None:
     assert len(diag_empty) == 1
     assert diag_empty[0].schema == UNKNOWN_SCHEMA
     assert diag_empty[0].source == ""
+    assert diag_empty[0].line_start == 2
+    assert diag_empty[0].line_end == 3
 
     content_ws = "```mermaid\n   \n```"
     diag_ws = parse_blocks(content_ws)
     assert len(diag_ws) == 1
     assert diag_ws[0].schema == UNKNOWN_SCHEMA
     assert diag_ws[0].source == "   "
+    assert diag_ws[0].line_start == 2
+    assert diag_ws[0].line_end == 3
 
     content_comment = "```mermaid\n%% a comment\nsequenceDiagram\nA->B\n```"
     diag_comment = parse_blocks(content_comment)
     assert diag_comment[0].schema == "sequenceDiagram"
+    assert diag_comment[0].line_start == 2
+    assert diag_comment[0].line_end == 5
