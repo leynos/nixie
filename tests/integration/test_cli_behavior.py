@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nixie.cli import main
+from nixie.cli import UNKNOWN_SCHEMA, main
 
 
 class SimulatedProcessingError(ValueError):
@@ -195,7 +195,9 @@ async def test_cli_reports_unknown_schema(
     end_markers = [line for line in lines if line.startswith("<--")]
     assert len(start_markers) == 1, "Expected one start marker"
     assert len(end_markers) == 1, "Expected one end marker"
-    assert "<unknown>" in out, "Expected <unknown> when no schema token is found"
+    assert UNKNOWN_SCHEMA in out, (
+        f"Expected {UNKNOWN_SCHEMA} when no schema token is found"
+    )
 
 
 @pytest.mark.asyncio

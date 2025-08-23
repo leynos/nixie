@@ -74,8 +74,10 @@ output for each file starts and ends. Each Mermaid diagram is also bracketed
 with its line numbers and schema name. The start marker’s line number is the
 first content line inside the fenced block; the end marker’s line number is the
 closing fence line. The schema is derived from the first non-blank, non-comment
-line inside the diagram. If that line contains no alphabetic token, the schema
-is reported as `<unknown>`:
+line inside the diagram. Lines starting with `%%` are treated as comments.
+Schema names are echoed verbatim and are case-sensitive. If that line contains
+no alphabetic token, the schema is reported as `UNKNOWN_SCHEMA` (rendered as
+`<unknown>`):
 
 ```text
 ==> path/to/file.md
