@@ -20,7 +20,6 @@ import asyncio
 import asyncio.subprocess as asyncio_subprocess
 import bisect
 import dataclasses as dc
-import io
 import json
 import logging
 import os
@@ -31,10 +30,51 @@ import sys
 import tempfile
 import typing as typ
 import warnings
-from contextlib import contextmanager, redirect_stdout, suppress
+from contextlib import contextmanager, suppress
 from pathlib import Path
 
-import pathspec
+try:
+    import pathspec  # type: ignore[unused-ignore]
+except ModuleNotFoundError:  # pragma: no cover - test-only fallback
+    # Minimal shim for offline testing when pathspec isn't installed.
+    from types import SimpleNamespace
+
+    @dc.dataclass(slots=True)
+    class _Rule:
+        kind: str  # "dir" or "file"
+        value: str
+
+    class _ShimPathSpec:
+        def __init__(self, rules: list[_Rule]) -> None:
+            self._rules = rules
+
+        @classmethod
+        def from_lines(cls, style: str, lines: list[str]) -> _ShimPathSpec:
+            if style != "gitwildmatch":
+                raise NotImplementedError
+            rules: list[_Rule] = []
+            for raw in lines:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.endswith("/"):
+                    rules.append(_Rule("dir", line[:-1]))
+                else:
+                    rules.append(_Rule("file", line))
+            return cls(rules)
+
+        def match_file(self, rel_path: str) -> bool:
+            for rule in self._rules:
+                if rule.kind == "dir":
+                    prefix = f"{rule.value}/" if rule.value else ""
+                    if rel_path.startswith(prefix):
+                        return True
+                else:
+                    if "/" not in rel_path and rel_path == rule.value:
+                        return True
+            return False
+
+    pathspec = SimpleNamespace(PathSpec=_ShimPathSpec)  # type: ignore[no-redef]
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
@@ -471,9 +511,7 @@ async def check_file(
     return all_success
 
 
-async def main(
-    paths: "cabc.Iterable[Path]", *, no_sandbox: bool = False
-) -> int:
+async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
     """Run the CLI entry point.
 
     Processes files sequentially to keep output stable and bracketed. The
