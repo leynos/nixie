@@ -224,7 +224,14 @@ async def test_cli_handles_file_processing_error(
         **kwargs: object,
     ) -> bool:
         if path == file_b:
-            raise SimulatedProcessingError
+
+            def trigger() -> None:
+                raise SimulatedProcessingError
+
+            try:
+                trigger()
+            except SimulatedProcessingError as exc:
+                raise exc.__class__ from exc
         return await original_check_file(path, cfg_path, *args, **kwargs)
 
     monkeypatch.setattr(cli_module, "check_file", mock_check_file)
