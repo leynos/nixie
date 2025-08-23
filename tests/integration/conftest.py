@@ -1,6 +1,5 @@
 """Common fixtures for integration tests."""
 
-import asyncio
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -18,7 +17,6 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         cfg_path: Path | None,
         path: Path,
         idx: int,
-        semaphore: asyncio.Semaphore,
         timeout: float = 30.0,
     ) -> bool:
         if "invalid" in block.lower():

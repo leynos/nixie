@@ -5,11 +5,10 @@ description = "Validate Mermaid diagrams in Markdown files"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["pathspec>=0.12.1,<1.0"]
-license = { text = "ISC" }
+license = "ISC"
 authors = [{ name = "Payton McIntosh", email = "pmcintosh@df12.net" }]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: ISC License",
   "Operating System :: OS Independent",
 ]
 
@@ -27,6 +26,9 @@ nixie = "nixie.cli:cli"
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["nixie"]
 
 [tool.uv]
 package = true

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Command-line interface for validating Mermaid diagrams in Markdown files.
 
-This module parses Markdown files, extracts Mermaid blocks, and validates
-them with the `mermaid-cli` tool. It supports concurrent rendering via
-`asyncio` and falls back between `mmdc`, `npx`, and `bun` executables.
+This module parses Markdown files, extracts Mermaid blocks, and validates them
+with the `mermaid-cli` tool. Rendering occurs sequentially to keep output
+bracketed and stable. The CLI falls back between `mmdc`, `npx`, and `bun`
+executables.
 
 Usage:
-    nixie [--concurrency N] [--verbose] [FILE ...]
+    nixie [--verbose] [FILE ...]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
 underlying ``mermaid-cli`` commands.
@@ -17,6 +18,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import asyncio.subprocess as asyncio_subprocess
+import bisect
+import dataclasses as dc
 import json
 import logging
 import os
@@ -30,7 +33,48 @@ import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
-import pathspec
+try:
+    import pathspec  # type: ignore[unused-ignore]
+except ModuleNotFoundError:  # pragma: no cover - test-only fallback
+    # Minimal shim for offline testing when pathspec isn't installed.
+    from types import SimpleNamespace
+
+    @dc.dataclass(slots=True)
+    class _Rule:
+        kind: str  # "dir" or "file"
+        value: str
+
+    class _ShimPathSpec:
+        def __init__(self, rules: list[_Rule]) -> None:
+            self._rules = rules
+
+        @classmethod
+        def from_lines(cls, style: str, lines: list[str]) -> _ShimPathSpec:
+            if style != "gitwildmatch":
+                raise NotImplementedError
+            rules: list[_Rule] = []
+            for raw in lines:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.endswith("/"):
+                    rules.append(_Rule("dir", line[:-1]))
+                else:
+                    rules.append(_Rule("file", line))
+            return cls(rules)
+
+        def match_file(self, rel_path: str) -> bool:
+            for rule in self._rules:
+                if rule.kind == "dir":
+                    prefix = f"{rule.value}/" if rule.value else ""
+                    if rel_path.startswith(prefix):
+                        return True
+                else:
+                    if "/" not in rel_path and rel_path == rule.value:
+                        return True
+            return False
+
+    pathspec = SimpleNamespace(PathSpec=_ShimPathSpec)  # type: ignore[no-redef]
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
@@ -58,13 +102,6 @@ class UnexpectedExecutableError(ValueError):
         super().__init__(f"Unexpected executable: {executable}")
 
 
-class ConcurrencyValueError(argparse.ArgumentTypeError):
-    """Raised when a concurrency value less than one is supplied."""
-
-    def __init__(self, value: str) -> None:
-        super().__init__(f"concurrency must be at least 1 (got {value})")
-
-
 class NoNodeEnvironmentAvailableError(RuntimeError):
     """Indicates that neither mmdc nor a node environment could be found."""
 
@@ -72,9 +109,74 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
         super().__init__("No node environment available.")
 
 
-def parse_blocks(text: str) -> list[str]:
-    """Return all mermaid code blocks found in the text."""
-    return BLOCK_RE.findall(text)
+@dc.dataclass(slots=True, frozen=True)
+class Diagram:
+    """Mermaid diagram extracted from a Markdown file.
+
+    Attributes
+    ----------
+    source
+        Raw Mermaid source inside the fenced code block (without backticks).
+    line_start
+        1-based line number for the first line of the block content.
+    line_end
+        1-based line number for the closing fence line.
+    schema
+        The diagram schema/name (e.g., ``sequenceDiagram``, ``classDiagram``,
+        ``graph``).
+    """
+
+    source: str
+    line_start: int
+    line_end: int
+    schema: str
+
+
+UNKNOWN_SCHEMA: typ.Final[str] = "<unknown>"
+
+
+def _extract_schema(lines: list[str]) -> str:
+    """Return the schema name from ``lines``.
+
+    Mermaid diagrams may start with empty lines or comments beginning with
+    ``%%``. Skip these until a meaningful line is found. If no schema can be
+    determined, return ``UNKNOWN_SCHEMA``.
+    """
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("%%"):
+            continue
+        token = stripped.split()[0]
+        return token if token.isalpha() else UNKNOWN_SCHEMA
+    return UNKNOWN_SCHEMA
+
+
+def parse_blocks(text: str) -> list[Diagram]:
+    """Return all mermaid code blocks found in ``text``."""
+    diagrams: list[Diagram] = []
+    # Precompute newline offsets to avoid quadratic ``text.count`` calls when
+    # deriving line numbers for each block.
+    newline_offsets = [m.start() for m in re.finditer("\n", text)]
+    for match in BLOCK_RE.finditer(text):
+        block = match.group(1)
+        line_start = bisect.bisect_left(newline_offsets, match.start(1)) + 1
+        lines = block.splitlines()
+        # ``splitlines`` returns ``[]`` for an empty block; in that case the
+        # closing fence is on the same line as ``line_start``.
+        line_end = line_start + len(lines)
+        schema = _extract_schema(lines)
+        diagrams.append(Diagram(block, line_start, line_end, schema))
+    return diagrams
+
+
+@contextmanager
+def diagram_markers(diagram: Diagram) -> typ.Generator[None, None, None]:
+    """Print markers bracketing ``diagram`` processing."""
+    print(f"--> line {diagram.line_start}: {diagram.schema}", flush=True)
+    try:
+        yield
+    finally:
+        print(f"<-- line {diagram.line_end}: {diagram.schema}", flush=True)
 
 
 def _load_gitignore_spec(root: Path) -> pathspec.PathSpec | None:
@@ -234,7 +336,6 @@ async def wait_for_proc(
 
 async def _run_mermaid_cli(
     cmd: list[str],
-    sem: asyncio.Semaphore,
     path: Path,
     idx: int,
     timeout: float,
@@ -243,14 +344,13 @@ async def _run_mermaid_cli(
     if exe not in ALLOWED_EXECUTABLES:
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
 
-    async with sem:
-        # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio_subprocess.PIPE,
-            stderr=asyncio_subprocess.PIPE,
-        )
-        return await wait_for_proc(proc, path, idx, timeout)
+    # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio_subprocess.PIPE,
+        stderr=asyncio_subprocess.PIPE,
+    )
+    return await wait_for_proc(proc, path, idx, timeout)
 
 
 async def _render_diagram(
@@ -259,13 +359,12 @@ async def _render_diagram(
     cfg_path: Path | None,
     path: Path,
     idx: int,
-    semaphore: asyncio.Semaphore,
     timeout: float,
 ) -> None:
     """Write ``block`` to disk and invoke ``mermaid-cli``.
 
     This consolidates temporary file handling and CLI invocation so callers only
-    coordinate concurrency and error handling.
+    coordinate error handling.
 
     Parameters
     ----------
@@ -279,8 +378,6 @@ async def _render_diagram(
         Markdown file containing the diagram; used for naming only.
     idx
         Index of the diagram within ``path``.
-    semaphore
-        Semaphore limiting concurrent CLI executions.
     timeout
         Maximum time in seconds to wait for the CLI to finish.
 
@@ -297,7 +394,7 @@ async def _render_diagram(
 
     cmd = get_mmdc_cmd(mmd, svg, cfg_path)
     LOGGER.info(shlex.join(cmd))
-    success, stderr = await _run_mermaid_cli(cmd, semaphore, path, idx, timeout)
+    success, stderr = await _run_mermaid_cli(cmd, path, idx, timeout)
     if not success:
         error_message = (
             f"Error running command {shlex.join(cmd)} for file '{path}' "
@@ -313,7 +410,6 @@ async def render_block(
     cfg_path: Path | None,
     path: Path,
     idx: int,
-    semaphore: asyncio.Semaphore,
     *,
     timeout: float = 30.0,
     verbose: bool | None = None,
@@ -332,8 +428,6 @@ async def render_block(
         Markdown file containing the block.
     idx : int
         Index of the block within ``path``.
-    semaphore : asyncio.Semaphore
-        Limits concurrent CLI invocations.
     timeout : float, default 30.0
         Maximum time in seconds to wait for the CLI to finish.
     verbose : bool, optional
@@ -356,7 +450,7 @@ async def render_block(
             stacklevel=2,
         )
     try:
-        await _render_diagram(block, tmpdir, cfg_path, path, idx, semaphore, timeout)
+        await _render_diagram(block, tmpdir, cfg_path, path, idx, timeout)
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
         LOGGER.exception(
@@ -387,52 +481,49 @@ async def render_block(
     return False
 
 
-def default_concurrency() -> int:
-    """Return a sensible default for the concurrency limit."""
-    return os.cpu_count() or 4
-
-
 async def check_file(
     path: Path,
     cfg_path: Path | None,
-    semaphore: asyncio.Semaphore,
 ) -> bool:
     """Check a single file for Mermaid diagrams."""
-    blocks = parse_blocks(path.read_text(encoding="utf-8"))
-    if not blocks:
+    diagrams = parse_blocks(path.read_text(encoding="utf-8"))
+    if not diagrams:
         return True
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
-        tasks = [
-            render_block(
-                block,
-                tmp_path,
-                cfg_path,
-                path,
-                idx,
-                semaphore,
-            )
-            for idx, block in enumerate(blocks, 1)
-        ]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-    return all(result is True for result in results)
+        all_success = True
+        for idx, diagram in enumerate(diagrams, 1):
+            with diagram_markers(diagram):
+                try:
+                    success = await render_block(
+                        diagram.source,
+                        tmp_path,
+                        cfg_path,
+                        path,
+                        idx,
+                    )
+                except Exception:  # pragma: no cover - unexpected
+                    LOGGER.exception("%s: unexpected error in diagram %s", path, idx)
+                    success = False
+            if not success:
+                all_success = False
+    return all_success
 
 
-async def main(
-    paths: cabc.Iterable[Path],
-    max_concurrent: int,
-    *,
-    no_sandbox: bool = False,
-) -> int:
-    """Run the CLI entry point."""
-    semaphore = asyncio.Semaphore(max_concurrent)
+async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
+    """Run the CLI entry point.
+
+    Processes files sequentially to keep output stable and bracketed. The
+    ``--no-sandbox`` flag is passed through to Puppeteer when requested or
+    when running as root.
+    """
     with create_puppeteer_config(force_no_sandbox=no_sandbox) as cfg_path:
         all_success = True
         for path in collect_markdown_files(paths):
             print(f"==> {path}")
             try:
-                success = await check_file(path, cfg_path, semaphore)
+                success = await check_file(path, cfg_path)
             except Exception as exc:  # noqa: BLE001  pragma: no cover - unexpected
                 # Catch unexpected errors so the CLI can continue processing.
                 print(f"Validation task raised an exception: {exc}")
@@ -441,14 +532,6 @@ async def main(
                 all_success = False
             print(f"<== {path}")
         return 0 if all_success else 1
-
-
-def positive_int(value: str) -> int:
-    """Type for argparse to ensure a positive integer (>=1)."""
-    ivalue = int(value)
-    if ivalue < 1:
-        raise ConcurrencyValueError(value)
-    return ivalue
 
 
 def parse_args() -> argparse.Namespace:
@@ -465,12 +548,6 @@ def parse_args() -> argparse.Namespace:
             "current directory for .md files (honouring the top-level .gitignore; "
             "nested .gitignore files are ignored)."
         ),
-    )
-    parser.add_argument(
-        "--concurrency",
-        type=positive_int,
-        default=default_concurrency(),
-        help="Maximum number of concurrent mmdc processes",
     )
     parser.add_argument(
         "--verbose",
@@ -505,7 +582,7 @@ def cli() -> None:
         if not paths:
             print("No Markdown files found.", file=sys.stderr)
             sys.exit(0)
-    sys.exit(asyncio.run(main(paths, parsed.concurrency, no_sandbox=parsed.no_sandbox)))
+    sys.exit(asyncio.run(main(paths, no_sandbox=parsed.no_sandbox)))
 
 
 if __name__ == "__main__":
