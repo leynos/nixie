@@ -73,11 +73,17 @@ When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed
 with its line numbers and schema name. The start marker’s line number is the
 first content line inside the fenced block; the end marker’s line number is the
-closing fence line. The schema is derived from the first non-blank, non-comment
-line inside the diagram. Lines starting with `%%` are treated as comments.
-Schema names are echoed verbatim and are case-sensitive. If that line contains
-no alphabetic token, the schema is reported as `UNKNOWN_SCHEMA` (rendered as
-`<unknown>`):
+closing fence line.
+
+Schema detection:
+
+- The schema is the first token on the first non-blank, non-comment line inside
+  the fenced block. Lines starting with `%%` are treated as comments.
+- If no such token exists, the schema is reported as `UNKNOWN_SCHEMA` (rendered
+  as `<unknown>`).
+- Schema names are echoed verbatim and are case-sensitive.
+
+Example:
 
 ```text
 ==> path/to/file.md
