@@ -20,6 +20,7 @@ import asyncio
 import asyncio.subprocess as asyncio_subprocess
 import bisect
 import dataclasses as dc
+import io
 import json
 import logging
 import os
@@ -30,7 +31,7 @@ import sys
 import tempfile
 import typing as typ
 import warnings
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, redirect_stdout, suppress
 from pathlib import Path
 
 import pathspec
@@ -470,22 +471,14 @@ async def check_file(
     return all_success
 
 
-<<<<<<< HEAD
-async def main(
-    paths: cabc.Iterable[Path],
-    max_concurrent: int,
-    *,
-    no_sandbox: bool = False,
-) -> int:
-||||||| parent of 9a3db1c (Remove unused concurrency scaffolding)
 async def main(
     paths: "cabc.Iterable[Path]", *, no_sandbox: bool = False
 ) -> int:
     """Run the CLI entry point.
 
-    Concurrency was removed to simplify processing and ensure predictable,
-    bracketed output. We still allow disabling the Puppeteer sandbox when
-    needed for environments like Docker or root.
+    Processes files sequentially to keep output stable and bracketed. The
+    ``--no-sandbox`` flag is passed through to Puppeteer when requested or
+    when running as root.
     """
     with create_puppeteer_config(force_no_sandbox=no_sandbox) as cfg_path:
         all_success = True

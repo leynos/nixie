@@ -47,6 +47,8 @@ nixie [--verbose] [--no-sandbox] [FILE ...]
 ```
 
 Diagrams are processed sequentially within each file to keep output stable.
+Files are checked concurrently, but their buffered output is written between the
+`==>` and `<==` markers in the order provided.
 Paths can be files or directories. If no files are provided, nixie searches the
 current working directory for Markdown files, excluding paths matched by
 `.gitignore` in that directory. Discovery includes files with the `.md`
