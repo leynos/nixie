@@ -32,7 +32,6 @@ import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Final  # noqa: ICN003
 
 try:
     import pathspec  # type: ignore[unused-ignore]
