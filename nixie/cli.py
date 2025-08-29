@@ -96,6 +96,7 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
 
 SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
 
+
 class UnexpectedExecutableError(ValueError):
     """Raised when an executable outside the allowed set is requested."""
 
