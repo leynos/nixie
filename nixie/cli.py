@@ -32,6 +32,7 @@ import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
 from pathlib import Path
+from typing import Final  # noqa: ICN003
 
 try:
     import pathspec  # type: ignore[unused-ignore]
@@ -93,6 +94,8 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
     "--disable-gpu",
     "--disable-dev-shm-usage",
 )
+
+SUCCESS_BANNER: Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
 
 
 class UnexpectedExecutableError(ValueError):
@@ -532,7 +535,7 @@ async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
                 all_success = False
             print(f"<== {path}")
         if all_success:
-            print("🧜‍♀️✨ All diagrams validated successfully!")
+            print(SUCCESS_BANNER, flush=True)
         return 0 if all_success else 1
 
 

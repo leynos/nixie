@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nixie.cli import UNKNOWN_SCHEMA, main
+from nixie.cli import SUCCESS_BANNER, UNKNOWN_SCHEMA, main
 
 
 class SimulatedProcessingError(ValueError):
@@ -99,11 +99,10 @@ async def test_cli_behavior(
     expected = {(Path(p), i) for p, i in expected_calls}
     assert actual == expected
 
-    message = "🧜‍♀️✨ All diagrams validated successfully!"
     if expected_exit == 0:
-        assert message in captured.out
+        assert captured.out.count(SUCCESS_BANNER) == 1
     else:
-        assert message not in captured.out
+        assert captured.out.count(SUCCESS_BANNER) == 0
 
 
 @pytest.mark.asyncio
