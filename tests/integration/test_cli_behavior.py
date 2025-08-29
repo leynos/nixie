@@ -99,6 +99,12 @@ async def test_cli_behavior(
     expected = {(Path(p), i) for p, i in expected_calls}
     assert actual == expected
 
+    message = "🧜‍♀️✨ All diagrams validated successfully!"
+    if expected_exit == 0:
+        assert message in captured.out
+    else:
+        assert message not in captured.out
+
 
 @pytest.mark.asyncio
 async def test_cli_marks_file_boundaries(

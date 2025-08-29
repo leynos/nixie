@@ -531,6 +531,8 @@ async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
             if not success:
                 all_success = False
             print(f"<== {path}")
+        if all_success:
+            print("🧜‍♀️✨ All diagrams validated successfully!")
         return 0 if all_success else 1
 
 
