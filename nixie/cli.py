@@ -94,6 +94,8 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
     "--disable-dev-shm-usage",
 )
 
+SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
+
 
 class UnexpectedExecutableError(ValueError):
     """Raised when an executable outside the allowed set is requested."""
@@ -531,6 +533,8 @@ async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
             if not success:
                 all_success = False
             print(f"<== {path}")
+        if all_success:
+            print(SUCCESS_BANNER, flush=True)
         return 0 if all_success else 1
 
 
