@@ -1,4 +1,4 @@
-# ruff: noqa: D100
+"""Unit tests for CLI executable normalisation and allow-list validation."""
 
 from __future__ import annotations
 
