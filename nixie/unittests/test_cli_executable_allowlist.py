@@ -21,10 +21,10 @@ import nixie.cli as cli
         ("mmdc.bat", "mmdc"),
         ("/usr/bin/mmdc", "mmdc"),
         ("/usr/bin/mmdc.exe", "mmdc"),
-        (r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.exe", "mmdc"),
-        (r"C:\\Users\\runneradmin\\.bun\\bin\\MMDC.EXE", "mmdc"),
+        (r"C:\Users\runneradmin\.bun\bin\mmdc.exe", "mmdc"),
+        (r"C:\Users\runneradmin\.bun\bin\MMDC.EXE", "mmdc"),
         ("  C:/Program Files/mermaid-cli/mmdc.EXE  ", "mmdc"),
-        (r"C:\\Windows\\System32\\python.EXE", "python"),
+        (r"C:\Windows\System32\python.EXE", "python"),
     ],
 )
 def test_normalize_executable_name_known_suffix(executable: str, expected: str) -> None:
@@ -39,7 +39,7 @@ def test_normalize_executable_name_known_suffix(executable: str, expected: str) 
         ("/usr/bin/python3", "python3"),
         ("/usr/local/bin/python3.11", "python3.11"),
         ("mmdc.exe.bak", "mmdc.exe.bak"),
-        (r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.exe.bak", "mmdc.exe.bak"),
+        (r"C:\Users\runneradmin\.bun\bin\mmdc.exe.bak", "mmdc.exe.bak"),
     ],
 )
 def test_normalize_executable_name_unknown_suffix(
@@ -56,12 +56,12 @@ def test_normalize_executable_name_unknown_suffix(
         "mmdc.exe",
         "mmdc.CMD",
         "mmdc.BAT",
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.EXE",
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.CMD",
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.BAT",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.EXE",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.CMD",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.BAT",
         "bun",
         "npx",
-        r"C:\\Program Files\\nodejs\\npx.cmd",
+        r"C:\Program Files\nodejs\npx.cmd",
     ],
 )
 def test_is_allowed_executable_accepts_allowlisted(executable: str) -> None:
@@ -75,9 +75,9 @@ def test_is_allowed_executable_accepts_allowlisted(executable: str) -> None:
         "",
         "python",
         "python.exe",
-        r"C:\\Windows\\System32\\python.exe",
+        r"C:\Windows\System32\python.exe",
         "mmdc.exe.bak",
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.exe.bak",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.exe.bak",
     ],
 )
 def test_is_allowed_executable_rejects_unexpected(executable: str) -> None:
