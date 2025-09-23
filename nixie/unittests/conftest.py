@@ -18,5 +18,6 @@ def fake_home_cwd(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     """
     home = tmp_path / "home"
     monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setattr("nixie.cli.Path.home", lambda: home)
     monkeypatch.chdir(tmp_path)
     return home

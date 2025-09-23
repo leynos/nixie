@@ -31,7 +31,7 @@ import tempfile
 import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 try:
     import pathspec  # type: ignore[unused-ignore]
@@ -87,6 +87,7 @@ BLOCK_RE = re.compile(
 )
 
 ALLOWED_EXECUTABLES: typ.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
+WINDOWS_EXECUTABLE_SUFFIXES: typ.Final[tuple[str, ...]] = (".exe", ".cmd", ".bat")
 
 DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
     "--disable-setuid-sandbox",
@@ -336,15 +337,42 @@ async def wait_for_proc(
     return success, stderr
 
 
+def _normalize_executable_name(executable: str) -> str:
+    """Return a normalized name for ``executable`` suitable for allow-listing."""
+    if not executable:
+        return ""
+    # ``PureWindowsPath`` gracefully handles both POSIX and Windows style
+    # separators without requiring platform checks. Always interpret the input
+    # as a Windows path so that raw ``C:\\...`` strings normalise identically on
+    # Linux hosts.
+    cleaned = executable.strip()
+    if not cleaned:
+        return ""
+    path = PureWindowsPath(cleaned)
+    name = path.name.lower()
+    for suffix in WINDOWS_EXECUTABLE_SUFFIXES:
+        if name.endswith(suffix):
+            return path.stem.lower()
+    return name
+
+
+def _is_allowed_executable(executable: str) -> bool:
+    """Return ``True`` when ``executable`` is permitted to run mermaid-cli."""
+    if not executable:
+        return False
+    normalized = _normalize_executable_name(executable)
+    return normalized in ALLOWED_EXECUTABLES
+
+
 async def _run_mermaid_cli(
     cmd: list[str],
     path: Path,
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
-    exe = Path(cmd[0]).name if cmd else ""
-    if exe not in ALLOWED_EXECUTABLES:
-        raise UnexpectedExecutableError(cmd[0] if cmd else "")
+    executable = cmd[0] if cmd else ""
+    if not _is_allowed_executable(executable):
+        raise UnexpectedExecutableError(executable)
 
     # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
     proc = await asyncio.create_subprocess_exec(
