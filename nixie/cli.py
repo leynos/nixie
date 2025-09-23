@@ -369,7 +369,7 @@ async def _run_mermaid_cli(
 ) -> tuple[bool, bytes]:
     executable = cmd[0] if cmd else ""
     if not _is_allowed_executable(executable):
-        raise UnexpectedExecutableError(cmd[0] if cmd else "")
+        raise UnexpectedExecutableError(executable)
 
     # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit
     proc = await asyncio.create_subprocess_exec(
