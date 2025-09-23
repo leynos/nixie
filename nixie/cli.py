@@ -87,6 +87,7 @@ BLOCK_RE = re.compile(
 )
 
 ALLOWED_EXECUTABLES: typ.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
+WINDOWS_EXECUTABLE_SUFFIXES: typ.Final[tuple[str, ...]] = (".exe", ".cmd", ".bat")
 
 DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
     "--disable-setuid-sandbox",
@@ -336,14 +337,33 @@ async def wait_for_proc(
     return success, stderr
 
 
+def _normalize_executable_name(executable: str) -> str:
+    """Return a normalized name for ``executable`` suitable for allow-listing."""
+    raw = executable.rsplit("/", 1)[-1]
+    raw = raw.rsplit("\\", 1)[-1]
+    lowered = raw.lower()
+    for suffix in WINDOWS_EXECUTABLE_SUFFIXES:
+        if lowered.endswith(suffix):
+            return lowered[: -len(suffix)]
+    return lowered
+
+
+def _is_allowed_executable(executable: str) -> bool:
+    """Return ``True`` when ``executable`` is permitted to run mermaid-cli."""
+    if not executable:
+        return False
+    normalized = _normalize_executable_name(executable)
+    return normalized in ALLOWED_EXECUTABLES
+
+
 async def _run_mermaid_cli(
     cmd: list[str],
     path: Path,
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
-    exe = Path(cmd[0]).name if cmd else ""
-    if exe not in ALLOWED_EXECUTABLES:
+    executable = cmd[0] if cmd else ""
+    if not _is_allowed_executable(executable):
         raise UnexpectedExecutableError(cmd[0] if cmd else "")
 
     # nosemgrep: python.lang.security.audit.dangerous-asyncio-create-exec-audit

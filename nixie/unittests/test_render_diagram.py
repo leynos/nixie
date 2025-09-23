@@ -88,3 +88,25 @@ async def test_run_mermaid_cli_rejects_unexpected_executable() -> None:
     cmd = ["echo", "hello"]
     with pytest.raises(ValueError, match="Unexpected executable"):
         await _run_mermaid_cli(cmd, path, 1, 30.0)
+
+
+@pytest.mark.asyncio
+async def test_run_mermaid_cli_accepts_windows_executable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Treat Windows ``.EXE`` binaries as valid executables."""
+
+    async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        return object()
+
+    async def fake_wait_for_proc(
+        _proc: object, _path: Path, _idx: int, _timeout: float
+    ) -> tuple[bool, bytes]:
+        return True, b""
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
+
+    cmd = [r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.EXE", "--version"]
+    result = await _run_mermaid_cli(cmd, Path("doc.md"), 1, 30.0)
+    assert result == (True, b"")
