@@ -31,7 +31,7 @@ import tempfile
 import typing as typ
 import warnings
 from contextlib import contextmanager, suppress
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 try:
     import pathspec  # type: ignore[unused-ignore]
@@ -339,13 +339,18 @@ async def wait_for_proc(
 
 def _normalize_executable_name(executable: str) -> str:
     """Return a normalized name for ``executable`` suitable for allow-listing."""
-    raw = executable.rsplit("/", 1)[-1]
-    raw = raw.rsplit("\\", 1)[-1]
-    lowered = raw.lower()
-    for suffix in WINDOWS_EXECUTABLE_SUFFIXES:
-        if lowered.endswith(suffix):
-            return lowered[: -len(suffix)]
-    return lowered
+    if not executable:
+        return ""
+    # ``Path`` handles POSIX separators while ``PureWindowsPath`` copes with
+    # Windows-style ``\`` separators. Prefer the Windows interpretation when the
+    # input contains backslashes so shims like ``mmdc.EXE`` normalise reliably on
+    # Unix hosts running the tests.
+    path = PureWindowsPath(executable) if "\\" in executable else Path(executable)
+    suffix = path.suffix.lower()
+    name = path.name.lower()
+    if suffix in WINDOWS_EXECUTABLE_SUFFIXES:
+        return path.stem.lower()
+    return name
 
 
 def _is_allowed_executable(executable: str) -> bool:
