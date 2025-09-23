@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 
 import pytest
@@ -14,9 +13,9 @@ from nixie.cli import render_block
 @pytest.mark.parametrize(
     "executable",
     [
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.EXE",
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.CMD",
-        r"C:\\Users\\runneradmin\\.bun\\bin\\mmdc.BAT",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.EXE",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.CMD",
+        r"C:\Users\runneradmin\.bun\bin\mmdc.BAT",
     ],
 )
 async def test_render_block_accepts_windows_executables(
@@ -33,9 +32,11 @@ async def test_render_block_accepts_windows_executables(
     ) -> tuple[bool, bytes]:
         return True, b""
 
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr(
+        "nixie.cli.asyncio.create_subprocess_exec", fake_create_subprocess_exec
+    )
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr("nixie.cli.Path.home", lambda: tmp_path)
     monkeypatch.chdir(tmp_path)
 
     def fake_which(cmd: str) -> str | None:
@@ -56,8 +57,10 @@ async def test_render_block_rejects_unexpected_executable(
     async def fail_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         pytest.fail("create_subprocess_exec should not be called")
 
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fail_create_subprocess_exec)
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(
+        "nixie.cli.asyncio.create_subprocess_exec", fail_create_subprocess_exec
+    )
+    monkeypatch.setattr("nixie.cli.Path.home", lambda: tmp_path)
     monkeypatch.chdir(tmp_path)
 
     def fake_which(cmd: str) -> str | None:
