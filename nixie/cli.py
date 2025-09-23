@@ -341,15 +341,18 @@ def _normalize_executable_name(executable: str) -> str:
     """Return a normalized name for ``executable`` suitable for allow-listing."""
     if not executable:
         return ""
-    # ``Path`` handles POSIX separators while ``PureWindowsPath`` copes with
-    # Windows-style ``\`` separators. Prefer the Windows interpretation when the
-    # input contains backslashes so shims like ``mmdc.EXE`` normalise reliably on
-    # Unix hosts running the tests.
-    path = PureWindowsPath(executable) if "\\" in executable else Path(executable)
-    suffix = path.suffix.lower()
+    # ``PureWindowsPath`` gracefully handles both POSIX and Windows style
+    # separators without requiring platform checks. Always interpret the input
+    # as a Windows path so that raw ``C:\\...`` strings normalise identically on
+    # Linux hosts.
+    cleaned = executable.strip()
+    if not cleaned:
+        return ""
+    path = PureWindowsPath(cleaned)
     name = path.name.lower()
-    if suffix in WINDOWS_EXECUTABLE_SUFFIXES:
-        return path.stem.lower()
+    for suffix in WINDOWS_EXECUTABLE_SUFFIXES:
+        if name.endswith(suffix):
+            return path.stem.lower()
     return name
 
 
