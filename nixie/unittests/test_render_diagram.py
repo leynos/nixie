@@ -89,10 +89,16 @@ async def test_render_diagram_raises_on_failure(
 
 
 @pytest.mark.asyncio
-async def test_run_mermaid_cli_rejects_unexpected_executable() -> None:
+@pytest.mark.parametrize(
+    "executable",
+    ["", "python", "./mmdc.sh", r"C:\tools\mermaid.cmdx"],
+)
+async def test_run_mermaid_cli_rejects_unexpected_executable(
+    executable: str,
+) -> None:
     """Reject executables outside the allowed set."""
     path = Path("doc.md")
-    cmd = ["echo", "hello"]
+    cmd = [executable] if executable else []
     with pytest.raises(ValueError, match="Unexpected executable"):
         await _run_mermaid_cli(cmd, path, 1, 30.0)
 
