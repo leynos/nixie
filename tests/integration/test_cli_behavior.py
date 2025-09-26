@@ -1,11 +1,18 @@
 """Integration tests for the CLI's high-level behaviour."""
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 
-from nixie.cli import SUCCESS_BANNER, UNKNOWN_SCHEMA, main
+from nixie.cli import (
+    ASCII_SUCCESS_BANNER,
+    SUCCESS_BANNER,
+    UNKNOWN_SCHEMA,
+    main,
+    resolve_success_banner,
+)
 
 
 class SimulatedProcessingError(ValueError):
@@ -262,3 +269,20 @@ async def test_cli_handles_file_processing_error(
     end_markers = [line for line in lines if line.startswith("<-- line ")]
     assert len(start_markers) == 1, "Expected one start marker despite the failure"
     assert len(end_markers) == 1, "Expected one end marker despite the failure"
+
+
+@pytest.mark.parametrize(
+    ("stream", "expected"),
+    [
+        (SimpleNamespace(encoding="utf-8"), SUCCESS_BANNER),
+        (SimpleNamespace(encoding="cp1252"), ASCII_SUCCESS_BANNER),
+        (SimpleNamespace(encoding=None), SUCCESS_BANNER),
+        (None, SUCCESS_BANNER),
+    ],
+)
+def test_resolve_success_banner_handles_non_utf8_streams(
+    stream: SimpleNamespace | None, expected: str
+) -> None:
+    """Prefer the celebratory banner but fall back when encoding rejects it."""
+
+    assert resolve_success_banner(stream) == expected

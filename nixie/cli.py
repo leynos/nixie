@@ -79,6 +79,11 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
 
+    class _EncodingAwareStream(typ.Protocol):
+        encoding: str | None
+else:
+    _EncodingAwareStream = object
+
 LOGGER = logging.getLogger(__name__)
 
 BLOCK_RE = re.compile(
@@ -96,6 +101,29 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
 )
 
 SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
+ASCII_SUCCESS_BANNER: typ.Final[str] = "All diagrams validated successfully!"
+
+
+def resolve_success_banner(stream: _EncodingAwareStream | None) -> str:
+    """Return a stream-compatible success banner.
+
+    Windows runners still default to ``cp1252`` in several environments, which
+    cannot represent the emoji contained in :data:`SUCCESS_BANNER`. Attempt to
+    encode the celebratory banner with the stream's encoding and fall back to a
+    plain ASCII message if that fails. Linux environments use UTF-8 so they
+    retain the richer banner.
+    """
+
+    if stream is None:
+        return SUCCESS_BANNER
+    encoding = getattr(stream, "encoding", None)
+    if not encoding:
+        return SUCCESS_BANNER
+    try:
+        SUCCESS_BANNER.encode(encoding)
+    except UnicodeEncodeError:
+        return ASCII_SUCCESS_BANNER
+    return SUCCESS_BANNER
 
 
 class UnexpectedExecutableError(ValueError):
@@ -562,7 +590,7 @@ async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
                 all_success = False
             print(f"<== {path}")
         if all_success:
-            print(SUCCESS_BANNER, flush=True)
+            print(resolve_success_banner(sys.stdout), flush=True)
         return 0 if all_success else 1
 
 
