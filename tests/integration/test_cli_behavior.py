@@ -1,5 +1,6 @@
 """Integration tests for the CLI's high-level behaviour."""
 
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -278,11 +279,60 @@ async def test_cli_handles_file_processing_error(
         (SimpleNamespace(encoding="cp1252"), ASCII_SUCCESS_BANNER),
         (SimpleNamespace(encoding=None), SUCCESS_BANNER),
         (None, SUCCESS_BANNER),
+        (SimpleNamespace(encoding="unknown-encoding"), ASCII_SUCCESS_BANNER),
     ],
 )
 def test_resolve_success_banner_handles_non_utf8_streams(
     stream: SimpleNamespace | None, expected: str
 ) -> None:
     """Prefer the celebratory banner but fall back when encoding rejects it."""
-
     assert resolve_success_banner(stream) == expected
+
+
+class _RecordingStream:
+    """In-memory text stream that exposes an ``encoding`` attribute."""
+
+    def __init__(self, encoding: str | None) -> None:
+        self.encoding = encoding
+        self._chunks: list[str] = []
+
+    def write(self, data: str) -> int:
+        self._chunks.append(data)
+        return len(data)
+
+    def flush(self) -> None:
+        # ``print`` may call ``flush``; retain compatibility without side effects.
+        return None
+
+    def getvalue(self) -> str:
+        return "".join(self._chunks)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("encoding", "expected"),
+    [
+        ("utf-8", SUCCESS_BANNER),
+        ("cp1252", ASCII_SUCCESS_BANNER),
+        ("unknown-encoding", ASCII_SUCCESS_BANNER),
+    ],
+)
+async def test_cli_emits_encoding_aware_success_banner(
+    tmp_path: Path,
+    stub_render: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+    encoding: str,
+    expected: str,
+) -> None:
+    """Exercise ``resolve_success_banner`` through the CLI entry point."""
+    file = tmp_path / "diagram.md"
+    file.write_text("""```mermaid\nA-->B\n```""")
+
+    stream = _RecordingStream(encoding)
+    monkeypatch.setattr(sys, "stdout", stream)
+
+    exit_code = await main([file])
+
+    assert exit_code == 0
+    output = stream.getvalue().splitlines()
+    assert output[-1] == expected

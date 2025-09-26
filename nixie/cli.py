@@ -79,9 +79,12 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
 
+    TextIO = typ.TextIO
+
     class _EncodingAwareStream(typ.Protocol):
         encoding: str | None
 else:
+    TextIO = object  # type: ignore[assignment]
     _EncodingAwareStream = object
 
 LOGGER = logging.getLogger(__name__)
@@ -104,7 +107,7 @@ SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated succes
 ASCII_SUCCESS_BANNER: typ.Final[str] = "All diagrams validated successfully!"
 
 
-def resolve_success_banner(stream: _EncodingAwareStream | None) -> str:
+def resolve_success_banner(stream: _EncodingAwareStream | TextIO | None) -> str:
     """Return a stream-compatible success banner.
 
     Windows runners still default to ``cp1252`` in several environments, which
@@ -113,7 +116,6 @@ def resolve_success_banner(stream: _EncodingAwareStream | None) -> str:
     plain ASCII message if that fails. Linux environments use UTF-8 so they
     retain the richer banner.
     """
-
     if stream is None:
         return SUCCESS_BANNER
     encoding = getattr(stream, "encoding", None)
@@ -121,7 +123,12 @@ def resolve_success_banner(stream: _EncodingAwareStream | None) -> str:
         return SUCCESS_BANNER
     try:
         SUCCESS_BANNER.encode(encoding)
-    except UnicodeEncodeError:
+    except (LookupError, TypeError, UnicodeError):
+        # ``encode`` can raise ``LookupError`` for unknown encodings and generic
+        # ``UnicodeError`` subclasses (e.g., ``UnicodeEncodeError``) when the
+        # target codec lacks emoji support. ``TypeError`` guards against streams
+        # exposing non-string ``encoding`` attributes. Fallback to ASCII in all
+        # cases so printing never propagates encoding failures to callers.
         return ASCII_SUCCESS_BANNER
     return SUCCESS_BANNER
 
