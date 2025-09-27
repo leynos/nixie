@@ -108,9 +108,13 @@ async def test_cli_behavior(
     assert actual == expected
 
     if expected_exit == 0:
-        assert captured.out.count(SUCCESS_BANNER) == 1
+        assert any(
+            captured.out.count(banner) == 1
+            for banner in (SUCCESS_BANNER, ASCII_SUCCESS_BANNER)
+        )
     else:
         assert captured.out.count(SUCCESS_BANNER) == 0
+        assert captured.out.count(ASCII_SUCCESS_BANNER) == 0
 
 
 @pytest.mark.asyncio
@@ -279,7 +283,7 @@ async def test_cli_handles_file_processing_error(
         (SimpleNamespace(encoding="cp1252"), ASCII_SUCCESS_BANNER),
         (SimpleNamespace(encoding=None), SUCCESS_BANNER),
         (None, SUCCESS_BANNER),
-        (SimpleNamespace(encoding="unknown-encoding"), ASCII_SUCCESS_BANNER),
+        (SimpleNamespace(encoding="not-an-encoding"), ASCII_SUCCESS_BANNER),
     ],
 )
 def test_resolve_success_banner_handles_non_utf8_streams(
@@ -314,7 +318,7 @@ class _RecordingStream:
     [
         ("utf-8", SUCCESS_BANNER),
         ("cp1252", ASCII_SUCCESS_BANNER),
-        ("unknown-encoding", ASCII_SUCCESS_BANNER),
+        ("not-an-encoding", ASCII_SUCCESS_BANNER),
     ],
 )
 async def test_cli_emits_encoding_aware_success_banner(

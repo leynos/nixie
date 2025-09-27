@@ -13,7 +13,7 @@ from nixie.cli import ASCII_SUCCESS_BANNER, SUCCESS_BANNER, resolve_success_bann
         (SimpleNamespace(encoding="utf-8"), SUCCESS_BANNER),
         (SimpleNamespace(encoding="cp1252"), ASCII_SUCCESS_BANNER),
         (SimpleNamespace(encoding=None), SUCCESS_BANNER),
-        (SimpleNamespace(encoding="unknown-encoding"), ASCII_SUCCESS_BANNER),
+        (SimpleNamespace(encoding="not-an-encoding"), ASCII_SUCCESS_BANNER),
         (SimpleNamespace(encoding=1234), ASCII_SUCCESS_BANNER),
         (None, SUCCESS_BANNER),
     ],
