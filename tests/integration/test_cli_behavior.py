@@ -1,11 +1,19 @@
 """Integration tests for the CLI's high-level behaviour."""
 
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 
-from nixie.cli import SUCCESS_BANNER, UNKNOWN_SCHEMA, main
+from nixie.cli import (
+    ASCII_SUCCESS_BANNER,
+    SUCCESS_BANNER,
+    UNKNOWN_SCHEMA,
+    main,
+    resolve_success_banner,
+)
 
 
 class SimulatedProcessingError(ValueError):
@@ -100,9 +108,13 @@ async def test_cli_behavior(
     assert actual == expected
 
     if expected_exit == 0:
-        assert captured.out.count(SUCCESS_BANNER) == 1
+        assert any(
+            captured.out.count(banner) == 1
+            for banner in (SUCCESS_BANNER, ASCII_SUCCESS_BANNER)
+        )
     else:
         assert captured.out.count(SUCCESS_BANNER) == 0
+        assert captured.out.count(ASCII_SUCCESS_BANNER) == 0
 
 
 @pytest.mark.asyncio
@@ -262,3 +274,69 @@ async def test_cli_handles_file_processing_error(
     end_markers = [line for line in lines if line.startswith("<-- line ")]
     assert len(start_markers) == 1, "Expected one start marker despite the failure"
     assert len(end_markers) == 1, "Expected one end marker despite the failure"
+
+
+@pytest.mark.parametrize(
+    ("stream", "expected"),
+    [
+        (SimpleNamespace(encoding="utf-8"), SUCCESS_BANNER),
+        (SimpleNamespace(encoding="cp1252"), ASCII_SUCCESS_BANNER),
+        (SimpleNamespace(encoding=None), SUCCESS_BANNER),
+        (None, SUCCESS_BANNER),
+        (SimpleNamespace(encoding="not-an-encoding"), ASCII_SUCCESS_BANNER),
+    ],
+)
+def test_resolve_success_banner_handles_non_utf8_streams(
+    stream: SimpleNamespace | None, expected: str
+) -> None:
+    """Prefer the celebratory banner but fall back when encoding rejects it."""
+    assert resolve_success_banner(stream) == expected
+
+
+class _RecordingStream:
+    """In-memory text stream that exposes an ``encoding`` attribute."""
+
+    def __init__(self, encoding: str | None) -> None:
+        self.encoding = encoding
+        self._chunks: list[str] = []
+
+    def write(self, data: str) -> int:
+        self._chunks.append(data)
+        return len(data)
+
+    def flush(self) -> None:
+        # ``print`` may call ``flush``; retain compatibility without side effects.
+        return None
+
+    def getvalue(self) -> str:
+        return "".join(self._chunks)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("encoding", "expected"),
+    [
+        ("utf-8", SUCCESS_BANNER),
+        ("cp1252", ASCII_SUCCESS_BANNER),
+        ("not-an-encoding", ASCII_SUCCESS_BANNER),
+    ],
+)
+async def test_cli_emits_encoding_aware_success_banner(
+    tmp_path: Path,
+    stub_render: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+    encoding: str,
+    expected: str,
+) -> None:
+    """Exercise ``resolve_success_banner`` through the CLI entry point."""
+    file = tmp_path / "diagram.md"
+    file.write_text("""```mermaid\nA-->B\n```""")
+
+    stream = _RecordingStream(encoding)
+    monkeypatch.setattr(sys, "stdout", stream)
+
+    exit_code = await main([file])
+
+    assert exit_code == 0
+    output = stream.getvalue().splitlines()
+    assert output[-1] == expected

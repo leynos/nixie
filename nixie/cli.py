@@ -79,6 +79,14 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
 
+    TextIO = typ.TextIO
+
+    class _EncodingAwareStream(typ.Protocol):
+        encoding: str | None
+else:
+    TextIO = object  # type: ignore[assignment]
+    _EncodingAwareStream = object
+
 LOGGER = logging.getLogger(__name__)
 
 BLOCK_RE = re.compile(
@@ -96,6 +104,45 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
 )
 
 SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
+ASCII_SUCCESS_BANNER: typ.Final[str] = "All diagrams validated successfully!"
+
+
+def resolve_success_banner(stream: _EncodingAwareStream | TextIO | None) -> str:
+    """Return a stream-compatible success banner.
+
+    Parameters
+    ----------
+    stream : _EncodingAwareStream | TextIO | None
+        Output stream exposing an ``encoding`` attribute (e.g., ``sys.stdout``).
+
+    Returns
+    -------
+    str
+        :data:`SUCCESS_BANNER` when the stream supports it, otherwise the
+        ASCII-only fallback.
+
+    Notes
+    -----
+    Windows runners frequently default to ``cp1252`` and similar encodings that
+    cannot represent the emoji in :data:`SUCCESS_BANNER`. Probe the encoding and
+    use :data:`ASCII_SUCCESS_BANNER` whenever encoding fails or the codec is
+    unknown so callers never see ``UnicodeEncodeError``.
+    """
+    if stream is None:
+        return SUCCESS_BANNER
+    encoding = getattr(stream, "encoding", None)
+    if not encoding:
+        return SUCCESS_BANNER
+    try:
+        SUCCESS_BANNER.encode(encoding)
+    except (LookupError, TypeError, UnicodeError):
+        # ``encode`` can raise ``LookupError`` for unknown encodings and generic
+        # ``UnicodeError`` subclasses (e.g., ``UnicodeEncodeError``) when the
+        # target codec lacks emoji support. ``TypeError`` guards against streams
+        # exposing non-string ``encoding`` attributes. Fallback to ASCII in all
+        # cases so printing never propagates encoding failures to callers.
+        return ASCII_SUCCESS_BANNER
+    return SUCCESS_BANNER
 
 
 class UnexpectedExecutableError(ValueError):
@@ -562,7 +609,7 @@ async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
                 all_success = False
             print(f"<== {path}")
         if all_success:
-            print(SUCCESS_BANNER, flush=True)
+            print(resolve_success_banner(sys.stdout), flush=True)
         return 0 if all_success else 1
 
 
