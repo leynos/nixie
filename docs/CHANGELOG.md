@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Diagram validation now runs concurrently across and within files with a
+  bounded global worker limit. Output remains deterministic and ordered by file
+  and diagram position.
+- Added `--max-concurrency` to bound concurrent diagram checks. The configured
+  value is clamped to `max(1, cpu_count - 1)`.
+- Minimum supported Python version is now 3.14.
 - `--verbose` now sets the `nixie.cli` logger to INFO, logging the underlying
    `mermaid-cli` commands. The `render_block(verbose=...)` parameter is
    deprecated and has no effect; configure the `nixie.cli` logger directly

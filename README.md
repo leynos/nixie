@@ -14,7 +14,7 @@
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.14+
 - Node.js with `npx` or Bun with `bun x --bun` and `@mermaid-js/mermaid-cli`
 
 ## Installation
@@ -43,12 +43,14 @@ uv sync --include dev
 ## Usage
 
 ```bash
-nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION] [FILE ...]
+nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION]
+      [--max-concurrency N] [FILE ...]
 ```
 
-Diagrams are processed sequentially within each file to keep output stable.
-Files are checked concurrently, but their buffered output is written between the
-`==>` and `<==` markers in the order provided.
+Diagram checks are scheduled concurrently across and within files using a
+global worker limit. Output remains deterministic: file boundaries and diagram
+markers are emitted in the order files and diagrams appear in the input.
+`--max-concurrency` is clamped to `max(1, cpu_count - 1)`.
 Paths can be files or directories. If no files are provided, nixie searches the
 current working directory for Markdown files, excluding paths matched by
 `.gitignore` in that directory. Discovery includes files with the `.md`
@@ -71,6 +73,7 @@ to also pass `--no-sandbox` to Chromium.
 `--mermaid-version` selects the `@mermaid-js/mermaid-cli` version when nixie
 launches `npx` or `bun`. The default is `latest`, and the flag is ignored when
 `mmdc` is found on disk.
+`--max-concurrency` bounds the number of simultaneous `mermaid-cli` processes.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed

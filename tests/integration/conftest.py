@@ -1,15 +1,19 @@
 """Common fixtures for integration tests."""
 
-import sys
-from pathlib import Path
+from __future__ import annotations
+
+import typing as typ
 from unittest.mock import AsyncMock
 
 import pytest
 
+if typ.TYPE_CHECKING:
+    from pathlib import Path
+
 
 @pytest.fixture
 def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
-    """Replace ``render_block`` with a stub for predictable results."""
+    """Replace ``_render_diagram`` with a stub for predictable results."""
 
     async def side_effect(
         block: str,
@@ -17,15 +21,18 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         cfg_path: Path | None,
         path: Path,
         idx: int,
-        timeout: float = 30.0,
+        timeout: float,
         mermaid_version: str = "latest",
-    ) -> bool:
+    ) -> None:
+        _ = timeout
         _ = mermaid_version
+        _ = tmpdir
+        _ = cfg_path
+        _ = path
+        _ = idx
         if "invalid" in block.lower():
-            print("Parse error on line 1: INVALID", file=sys.stderr)
-            return False
-        return True
+            raise RuntimeError("Parse error on line 1: INVALID")
 
     mock = AsyncMock(side_effect=side_effect)
-    monkeypatch.setattr("nixie.cli.render_block", mock)
+    monkeypatch.setattr("nixie.cli._render_diagram", mock)
     return mock

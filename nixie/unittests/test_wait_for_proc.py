@@ -37,4 +37,4 @@ async def test_wait_for_proc_handles_asyncio_timeout_error(tmp_path: Path) -> No
     )
     success, stderr = await wait_for_proc(proc, tmp_path / "dummy.md", 1, timeout=0.01)
     assert not success
-    assert stderr == b""
+    assert b"diagram 1 timed out" in stderr

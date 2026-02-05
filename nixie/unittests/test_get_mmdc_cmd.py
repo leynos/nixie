@@ -1,11 +1,16 @@
 """Unit tests for :mod:`nixie.cli.get_mmdc_cmd`."""
 
+from __future__ import annotations
+
 import shutil
-from pathlib import Path
+import typing as typ
 
 import pytest
 
 from nixie.cli import NoNodeEnvironmentAvailableError, get_mmdc_cmd
+
+if typ.TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.fixture

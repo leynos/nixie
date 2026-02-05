@@ -32,8 +32,10 @@ def test_cli_scans_cwd_when_no_args(
         *,
         no_sandbox: bool = False,
         mermaid_version: str = "latest",
+        max_concurrency: int | None = None,
     ) -> int:
         _ = mermaid_version
+        _ = max_concurrency
         captured.extend(paths)
         return 0
 
@@ -44,7 +46,7 @@ def test_cli_scans_cwd_when_no_args(
     with pytest.raises(SystemExit) as excinfo:
         cli_module.cli()
 
-    exc = typ.cast("SystemExit", excinfo.value)
+    exc = excinfo.value
     assert exc.code == 0, "cli() must exit with code 0 when run without arguments"
     assert captured == [keep], (
         "cli() must pass exactly the discovered Markdown file(s) to main()"
@@ -64,9 +66,11 @@ def test_cli_handles_empty_directory(
         *,
         no_sandbox: bool = False,
         mermaid_version: str = "latest",
+        max_concurrency: int | None = None,
     ) -> int:
         nonlocal called
         _ = mermaid_version
+        _ = max_concurrency
         called = True
         return 0
 
@@ -77,7 +81,7 @@ def test_cli_handles_empty_directory(
     with pytest.raises(SystemExit) as excinfo:
         cli_module.cli()
 
-    exc = typ.cast("SystemExit", excinfo.value)
+    exc = excinfo.value
     assert exc.code == 0, (
         "cli() must exit with code 0 when no Markdown files are present"
     )
@@ -100,9 +104,11 @@ def test_cli_accepts_no_sandbox_flag(
         *,
         no_sandbox: bool = False,
         mermaid_version: str = "latest",
+        max_concurrency: int | None = None,
     ) -> int:
         nonlocal received_no_sandbox
         _ = mermaid_version
+        _ = max_concurrency
         received_no_sandbox = no_sandbox
         return 0
 
@@ -113,7 +119,7 @@ def test_cli_accepts_no_sandbox_flag(
     with pytest.raises(SystemExit) as excinfo:
         cli_module.cli()
 
-    exc = typ.cast("SystemExit", excinfo.value)
+    exc = excinfo.value
     assert exc.code == 0, "cli() must exit with code 0 when --no-sandbox is set"
     assert received_no_sandbox is True, (
         "cli() must pass no_sandbox=True to main() when --no-sandbox is used"
