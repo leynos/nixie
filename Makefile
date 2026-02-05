@@ -4,8 +4,8 @@ RUFF ?= uv run ruff
 TY ?= uv run ty
 PYTEST ?= uv run pytest
 BUILD_JOBS ?=
-MDLINT ?= markdownlint
-NIXIE ?= nixie
+MDLINT ?= npx --yes markdownlint-cli
+NIXIE ?= uv run nixie
 HYPERFINE ?= hyperfine
 BENCH_DOCS ?= tests/fixtures/benchmark_sample
 
