@@ -4,7 +4,7 @@ This ExecPlan is a living document. The sections `Constraints`, `Tolerances`,
 `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`, and
 `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Purpose / Big Picture
 
@@ -84,7 +84,8 @@ documents.
 - [x] 2026-02-05 23:24 UTC: Ran `make benchmark` on
       `tests/fixtures/benchmark_sample`; bounded-concurrency mode measured
       4.41x faster than `--max-concurrency 1` in this environment.
-- [ ] Commit atomic changes.
+- [x] 2026-02-05 23:28 UTC: Committed implementation and test/doc updates in
+      `b178161`.
 
 ## Surprises & Discoveries
 
@@ -178,4 +179,21 @@ Expected observable results:
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Nixie now runs diagram validation concurrently across and within files while
+preserving deterministic marker order. A bounded worker cap is enforced through
+`--max-concurrency` clamped to `max(1, cpu_count - 1)`.
+
+Coverage now includes:
+
+- unit tests for concurrency resolution and timeout payload behavior
+- integration tests for deterministic ordering under out-of-order completion
+- pytest-bdd scenario coverage for ordered streaming and failure diagnostics
+
+Benchmarking support is now part of the repository workflow via
+`make benchmark` (hyperfine). In this environment, the benchmark sample corpus
+showed a 4.41x speedup for bounded-concurrency mode vs serial mode.
+
+The largest practical lesson: copied external markdown corpora are useful for
+realistic benchmarking but too large for routine markdown style gates. Project
+markdown gates were scoped to tracked project docs while excluding benchmark
+fixture corpora.
