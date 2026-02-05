@@ -1,9 +1,12 @@
 """Integration tests for the CLI's high-level behaviour."""
 
+from __future__ import annotations
+
+import asyncio
 import sys
+import typing as typ
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -14,6 +17,9 @@ from nixie.cli import (
     main,
     resolve_success_banner,
 )
+
+if typ.TYPE_CHECKING:
+    from unittest.mock import AsyncMock
 
 
 class SimulatedProcessingError(ValueError):
@@ -218,40 +224,46 @@ async def test_cli_reports_unknown_schema(
 
 
 @pytest.mark.asyncio
+async def test_cli_passes_mermaid_version(
+    tmp_path: Path,
+    stub_render: AsyncMock,
+) -> None:
+    """Forward the requested mermaid-cli version to the renderer."""
+    file = tmp_path / "diagram.md"
+    file.write_text("```mermaid\nA-->B\n```")
+
+    exit_code = await main([file], mermaid_version="10.9.1")
+
+    assert exit_code == 0
+    assert stub_render.await_count == 1
+    await_args = stub_render.await_args
+    assert await_args is not None
+    assert await_args.kwargs["mermaid_version"] == "10.9.1"
+
+
+@pytest.mark.asyncio
 async def test_cli_handles_file_processing_error(
     tmp_path: Path,
     stub_render: AsyncMock,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Handle exceptions from ``check_file`` without halting processing."""
+    """Handle file preparation failures without halting processing."""
     file_a = tmp_path / "a.md"
     file_b = tmp_path / "b.md"
     file_a.write_text("```mermaid\nA-->B\n```")
-    file_b.write_text("```mermaid\nA-->B\n```")
+    file_b.write_text("TRIGGER_PARSE_BLOCKS_ERROR")
 
     from nixie import cli as cli_module
 
-    original_check_file = cli_module.check_file
+    original_parse_blocks = cli_module.parse_blocks
 
-    async def mock_check_file(
-        path: Path,
-        cfg_path: Path | None,
-        *args: object,
-        **kwargs: object,
-    ) -> bool:
-        if path == file_b:
+    def mock_parse_blocks(text: str) -> list[cli_module.Diagram]:
+        if "TRIGGER_PARSE_BLOCKS_ERROR" in text:
+            raise SimulatedProcessingError
+        return original_parse_blocks(text)
 
-            def trigger() -> None:
-                raise SimulatedProcessingError
-
-            try:
-                trigger()
-            except SimulatedProcessingError as exc:
-                raise exc.__class__ from exc
-        return await original_check_file(path, cfg_path, *args, **kwargs)
-
-    monkeypatch.setattr(cli_module, "check_file", mock_check_file)
+    monkeypatch.setattr(cli_module, "parse_blocks", mock_parse_blocks)
 
     exit_code = await main([file_a, file_b])
     captured = capsys.readouterr()
@@ -274,6 +286,134 @@ async def test_cli_handles_file_processing_error(
     end_markers = [line for line in lines if line.startswith("<-- line ")]
     assert len(start_markers) == 1, "Expected one start marker despite the failure"
     assert len(end_markers) == 1, "Expected one end marker despite the failure"
+
+
+@pytest.mark.asyncio
+async def test_cli_preserves_deterministic_order_with_out_of_order_completions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Emit markers in stable order even when tasks complete out of order."""
+    file_a = tmp_path / "a.md"
+    file_b = tmp_path / "b.md"
+    file_a.write_text(
+        "\n".join(
+            [
+                "```mermaid",
+                "sequenceDiagram %% slowA",
+                "A->B",
+                "```",
+                "",
+                "```mermaid",
+                "classDiagram %% fastA",
+                "A--|>B",
+                "```",
+            ]
+        )
+    )
+    file_b.write_text(
+        "\n".join(
+            [
+                "```mermaid",
+                "flowchart %% fastB",
+                "A-->B",
+                "```",
+            ]
+        )
+    )
+    completion_order: list[str] = []
+
+    async def fake_render(
+        block: str,
+        _tmpdir: Path,
+        _cfg_path: Path | None,
+        _path: Path,
+        _idx: int,
+        timeout: float,
+        mermaid_version: str = "latest",
+    ) -> None:
+        _ = timeout
+        _ = mermaid_version
+        if "slowA" in block:
+            await asyncio.sleep(0.2)
+            completion_order.append("a1")
+            return
+        if "fastA" in block:
+            await asyncio.sleep(0.01)
+            completion_order.append("a2")
+            return
+        await asyncio.sleep(0.02)
+        completion_order.append("b1")
+
+    monkeypatch.setattr("nixie.cli._render_diagram", fake_render)
+
+    exit_code = await main([file_a, file_b], max_concurrency=3)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert completion_order == ["a2", "b1", "a1"]
+    lines = captured.out.splitlines()
+    expected_markers = [
+        f"==> {file_a}",
+        "--> line 2: sequenceDiagram",
+        "<-- line 4: sequenceDiagram",
+        "--> line 7: classDiagram",
+        "<-- line 9: classDiagram",
+        f"<== {file_a}",
+        f"==> {file_b}",
+        "--> line 2: flowchart",
+        "<-- line 4: flowchart",
+        f"<== {file_b}",
+    ]
+    positions = [lines.index(marker) for marker in expected_markers]
+    assert positions == sorted(positions)
+
+
+@pytest.mark.asyncio
+async def test_cli_caps_concurrency_to_cpu_count_minus_one(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Never run more than ``cpu_count - 1`` diagram checks concurrently."""
+    file = tmp_path / "many.md"
+    file.write_text(
+        "\n\n".join(
+            [
+                "```mermaid\nsequenceDiagram %% d1\nA->B\n```",
+                "```mermaid\nsequenceDiagram %% d2\nA->B\n```",
+                "```mermaid\nsequenceDiagram %% d3\nA->B\n```",
+                "```mermaid\nsequenceDiagram %% d4\nA->B\n```",
+            ]
+        )
+    )
+    active = 0
+    peak_active = 0
+
+    async def fake_render(
+        _block: str,
+        _tmpdir: Path,
+        _cfg_path: Path | None,
+        _path: Path,
+        _idx: int,
+        timeout: float,
+        mermaid_version: str = "latest",
+    ) -> None:
+        nonlocal active, peak_active
+        _ = timeout
+        _ = mermaid_version
+        active += 1
+        peak_active = max(peak_active, active)
+        await asyncio.sleep(0.05)
+        active -= 1
+
+    monkeypatch.setattr("nixie.cli._render_diagram", fake_render)
+    monkeypatch.setattr("nixie.cli.os.cpu_count", lambda: 3)
+
+    exit_code = await main([file], max_concurrency=99)
+
+    assert exit_code == 0
+    assert peak_active <= 2
 
 
 @pytest.mark.parametrize(

@@ -2,12 +2,12 @@
 """Command-line interface for validating Mermaid diagrams in Markdown files.
 
 This module parses Markdown files, extracts Mermaid blocks, and validates them
-with the `mermaid-cli` tool. Rendering occurs sequentially to keep output
-bracketed and stable. The CLI falls back between `mmdc`, `npx`, and `bun`
-executables.
+with the `mermaid-cli` tool. Rendering is scheduled concurrently with a bounded
+worker limit while output is emitted in deterministic file/diagram order. The
+CLI falls back between `mmdc`, `npx`, and `bun` executables.
 
 Usage:
-    nixie [--verbose] [FILE ...]
+    nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION] [FILE ...]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
 underlying ``mermaid-cli`` commands.
@@ -105,6 +105,8 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
 
 SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
 ASCII_SUCCESS_BANNER: typ.Final[str] = "All diagrams validated successfully!"
+DEFAULT_MERMAID_VERSION: typ.Final[str] = "latest"
+MERMAID_CLI_PACKAGE: typ.Final[str] = "@mermaid-js/mermaid-cli"
 
 
 def resolve_success_banner(stream: _EncodingAwareStream | TextIO | None) -> str:
@@ -185,6 +187,37 @@ class Diagram:
 UNKNOWN_SCHEMA: typ.Final[str] = "<unknown>"
 
 
+@dc.dataclass(slots=True, frozen=True)
+class DiagramTask:
+    """Task metadata for validating a single diagram."""
+
+    ordinal: int
+    file_index: int
+    path: Path
+    diagram_index: int
+    diagram: Diagram
+    tmpdir: Path
+
+
+@dc.dataclass(slots=True, frozen=True)
+class DiagramTaskResult:
+    """Result payload produced by a completed diagram task."""
+
+    task: DiagramTask
+    success: bool
+    stderr_message: str | None = None
+
+
+@dc.dataclass(slots=True, frozen=True)
+class FileValidationPlan:
+    """Work plan and preparation status for one markdown file."""
+
+    index: int
+    path: Path
+    diagram_ordinals: tuple[int, ...]
+    preparation_error: str | None = None
+
+
 def _extract_schema(lines: list[str]) -> str:
     """Return the schema name from ``lines``.
 
@@ -220,7 +253,7 @@ def parse_blocks(text: str) -> list[Diagram]:
 
 
 @contextmanager
-def diagram_markers(diagram: Diagram) -> typ.Generator[None, None, None]:
+def diagram_markers(diagram: Diagram) -> typ.Generator[None]:
     """Print markers bracketing ``diagram`` processing."""
     print(f"--> line {diagram.line_start}: {diagram.schema}", flush=True)
     try:
@@ -282,11 +315,28 @@ def collect_markdown_files(paths: cabc.Iterable[Path]) -> cabc.Generator[Path]:
             yield p
 
 
+def resolve_max_concurrency(
+    requested_max_concurrency: int | None,
+    *,
+    cpu_count: int | None = None,
+) -> int:
+    """Return bounded worker concurrency.
+
+    The automatic ceiling is ``max(1, cpu_count - 1)``. Explicit requests are
+    clamped to that ceiling to ensure process creation remains bounded.
+    """
+    detected_cores = cpu_count if cpu_count is not None else os.cpu_count()
+    limit = max(1, (detected_cores or 1) - 1)
+    if requested_max_concurrency is None:
+        return limit
+    return max(1, min(requested_max_concurrency, limit))
+
+
 @contextmanager
 def create_puppeteer_config(
     *,
     force_no_sandbox: bool = False,
-) -> typ.Generator[Path, None, None]:
+) -> typ.Generator[Path]:
     """Yield a temporary Puppeteer config ``Path`` and remove it on exit.
 
     ``mmdc`` relies on Chromium, which operates more reliably with a handful of
@@ -310,14 +360,27 @@ def create_puppeteer_config(
             path.unlink(missing_ok=True)
 
 
-def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
+def _resolve_mermaid_cli_package(version: str) -> str:
+    """Return the mermaid-cli package spec for ``version``."""
+    normalized = version.strip()
+    if not normalized:
+        normalized = DEFAULT_MERMAID_VERSION
+    return f"{MERMAID_CLI_PACKAGE}@{normalized}"
+
+
+def get_mmdc_cmd(
+    mmd: Path,
+    svg: Path,
+    cfg_path: Path | None,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
+) -> list[str]:
     """Return the command to run mermaid-cli.
 
     The Mermaid CLI can be installed in several common locations. We first
     check these explicit paths so that users do not need to modify ``PATH``
     just to run ``nixie``. Only if ``mmdc`` is not found do we fall back to
-    ``bun`` or ``npx``. Absolute paths to ``mmdc`` are valid and are invoked
-    directly.
+    ``bun`` or ``npx``, using the requested mermaid-cli version. Absolute paths
+    to ``mmdc`` are valid and are invoked directly.
     """
     home = Path.home()
     cwd = Path.cwd()
@@ -345,9 +408,9 @@ def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
     name = Path(cli).name
     match name:
         case "npx":
-            cmd = [cli, "--yes", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "--yes", _resolve_mermaid_cli_package(mermaid_version)]
         case "bun":
-            cmd = [cli, "x", "--bun", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "x", "--bun", _resolve_mermaid_cli_package(mermaid_version)]
         case _:
             cmd = [cli]
     if cfg_path is not None:
@@ -378,8 +441,8 @@ async def wait_for_proc(
     except asyncio.TimeoutError:  # noqa: UP041  # TODO(leynos): remove once ruff issue 8565 is fixed https://github.com/astral-sh/ruff/issues/8565
         proc.kill()
         await proc.wait()
-        print(f"{path}: diagram {idx} timed out", file=sys.stderr)
-        return (False, b"")
+        timeout_message = f"{path}: diagram {idx} timed out"
+        return (False, timeout_message.encode("utf-8"))
     success = proc.returncode == 0
     return success, stderr
 
@@ -437,6 +500,7 @@ async def _render_diagram(
     path: Path,
     idx: int,
     timeout: float,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
 ) -> None:
     """Write ``block`` to disk and invoke ``mermaid-cli``.
 
@@ -469,7 +533,7 @@ async def _render_diagram(
     svg = mmd.with_suffix(".svg")
     mmd.write_text(block)
 
-    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    cmd = get_mmdc_cmd(mmd, svg, cfg_path, mermaid_version=mermaid_version)
     LOGGER.info(shlex.join(cmd))
     success, stderr = await _run_mermaid_cli(cmd, path, idx, timeout)
     if not success:
@@ -489,6 +553,7 @@ async def render_block(
     idx: int,
     *,
     timeout: float = 30.0,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
     verbose: bool | None = None,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
@@ -527,7 +592,15 @@ async def render_block(
             stacklevel=2,
         )
     try:
-        await _render_diagram(block, tmpdir, cfg_path, path, idx, timeout)
+        await _render_diagram(
+            block,
+            tmpdir,
+            cfg_path,
+            path,
+            idx,
+            timeout,
+            mermaid_version=mermaid_version,
+        )
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
         LOGGER.exception(
@@ -558,9 +631,116 @@ async def render_block(
     return False
 
 
+def _stderr_message_from_exception(exc: Exception) -> str:
+    """Return deterministic stderr text for a diagram execution failure."""
+    if isinstance(exc, FileNotFoundError):
+        cli = exc.filename or "mmdc"
+        return (
+            f"Error: '{cli}' not found. Install Node.js with npx or Bun to use "
+            "@mermaid-js/mermaid-cli."
+        )
+    if isinstance(exc, NoNodeEnvironmentAvailableError):
+        return (
+            "No supported node environment found. Install mmdc directly, or install "
+            "Node.js (npx) or Bun to use @mermaid-js/mermaid-cli."
+        )
+    return str(exc)
+
+
+async def _run_diagram_task(
+    task: DiagramTask,
+    cfg_path: Path | None,
+    semaphore: asyncio.Semaphore,
+    *,
+    mermaid_version: str,
+) -> DiagramTaskResult:
+    """Run a single diagram task under bounded concurrency."""
+    async with semaphore:
+        try:
+            await _render_diagram(
+                task.diagram.source,
+                task.tmpdir,
+                cfg_path,
+                task.path,
+                task.diagram_index,
+                30.0,
+                mermaid_version=mermaid_version,
+            )
+        except Exception as exc:
+            if isinstance(exc, KeyboardInterrupt | SystemExit):
+                raise
+            return DiagramTaskResult(
+                task=task,
+                success=False,
+                stderr_message=_stderr_message_from_exception(exc),
+            )
+    return DiagramTaskResult(task=task, success=True)
+
+
+def _emit_diagram_result(result: DiagramTaskResult) -> None:
+    """Emit deterministic output for a completed diagram result."""
+    diagram = result.task.diagram
+    print(f"--> line {diagram.line_start}: {diagram.schema}", flush=True)
+    if result.stderr_message:
+        print(result.stderr_message, file=sys.stderr, flush=True)
+    print(f"<-- line {diagram.line_end}: {diagram.schema}", flush=True)
+
+
+def _prepare_validation_work(
+    paths: list[Path],
+    *,
+    temp_roots: list[str],
+) -> tuple[list[FileValidationPlan], list[DiagramTask]]:
+    """Prepare file and diagram work plans with stable global ordinals."""
+    file_plans: list[FileValidationPlan] = []
+    diagram_tasks: list[DiagramTask] = []
+    next_ordinal = 0
+
+    for file_index, path in enumerate(paths):
+        try:
+            diagrams = parse_blocks(path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001  # unexpected file-level failure
+            file_plans.append(
+                FileValidationPlan(
+                    index=file_index,
+                    path=path,
+                    diagram_ordinals=(),
+                    preparation_error=f"Validation task raised an exception: {exc}",
+                )
+            )
+            continue
+
+        diagram_ordinals: list[int] = []
+        if diagrams:
+            tmpdir = Path(temp_roots[file_index])
+            for diagram_index, diagram in enumerate(diagrams, 1):
+                ordinal = next_ordinal
+                next_ordinal += 1
+                diagram_ordinals.append(ordinal)
+                diagram_tasks.append(
+                    DiagramTask(
+                        ordinal=ordinal,
+                        file_index=file_index,
+                        path=path,
+                        diagram_index=diagram_index,
+                        diagram=diagram,
+                        tmpdir=tmpdir,
+                    )
+                )
+        file_plans.append(
+            FileValidationPlan(
+                index=file_index,
+                path=path,
+                diagram_ordinals=tuple(diagram_ordinals),
+            )
+        )
+    return file_plans, diagram_tasks
+
+
 async def check_file(
     path: Path,
     cfg_path: Path | None,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
 ) -> bool:
     """Check a single file for Mermaid diagrams."""
     diagrams = parse_blocks(path.read_text(encoding="utf-8"))
@@ -579,6 +759,7 @@ async def check_file(
                         cfg_path,
                         path,
                         idx,
+                        mermaid_version=mermaid_version,
                     )
                 except Exception:  # pragma: no cover - unexpected
                     LOGGER.exception("%s: unexpected error in diagram %s", path, idx)
@@ -588,26 +769,73 @@ async def check_file(
     return all_success
 
 
-async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
+async def main(
+    paths: cabc.Iterable[Path],
+    *,
+    no_sandbox: bool = False,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
+    max_concurrency: int | None = None,
+) -> int:
     """Run the CLI entry point.
 
-    Processes files sequentially to keep output stable and bracketed. The
-    ``--no-sandbox`` flag is passed through to Puppeteer when requested or
-    when running as root.
+    Diagram checks run concurrently across and within files using a global
+    bounded worker pool. Output remains deterministic and bracketed in input
+    file order and in-source diagram order.
     """
-    with create_puppeteer_config(force_no_sandbox=no_sandbox) as cfg_path:
+    with (
+        create_puppeteer_config(force_no_sandbox=no_sandbox) as cfg_path,
+        tempfile.TemporaryDirectory() as temp_root,
+    ):
+        all_paths = list(collect_markdown_files(paths))
+        temp_roots = [str(Path(temp_root) / str(i)) for i in range(len(all_paths))]
+        for root in temp_roots:
+            Path(root).mkdir(parents=True, exist_ok=True)
+
+        file_plans, diagram_tasks = _prepare_validation_work(
+            all_paths,
+            temp_roots=temp_roots,
+        )
+
+        semaphore = asyncio.Semaphore(resolve_max_concurrency(max_concurrency))
+        running_tasks = [
+            asyncio.create_task(
+                _run_diagram_task(
+                    task,
+                    cfg_path,
+                    semaphore,
+                    mermaid_version=mermaid_version,
+                )
+            )
+            for task in diagram_tasks
+        ]
+        completions: typ.Iterator[typ.Awaitable[DiagramTaskResult]] = iter(
+            asyncio.as_completed(running_tasks)
+        )
+        pending_results: dict[int, DiagramTaskResult] = {}
         all_success = True
-        for path in collect_markdown_files(paths):
-            print(f"==> {path}")
+
+        for file_plan in file_plans:
+            print(f"==> {file_plan.path}")
             try:
-                success = await check_file(path, cfg_path)
+                if file_plan.preparation_error:
+                    all_success = False
+                    print(file_plan.preparation_error)
+                for ordinal in file_plan.diagram_ordinals:
+                    while ordinal not in pending_results:
+                        next_task = next(completions)
+                        completed = await next_task
+                        pending_results[completed.task.ordinal] = completed
+                    result = pending_results.pop(ordinal)
+                    _emit_diagram_result(result)
+                    if not result.success:
+                        all_success = False
             except Exception as exc:  # noqa: BLE001  pragma: no cover - unexpected
                 # Catch unexpected errors so the CLI can continue processing.
                 print(f"Validation task raised an exception: {exc}")
-                success = False
-            if not success:
                 all_success = False
-            print(f"<== {path}")
+            print(f"<== {file_plan.path}")
+        if running_tasks:
+            await asyncio.gather(*running_tasks, return_exceptions=True)
         if all_success:
             print(resolve_success_banner(sys.stdout), flush=True)
         return 0 if all_success else 1
@@ -641,6 +869,23 @@ def parse_args() -> argparse.Namespace:
             "running as root)"
         ),
     )
+    parser.add_argument(
+        "--mermaid-version",
+        default=DEFAULT_MERMAID_VERSION,
+        help=(
+            "Version of @mermaid-js/mermaid-cli to use when launching via npx or bun "
+            "(default: latest)."
+        ),
+    )
+    parser.add_argument(
+        "--max-concurrency",
+        type=int,
+        default=None,
+        help=(
+            "Maximum concurrent diagram checks. Values are clamped to "
+            "max(1, cpu_count - 1)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -661,7 +906,16 @@ def cli() -> None:
         if not paths:
             print("No Markdown files found.", file=sys.stderr)
             sys.exit(0)
-    sys.exit(asyncio.run(main(paths, no_sandbox=parsed.no_sandbox)))
+    sys.exit(
+        asyncio.run(
+            main(
+                paths,
+                no_sandbox=parsed.no_sandbox,
+                mermaid_version=parsed.mermaid_version,
+                max_concurrency=parsed.max_concurrency,
+            )
+        )
+    )
 
 
 if __name__ == "__main__":

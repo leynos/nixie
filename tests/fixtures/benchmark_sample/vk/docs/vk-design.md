@@ -1,0 +1,231 @@
+# vk Design
+
+This document describes the design and functionality of the `vk` command line
+application from user experience and architecture perspectives.
+
+## Overview
+
+`vk` (View Komments) is a CLI tool for inspecting unresolved GitHub pull
+request comments. Users supply a pull request URL or number, and `vk` fetches
+the associated review threads through the GitHub GraphQL API. Each thread is
+printed with syntax highlighting using Termimad. Diffs appear once per thread,
+even when multiple comments reference the same code.
+
+## User Experience
+
+- **Simple invocation**: `vk pr <url-or-number>` prints unresolved comments with
+  colourful formatting.
+- **Targeted review**: append file paths after the pull request to show only
+  comments for those files.
+- **Focused thread**: include a `#discussion_r<ID>` fragment in the pull
+  request reference to view a single thread starting from that comment.
+- **Fragment semantics**: when a `#discussion_r<ID>` fragment is supplied,
+  file filters are ignored and both resolved and unresolved threads are
+  searched. If the discussion lacks comments, the tool prints an explicit
+  message.
+- **Permalink format**: GitHub review comment links always end with a
+  `#discussion_r<ID>` fragment as documented in GitHub's guide to linking to
+  pull request comments.[^github-link]
+- **Concise output**: Each thread shows the diff once followed by all comments,
+  reducing clutter when multiple remarks target the same line.
+- **Outdated threads**: hidden by default; pass `-o` (`--show-outdated`) to
+  include them when needed.
+- **Error visibility**: Failures encountered while printing a thread are logged
+  to stderr instead of being silently discarded.
+- **Banners**: Output opens with a `code review` banner
+  (`========== code review ==========`) and ends with an `end of code review`
+  banner (`========== end of code review ==========`). A `review comments`
+  banner (`========== review comments ==========`) separates reviewer summaries
+  from the printed threads.
+
+- **Resolve threads**: `vk resolve <comment-ref>` resolves the thread via the
+  `resolveReviewThread` GraphQL mutation. When compiled with the
+  `unstable-rest-resolve` feature and a reply message is supplied (`-m`), it
+  posts a reply via the REST API before resolving. If the REST reply fails the
+  command aborts without calling `resolveReviewThread`, does not retry, and
+  does not apply backoff; missing comments return a warning and continue. The
+  resolver pages through the pull request's `reviewComments` connection using
+  typed `serde` structures (see `src/resolve/graphql.rs`), matching the
+  requested `databaseId` and extracting the owning thread identifier.
+  Pagination detects repeated or non-advancing cursors and aborts with an error
+  rather than looping indefinitely. This subcommand requires `GITHUB_TOKEN`
+  with sufficient scopes (resolving threads and posting replies require
+  `repo`); if absent, it aborts rather than performing anonymous calls.
+  Resolution steps emit debug spans via `tracing` to aid diagnostics; the
+  binary initialises `tracing_subscriber::fmt()` with an environment filter, so
+  running with `RUST_LOG=vk=debug` (or a more specific filter) surfaces the
+  spans on stderr.
+- **Configurable timeouts**: `--http-timeout` and `--connect-timeout`
+  override the default 10 s request and 5 s connection limits for REST replies.
+
+[^github-link]: GitHub Docs. "Linking to a pull request comment."
+    <https://docs.github.com/en/articles/linking-to-a-pull-request-comment>
+
+## Architecture
+
+The code centres on three printing helpers:
+
+1. `write_comment_body` formats a single comment body to any `Write`
+   implementation.
+2. `write_comment` includes the diff for the first comment in a thread.
+3. `write_thread` iterates over a thread and prints each comment body in turn.
+
+`run_pr` fetches the latest review from each reviewer and all unresolved
+threads. The helper `fetch_review_threads_with_options` accepts a
+`FetchOptions` struct and skips outdated threads before comment pagination
+unless `--show-outdated` is set, avoiding unnecessary requests. After printing
+a `code review` banner and a summary, the reviews are printed, followed by a
+`review comments` banner and the individual threads. If standard output is
+closed (broken pipe), the run terminates early. The comments banner is only
+emitted when threads will be printed; otherwise it is omitted. Other errors
+from `print_thread` and banner printing are surfaced via logging. Once all
+threads have been printed, a final banner reading `end of code review` confirms
+completion. Review threads missing the GraphQL `isOutdated` field are treated
+as current (client-side default) to preserve legacy fixture compatibility.
+
+### CLI arguments
+
+Runtime flags and subcommand options live in
+[src/cli_args.rs](../src/cli_args.rs). Keeping these structures in a dedicated
+module isolates the lint expectations generated by `clap` and keeps `main.rs`
+focused on orchestrating API calls and printing results. The public
+`GlobalArgs`, `PrArgs`, and `IssueArgs` structures are fully documented so
+their purpose and merge semantics are clear to downstream users. `PrArgs`
+accepts an optional list of file paths that limits output to matching comments.
+When the reference includes a `#discussion_r<ID>` fragment, the command fetches
+all threads, including resolved ones, and selects the one containing the
+specified comment, trimming the thread so printing begins with that entry.
+
+Networking logic resides in [src/api/mod.rs](../src/api/mod.rs). It exposes the
+`GraphQLClient` alongside `run_query`, `fetch_page`, and `paginate_all` helpers
+used throughout the application. The client employs lightweight `Token`,
+`Endpoint`, and `Query` types to avoid parameter mix-ups and accepts borrowed
+cursors via `Cow<'_, str>` to prevent needless allocation. For example:
+
+```rust
+fetch_page("query", Some(Cow::Borrowed("c1")), vars).await?;
+fetch_page("query", Some(Cow::Owned(String::from("c2"))), vars).await?;
+```
+
+`run_query` retries transient request failures with `backon`'s jittered
+exponential backoff, attempting each query up to five times. `fetch_page`
+merges an optional cursor into a variables map and rejects non-object input
+upfront. The `paginate_all` helper loops until `PageInfo` indicates completion,
+discarding any items fetched before an error occurs.
+
+## Utility
+
+Splitting the printing logic into reusable `write_*` functions enables testing
+without capturing stdout. The behavioural test `write_thread_emits_diff_once`
+verifies that diffs appear only once per thread.
+
+Comment bodies can include raw HTML. The helper `collapse_details` uses
+`html5ever` to parse each comment and collapse root `<details>` blocks to their
+`<summary>` text. Nested blocks are discarded to keep the output concise.
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant Main
+    participant MadSkin
+    participant ReviewThread
+    participant ReviewComment
+
+    Main->>ReviewThread: for each thread
+    Main->>MadSkin: print_thread(&skin, &thread)
+    MadSkin->>ReviewComment: get first comment
+    MadSkin->>MadSkin: print_comment(skin, first)
+    MadSkin->>ReviewComment: print_comment_body(skin, first)
+    MadSkin->>Main: print first.url
+    MadSkin->>ReviewComment: for remaining comments
+    MadSkin->>MadSkin: print_comment_body(skin, c)
+    MadSkin->>Main: print c.url
+```
+
+## Class Diagram
+
+The diagram below outlines the relationships between review threads, comments,
+and related page information as modelled in the GraphQL schema.
+
+```mermaid
+classDiagram
+    class ReviewThread {
+        +ID! id
+        +Boolean! isResolved
+        +Boolean isOutdated
+        +CommentConnection! comments
+    }
+    class CommentConnection {
+        +[ReviewComment!]! nodes
+        +PageInfo! pageInfo
+    }
+    class ReviewComment {
+        +String! body
+        +String! diffHunk
+        +Int originalPosition
+        +Int position
+        +String! path
+        +String! url
+        +User author
+    }
+    class PageInfo {
+        +Boolean! hasNextPage
+        +String endCursor
+    }
+    class User {
+        +String! login
+    }
+    ReviewThread "1" --> "1" CommentConnection : comments
+    CommentConnection "1" --> "0..*" ReviewComment : nodes
+    ReviewComment "0..*" --> "0..1" User : author
+    CommentConnection "1" --> "1" PageInfo : pageInfo
+
+    class ReviewThreadsService {
+        +fetchReviewThreads(client: GraphQLClient, repo: String, number: Int): [ReviewThread!]!
+    }
+```
+
+## GraphQL Error Handling
+
+GraphQL requests are retried when a network error occurs or the response lacks
+data. Retry behaviour is configurable through `RetryConfig`, covering the
+number of attempts, the base delay for the exponential backoff, and whether to
+apply jitter. By default, the client tries a query up to five times, waiting
+`200ms * 2^attempt` with full jitter supplied by `backon` so concurrent callers
+spread out as delays grow. Empty responses include the HTTP status, the
+operation name, and a short response-body snippet to aid triage. Error contexts
+also carry a redacted snippet of the request payload, replacing sensitive
+fields such as `token` with `<redacted>`. Because `run_query` only returns
+after a full page has been fetched, `paginate_all` never appends partial
+results, preserving order and avoiding duplicates.
+
+The diagram below illustrates how deserialization errors surface the JSON path
+and a response snippet, helping developers quickly locate schema mismatches.
+
+```mermaid
+sequenceDiagram
+    participant Client as GraphQLClient
+    participant Server as GraphQL API
+    participant Serde as serde_path_to_error
+    Client->>Server: Send GraphQL query
+    Server-->>Client: Return JSON response
+    Client->>Serde: Attempt to deserialize response
+    alt Deserialization fails
+        Serde-->>Client: Return error with path
+        Client-->>Client: Format error with path and snippet
+        Client-->>Caller: Return VkError::BadResponseSerde
+    else Deserialization succeeds
+        Serde-->>Client: Return deserialized object
+        Client-->>Caller: Return object
+    end
+```
+
+## Configuration and features
+
+`vk` reads configuration files using `ortho_config`, which layers values from
+files, environment variables and CLI arguments. JSON5 and YAML formats are
+enabled through the `json5` and `yaml` features on `ortho_config`, which pull
+in the required parsers as transitive dependencies. The REST API base URL
+defaults to `https://api.github.com` but can be overridden with
+`GITHUB_API_URL` for testing.

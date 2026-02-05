@@ -3,12 +3,13 @@ name = "nixie"
 version = "0.1.0"
 description = "Validate Mermaid diagrams in Markdown files"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = ["pathspec>=0.12.1,<1.0"]
 license = "ISC"
 authors = [{ name = "Payton McIntosh", email = "pmcintosh@df12.net" }]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
   "Operating System :: OS Independent",
 ]
 
@@ -18,6 +19,7 @@ dev = [
   "pyright",
   "pytest",
   "pytest-asyncio",
+  "pytest-bdd",
 ]
 
 [project.scripts]

@@ -19,6 +19,7 @@ def test_parse_args_verbose(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "argv", ["nixie", "--verbose", "file.md"])
     parsed = parse_args()
     assert parsed.verbose is True
+    assert parsed.mermaid_version == "latest"
     assert parsed.paths == [Path("file.md")]
 
 
@@ -27,6 +28,17 @@ def test_parse_args_no_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "argv", ["nixie", "--no-sandbox", "file.md"])
     parsed = parse_args()
     assert parsed.no_sandbox is True
+    assert parsed.mermaid_version == "latest"
+    assert parsed.paths == [Path("file.md")]
+
+
+def test_parse_args_mermaid_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Parse the ``--mermaid-version`` flag into the argument namespace."""
+    monkeypatch.setattr(
+        sys, "argv", ["nixie", "--mermaid-version", "10.9.1", "file.md"]
+    )
+    parsed = parse_args()
+    assert parsed.mermaid_version == "10.9.1"
     assert parsed.paths == [Path("file.md")]
 
 
