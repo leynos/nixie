@@ -18,7 +18,9 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         path: Path,
         idx: int,
         timeout: float = 30.0,
+        mermaid_version: str = "latest",
     ) -> bool:
+        _ = mermaid_version
         if "invalid" in block.lower():
             print("Parse error on line 1: INVALID", file=sys.stderr)
             return False

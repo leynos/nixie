@@ -11,6 +11,8 @@
   using those ignore rules (nested `.gitignore` files are ignored).
 - `nixie` searches common install locations for `mmdc` before falling back to
   `bun` or `npx`.
+- `--mermaid-version` controls the `@mermaid-js/mermaid-cli` version used when
+  launching `npx` or `bun` (default: `latest`).
 - `nixie` always passes `--disable-setuid-sandbox`, `--disable-gpu`, and
   `--disable-dev-shm-usage` to Puppeteer. A new `--no-sandbox` flag disables
   Chromium's sandbox when needed and is applied automatically when running as

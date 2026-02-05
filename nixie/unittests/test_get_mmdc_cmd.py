@@ -31,7 +31,12 @@ def test_get_mmdc_cmd_with_bun(
     )
 
     cmd = get_mmdc_cmd(mmd, svg, cfg)
-    assert cmd[:3] == ["/usr/bin/bun", "x", "--bun"]
+    assert cmd[:4] == [
+        "/usr/bin/bun",
+        "x",
+        "--bun",
+        "@mermaid-js/mermaid-cli@latest",
+    ]
 
 
 def test_get_mmdc_cmd_with_npx(
@@ -48,7 +53,24 @@ def test_get_mmdc_cmd_with_npx(
     )
 
     cmd = get_mmdc_cmd(mmd, svg, cfg)
-    assert cmd[:3] == ["/usr/bin/npx", "--yes", "@mermaid-js/mermaid-cli"]
+    assert cmd[:3] == ["/usr/bin/npx", "--yes", "@mermaid-js/mermaid-cli@latest"]
+
+
+def test_get_mmdc_cmd_with_custom_mermaid_version(
+    monkeypatch: pytest.MonkeyPatch,
+    sample_paths: tuple[Path, Path, Path],
+    fake_home_cwd: Path,
+) -> None:
+    """Include the requested mermaid-cli version for npx and bun."""
+    mmd, svg, cfg = sample_paths
+    monkeypatch.setattr(
+        shutil,
+        "which",
+        lambda cmd: "/usr/bin/npx" if cmd == "npx" else None,
+    )
+
+    cmd = get_mmdc_cmd(mmd, svg, cfg, mermaid_version="10.9.1")
+    assert cmd[:3] == ["/usr/bin/npx", "--yes", "@mermaid-js/mermaid-cli@10.9.1"]
 
 
 @pytest.mark.parametrize(
@@ -112,7 +134,7 @@ def test_get_mmdc_cmd_ignores_non_executable(
     )
 
     cmd = get_mmdc_cmd(mmd, svg, cfg)
-    assert cmd[:3] == ["/usr/bin/npx", "--yes", "@mermaid-js/mermaid-cli"]
+    assert cmd[:3] == ["/usr/bin/npx", "--yes", "@mermaid-js/mermaid-cli@latest"]
 
 
 def test_get_mmdc_cmd_errors_without_environment(

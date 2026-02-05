@@ -43,7 +43,7 @@ uv sync --include dev
 ## Usage
 
 ```bash
-nixie [--verbose] [--no-sandbox] [FILE ...]
+nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION] [FILE ...]
 ```
 
 Diagrams are processed sequentially within each file to keep output stable.
@@ -68,6 +68,9 @@ Only the `.gitignore` file in the working directory is used; nested
 with `--disable-setuid-sandbox`, `--disable-gpu`, and
 `--disable-dev-shm-usage` for reliable headless operation. Use `--no-sandbox`
 to also pass `--no-sandbox` to Chromium.
+`--mermaid-version` selects the `@mermaid-js/mermaid-cli` version when nixie
+launches `npx` or `bun`. The default is `latest`, and the flag is ignored when
+`mmdc` is found on disk.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed

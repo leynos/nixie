@@ -27,7 +27,13 @@ def test_cli_scans_cwd_when_no_args(
 
     captured: list[Path] = []
 
-    async def fake_main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
+    async def fake_main(
+        paths: cabc.Iterable[Path],
+        *,
+        no_sandbox: bool = False,
+        mermaid_version: str = "latest",
+    ) -> int:
+        _ = mermaid_version
         captured.extend(paths)
         return 0
 
@@ -53,8 +59,14 @@ def test_cli_handles_empty_directory(
     """Exit successfully when no Markdown files are present."""
     called = False
 
-    async def fake_main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
+    async def fake_main(
+        paths: cabc.Iterable[Path],
+        *,
+        no_sandbox: bool = False,
+        mermaid_version: str = "latest",
+    ) -> int:
         nonlocal called
+        _ = mermaid_version
         called = True
         return 0
 
@@ -83,8 +95,14 @@ def test_cli_accepts_no_sandbox_flag(
 
     received_no_sandbox = False
 
-    async def fake_main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
+    async def fake_main(
+        paths: cabc.Iterable[Path],
+        *,
+        no_sandbox: bool = False,
+        mermaid_version: str = "latest",
+    ) -> int:
         nonlocal received_no_sandbox
+        _ = mermaid_version
         received_no_sandbox = no_sandbox
         return 0
 

@@ -218,6 +218,22 @@ async def test_cli_reports_unknown_schema(
 
 
 @pytest.mark.asyncio
+async def test_cli_passes_mermaid_version(
+    tmp_path: Path,
+    stub_render: AsyncMock,
+) -> None:
+    """Forward the requested mermaid-cli version to the renderer."""
+    file = tmp_path / "diagram.md"
+    file.write_text("```mermaid\nA-->B\n```")
+
+    exit_code = await main([file], mermaid_version="10.9.1")
+
+    assert exit_code == 0
+    assert stub_render.await_count == 1
+    assert stub_render.await_args.kwargs["mermaid_version"] == "10.9.1"
+
+
+@pytest.mark.asyncio
 async def test_cli_handles_file_processing_error(
     tmp_path: Path,
     stub_render: AsyncMock,

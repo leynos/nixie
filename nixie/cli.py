@@ -7,7 +7,7 @@ bracketed and stable. The CLI falls back between `mmdc`, `npx`, and `bun`
 executables.
 
 Usage:
-    nixie [--verbose] [FILE ...]
+    nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION] [FILE ...]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
 underlying ``mermaid-cli`` commands.
@@ -105,6 +105,8 @@ DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
 
 SUCCESS_BANNER: typ.Final[str] = "🧜‍♀️✨ All diagrams validated successfully!"
 ASCII_SUCCESS_BANNER: typ.Final[str] = "All diagrams validated successfully!"
+DEFAULT_MERMAID_VERSION: typ.Final[str] = "latest"
+MERMAID_CLI_PACKAGE: typ.Final[str] = "@mermaid-js/mermaid-cli"
 
 
 def resolve_success_banner(stream: _EncodingAwareStream | TextIO | None) -> str:
@@ -310,14 +312,27 @@ def create_puppeteer_config(
             path.unlink(missing_ok=True)
 
 
-def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
+def _resolve_mermaid_cli_package(version: str) -> str:
+    """Return the mermaid-cli package spec for ``version``."""
+    normalized = version.strip()
+    if not normalized:
+        normalized = DEFAULT_MERMAID_VERSION
+    return f"{MERMAID_CLI_PACKAGE}@{normalized}"
+
+
+def get_mmdc_cmd(
+    mmd: Path,
+    svg: Path,
+    cfg_path: Path | None,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
+) -> list[str]:
     """Return the command to run mermaid-cli.
 
     The Mermaid CLI can be installed in several common locations. We first
     check these explicit paths so that users do not need to modify ``PATH``
     just to run ``nixie``. Only if ``mmdc`` is not found do we fall back to
-    ``bun`` or ``npx``. Absolute paths to ``mmdc`` are valid and are invoked
-    directly.
+    ``bun`` or ``npx``, using the requested mermaid-cli version. Absolute paths
+    to ``mmdc`` are valid and are invoked directly.
     """
     home = Path.home()
     cwd = Path.cwd()
@@ -345,9 +360,9 @@ def get_mmdc_cmd(mmd: Path, svg: Path, cfg_path: Path | None) -> list[str]:
     name = Path(cli).name
     match name:
         case "npx":
-            cmd = [cli, "--yes", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "--yes", _resolve_mermaid_cli_package(mermaid_version)]
         case "bun":
-            cmd = [cli, "x", "--bun", "@mermaid-js/mermaid-cli"]
+            cmd = [cli, "x", "--bun", _resolve_mermaid_cli_package(mermaid_version)]
         case _:
             cmd = [cli]
     if cfg_path is not None:
@@ -437,6 +452,7 @@ async def _render_diagram(
     path: Path,
     idx: int,
     timeout: float,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
 ) -> None:
     """Write ``block`` to disk and invoke ``mermaid-cli``.
 
@@ -469,7 +485,7 @@ async def _render_diagram(
     svg = mmd.with_suffix(".svg")
     mmd.write_text(block)
 
-    cmd = get_mmdc_cmd(mmd, svg, cfg_path)
+    cmd = get_mmdc_cmd(mmd, svg, cfg_path, mermaid_version=mermaid_version)
     LOGGER.info(shlex.join(cmd))
     success, stderr = await _run_mermaid_cli(cmd, path, idx, timeout)
     if not success:
@@ -489,6 +505,7 @@ async def render_block(
     idx: int,
     *,
     timeout: float = 30.0,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
     verbose: bool | None = None,
 ) -> bool:
     """Render a single mermaid block using the CLI asynchronously.
@@ -527,7 +544,15 @@ async def render_block(
             stacklevel=2,
         )
     try:
-        await _render_diagram(block, tmpdir, cfg_path, path, idx, timeout)
+        await _render_diagram(
+            block,
+            tmpdir,
+            cfg_path,
+            path,
+            idx,
+            timeout,
+            mermaid_version=mermaid_version,
+        )
     except FileNotFoundError as exc:
         cli = exc.filename or "mmdc"
         LOGGER.exception(
@@ -561,6 +586,7 @@ async def render_block(
 async def check_file(
     path: Path,
     cfg_path: Path | None,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
 ) -> bool:
     """Check a single file for Mermaid diagrams."""
     diagrams = parse_blocks(path.read_text(encoding="utf-8"))
@@ -579,6 +605,7 @@ async def check_file(
                         cfg_path,
                         path,
                         idx,
+                        mermaid_version=mermaid_version,
                     )
                 except Exception:  # pragma: no cover - unexpected
                     LOGGER.exception("%s: unexpected error in diagram %s", path, idx)
@@ -588,7 +615,12 @@ async def check_file(
     return all_success
 
 
-async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
+async def main(
+    paths: cabc.Iterable[Path],
+    *,
+    no_sandbox: bool = False,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
+) -> int:
     """Run the CLI entry point.
 
     Processes files sequentially to keep output stable and bracketed. The
@@ -600,7 +632,11 @@ async def main(paths: cabc.Iterable[Path], *, no_sandbox: bool = False) -> int:
         for path in collect_markdown_files(paths):
             print(f"==> {path}")
             try:
-                success = await check_file(path, cfg_path)
+                success = await check_file(
+                    path,
+                    cfg_path,
+                    mermaid_version=mermaid_version,
+                )
             except Exception as exc:  # noqa: BLE001  pragma: no cover - unexpected
                 # Catch unexpected errors so the CLI can continue processing.
                 print(f"Validation task raised an exception: {exc}")
@@ -641,6 +677,14 @@ def parse_args() -> argparse.Namespace:
             "running as root)"
         ),
     )
+    parser.add_argument(
+        "--mermaid-version",
+        default=DEFAULT_MERMAID_VERSION,
+        help=(
+            "Version of @mermaid-js/mermaid-cli to use when launching via npx or bun "
+            "(default: latest)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -661,7 +705,15 @@ def cli() -> None:
         if not paths:
             print("No Markdown files found.", file=sys.stderr)
             sys.exit(0)
-    sys.exit(asyncio.run(main(paths, no_sandbox=parsed.no_sandbox)))
+    sys.exit(
+        asyncio.run(
+            main(
+                paths,
+                no_sandbox=parsed.no_sandbox,
+                mermaid_version=parsed.mermaid_version,
+            )
+        )
+    )
 
 
 if __name__ == "__main__":
