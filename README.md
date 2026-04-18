@@ -56,6 +56,7 @@ current working directory for Markdown files, excluding paths matched by
 `.gitignore` in that directory. Discovery includes files with the `.md`
 extension (case-sensitive). Files are processed in the order provided on the
 command line.
+
 ### Exit codes
 
 - 0 — All diagrams in processed files validated successfully.
@@ -111,6 +112,7 @@ invalid diagram
 ^
 Unexpected token: syntax error
 ```
+
 ## Development
 
 Run formatting, linting, type checking and tests before committing:
