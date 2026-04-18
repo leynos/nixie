@@ -12,7 +12,7 @@ BENCH_DOCS ?= tests/fixtures/benchmark_sample
 all: check-fmt lint test ## Default target runs preflight checks
 
 clean: ## Remove build artifacts
-	rm -rf .venv dist/ *.egg-info
+	rm -rf .venv build dist/ *.egg-info
 
 build: ## install deps and build bytecode
 	@if [ -x .venv/bin/python ]; then \
