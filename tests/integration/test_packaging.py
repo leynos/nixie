@@ -7,6 +7,8 @@ import subprocess
 import zipfile
 from pathlib import Path
 
+import pytest
+
 
 def _copy_packaging_fixture(
     destination_root: Path,
@@ -32,12 +34,20 @@ def _copy_packaging_fixture(
     return build_root
 
 
+def _require_executable(name: str, *, purpose: str) -> str:
+    """Return an executable path or skip when the host tool is unavailable."""
+    executable = shutil.which(name)
+    if executable is None:
+        pytest.skip(f"{name} must be available to {purpose}")
+    assert executable is not None
+    return executable
+
+
 def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
     """Build a wheel copy and verify packaging metadata and contents."""
     build_root = _copy_packaging_fixture(tmp_path)
 
-    uv_executable = shutil.which("uv")
-    assert uv_executable is not None, "uv must be available to build the wheel"
+    uv_executable = _require_executable("uv", purpose="build the wheel")
 
     result = subprocess.run(  # noqa: S603
         [uv_executable, "build", "--wheel"],
@@ -86,9 +96,11 @@ def test_make_clean_removes_the_build_directory(tmp_path: Path) -> None:
     stale_test_file = build_root / "build/lib/nixie/unittests/stale_test.py"
     stale_test_file.parent.mkdir(parents=True, exist_ok=True)
     stale_test_file.write_text("pass\n", encoding="utf-8")
+    assert stale_test_file.exists(), (
+        "Expected stale test file to exist before running `make clean`"
+    )
 
-    make_executable = shutil.which("make")
-    assert make_executable is not None, "make must be available to clean the tree"
+    make_executable = _require_executable("make", purpose="clean the tree")
 
     result = subprocess.run(  # noqa: S603
         [make_executable, "clean"],
