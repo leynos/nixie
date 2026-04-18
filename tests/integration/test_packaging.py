@@ -61,21 +61,30 @@ def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
     combined_output = result.stdout + result.stderr
     assert "Package 'nixie.unittests'" not in combined_output
 
-    wheel_path = next((build_root / "dist").glob("*.whl"))
+    wheel_path = next((build_root / "dist").glob("*.whl"), None)
+    assert wheel_path is not None, "wheel file not found"
     assert wheel_path.name.startswith("nixie_cli-")
 
     with zipfile.ZipFile(wheel_path) as wheel_archive:
         packaged_files = wheel_archive.namelist()
         metadata_name = next(
-            packaged_file
-            for packaged_file in packaged_files
-            if packaged_file.endswith(".dist-info/METADATA")
+            (
+                packaged_file
+                for packaged_file in packaged_files
+                if packaged_file.endswith(".dist-info/METADATA")
+            ),
+            None,
         )
+        assert metadata_name is not None, "METADATA file not found in wheel"
         entry_points_name = next(
-            packaged_file
-            for packaged_file in packaged_files
-            if packaged_file.endswith(".dist-info/entry_points.txt")
+            (
+                packaged_file
+                for packaged_file in packaged_files
+                if packaged_file.endswith(".dist-info/entry_points.txt")
+            ),
+            None,
         )
+        assert entry_points_name is not None, "entry_points.txt not found in wheel"
         metadata = wheel_archive.read(metadata_name).decode("utf-8")
         entry_points = wheel_archive.read(entry_points_name).decode("utf-8")
 
