@@ -134,4 +134,4 @@ The integration tests mock the CLI so Node.js is not needed during testing.
 
 ## License
 
-See `LICENSE` for license details.
+Licenced under the ISC licence. See `LICENSE` for license details.
