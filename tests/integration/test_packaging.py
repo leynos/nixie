@@ -4,34 +4,13 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import typing as typ
 import zipfile
-from pathlib import Path
 
 import pytest
 
-
-def _copy_packaging_fixture(
-    destination_root: Path,
-    *,
-    include_makefile: bool = False,
-) -> Path:
-    """Copy the minimal project files needed for packaging tests."""
-    project_root = Path(__file__).resolve().parents[2]
-    build_root = destination_root / "package-copy"
-    build_root.mkdir()
-
-    names = ["pyproject.toml", "README.md", "LICENSE", "nixie"]
-    if include_makefile:
-        names.append("Makefile")
-
-    for name in names:
-        source = project_root / name
-        destination = build_root / name
-        if source.is_dir():
-            shutil.copytree(source, destination)
-        else:
-            shutil.copy2(source, destination)
-    return build_root
+if typ.TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _require_executable(name: str, *, purpose: str) -> str:
@@ -43,9 +22,11 @@ def _require_executable(name: str, *, purpose: str) -> str:
     return executable
 
 
-def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
+def test_uv_build_excludes_unittests_from_the_wheel(
+    packaging_project_root: Path,
+) -> None:
     """Build a wheel copy and verify packaging metadata and contents."""
-    build_root = _copy_packaging_fixture(tmp_path)
+    build_root = packaging_project_root
 
     uv_executable = _require_executable("uv", purpose="build the wheel")
 
@@ -60,11 +41,15 @@ def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stdout + result.stderr
     combined_output = result.stdout + result.stderr
-    assert "Package 'nixie.unittests'" not in combined_output
+    assert "Package 'nixie.unittests'" not in combined_output, (
+        f"Expected build output to exclude `nixie.unittests`, got: {combined_output!r}"
+    )
 
     wheel_path = next((build_root / "dist").glob("*.whl"), None)
     assert wheel_path is not None, "wheel file not found"
-    assert wheel_path.name.startswith("nixie_cli-")
+    assert wheel_path.name.startswith("nixie_cli-"), (
+        f"Expected wheel_path.name to start with 'nixie_cli-', got: {wheel_path.name!r}"
+    )
 
     with zipfile.ZipFile(wheel_path) as wheel_archive:
         packaged_files = wheel_archive.namelist()
@@ -89,20 +74,28 @@ def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
         metadata = wheel_archive.read(metadata_name).decode("utf-8")
         entry_points = wheel_archive.read(entry_points_name).decode("utf-8")
 
-    assert "Name: nixie-cli" in metadata
-    assert "nixie = nixie.cli:cli" in entry_points
+    assert "Name: nixie-cli" in metadata, (
+        f"Expected 'Name: nixie-cli' in metadata, got: {metadata!r}"
+    )
+    assert "nixie = nixie.cli:cli" in entry_points, (
+        f"Expected 'nixie = nixie.cli:cli' in entry_points, got: {entry_points!r}"
+    )
 
     unittest_entries = [
         packaged_file
         for packaged_file in packaged_files
         if packaged_file.startswith("nixie/unittests/")
     ]
-    assert unittest_entries == []
+    assert unittest_entries == [], (
+        f"Expected unittest_entries to be empty, got: {unittest_entries!r}"
+    )
 
 
-def test_make_clean_removes_the_build_directory(tmp_path: Path) -> None:
+def test_make_clean_removes_the_build_directory(
+    packaging_project_root_with_makefile: Path,
+) -> None:
     """Ensure ``make clean`` clears stale build artefacts before packaging."""
-    build_root = _copy_packaging_fixture(tmp_path, include_makefile=True)
+    build_root = packaging_project_root_with_makefile
     stale_test_file = build_root / "build/lib/nixie/unittests/stale_test.py"
     stale_test_file.parent.mkdir(parents=True, exist_ok=True)
     stale_test_file.write_text("pass\n", encoding="utf-8")
@@ -122,4 +115,7 @@ def test_make_clean_removes_the_build_directory(tmp_path: Path) -> None:
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert not (build_root / "build").exists()
+    build_dir = build_root / "build"
+    assert not build_dir.exists(), (
+        f"Expected build_dir to be removed by `make clean`, got: {build_dir!s}"
+    )
