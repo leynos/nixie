@@ -21,10 +21,10 @@
 
 ### From PyPI
 
-End users can install the latest release directly from PyPI:
+End users should install the latest release as a `uv` tool:
 
 ```bash
-pip install nixie-cli
+uv tool install nixie-cli
 ```
 
 This provides the `nixie` command without any development extras.
