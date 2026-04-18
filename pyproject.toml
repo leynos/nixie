@@ -1,5 +1,5 @@
 [project]
-name = "nixie"
+name = "nixie-cli"
 version = "0.2.0"
 description = "Validate Mermaid diagrams in Markdown files"
 readme = "README.md"

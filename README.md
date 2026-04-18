@@ -24,7 +24,7 @@
 End users can install the latest release directly from PyPI:
 
 ```bash
-pip install nixie
+pip install nixie-cli
 ```
 
 This provides the `nixie` command without any development extras.

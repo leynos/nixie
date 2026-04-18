@@ -33,7 +33,7 @@ def _copy_packaging_fixture(
 
 
 def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
-    """Build a wheel copy and verify that ``nixie.unittests`` is not packaged."""
+    """Build a wheel copy and verify packaging metadata and contents."""
     build_root = _copy_packaging_fixture(tmp_path)
 
     uv_executable = shutil.which("uv")
@@ -52,8 +52,25 @@ def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
     assert "Package 'nixie.unittests'" not in combined_output
 
     wheel_path = next((build_root / "dist").glob("*.whl"))
+    assert wheel_path.name.startswith("nixie_cli-")
+
     with zipfile.ZipFile(wheel_path) as wheel_archive:
         packaged_files = wheel_archive.namelist()
+        metadata_name = next(
+            packaged_file
+            for packaged_file in packaged_files
+            if packaged_file.endswith(".dist-info/METADATA")
+        )
+        entry_points_name = next(
+            packaged_file
+            for packaged_file in packaged_files
+            if packaged_file.endswith(".dist-info/entry_points.txt")
+        )
+        metadata = wheel_archive.read(metadata_name).decode("utf-8")
+        entry_points = wheel_archive.read(entry_points_name).decode("utf-8")
+
+    assert "Name: nixie-cli" in metadata
+    assert "nixie = nixie.cli:cli" in entry_points
 
     unittest_entries = [
         packaged_file
