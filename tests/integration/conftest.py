@@ -47,9 +47,13 @@ def _build_packaging_project(
     build_root = destination_root / f"package-copy-{uuid4().hex}"
     build_root.mkdir()
 
-    names = ["pyproject.toml", "README.md", "LICENSE", "nixie"]
-    if include_makefile:
-        names.append("Makefile")
+    names = (
+        "pyproject.toml",
+        "README.md",
+        "LICENSE",
+        "nixie",
+        *(("Makefile",) if include_makefile else ()),
+    )
 
     for name in names:
         source = project_root / name
