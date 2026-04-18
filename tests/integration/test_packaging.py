@@ -49,12 +49,13 @@ def test_uv_build_excludes_unittests_from_the_wheel(tmp_path: Path) -> None:
 
     uv_executable = _require_executable("uv", purpose="build the wheel")
 
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(  # noqa: S603  # Static argv in test env; shell=False.
         [uv_executable, "build", "--wheel"],
         cwd=build_root,
         check=False,
         capture_output=True,
         text=True,
+        timeout=120,
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
@@ -111,12 +112,13 @@ def test_make_clean_removes_the_build_directory(tmp_path: Path) -> None:
 
     make_executable = _require_executable("make", purpose="clean the tree")
 
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(  # noqa: S603  # Static argv in test env; shell=False.
         [make_executable, "clean"],
         cwd=build_root,
         check=False,
         capture_output=True,
         text=True,
+        timeout=120,
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
