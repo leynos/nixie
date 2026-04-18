@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The PyPI distribution is now published as `nixie-cli` while keeping the
+  installed console command as `nixie`.
 - Diagram validation now runs concurrently across and within files with a
   bounded global worker limit. Output remains deterministic and ordered by file
   and diagram position.
