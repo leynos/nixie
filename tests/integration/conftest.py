@@ -5,6 +5,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 
@@ -43,7 +44,7 @@ def _build_packaging_project(
 ) -> Path:
     """Copy the minimal project files needed for packaging tests."""
     project_root = Path(__file__).resolve().parents[2]
-    build_root = destination_root / "package-copy"
+    build_root = destination_root / f"package-copy-{uuid4().hex}"
     build_root.mkdir()
 
     names = ["pyproject.toml", "README.md", "LICENSE", "nixie"]
