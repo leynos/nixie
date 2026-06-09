@@ -125,7 +125,10 @@ escalation, not workarounds.
   (red → green → refactor). All gates pass (156 tests). Manual checks:
   `--help` documents `--renderer`; `--renderer merman` without the binary
   exits 1 with the install-route message.
-- [ ] Milestone 2: error formatting, snapshot tests, property tests.
+- [x] (2026-06-09 15:40Z) Milestone 2: error formatting, snapshot tests,
+  property tests. `syrupy` and `hypothesis` added as dev dependencies; five
+  snapshots recorded and reviewed; six properties pass. All gates pass
+  (167 tests).
 - [ ] Milestone 3: behavioural (pytest-bdd) and end-to-end coverage.
 - [ ] Milestone 4: documentation (README, CHANGELOG, users' guide,
   developers' guide, design doc, ADR, sequence diagram).
@@ -205,6 +208,21 @@ escalation, not workarounds.
   tests exercise; name-sensitive fakes pin each test to its intended
   backend.
   Date/Author: 2026-06-09, Milestone 1.
+- Decision: leave the `.hypothesis/` example database out of version control.
+  Rationale: the hypothesis skill recommends committing
+  `.hypothesis/examples`, but the repository's `.gitignore` already excludes
+  `.hypothesis/` (an explicit prior convention) and no failing seeds exist
+  to preserve; repository convention wins. Shrunk failures, if any arise,
+  are promoted to named unit tests instead.
+  Date/Author: 2026-06-09, Milestone 2.
+- Decision: property tests use `unittest.mock.patch` context managers rather
+  than pytest's `monkeypatch`/`tmp_path` fixtures, with purely symbolic
+  (non-filesystem) paths.
+  Rationale: Hypothesis re-runs the test body many times per
+  function-scoped fixture instance and flags such fixtures with a health
+  check; symbolic paths plus per-example `mock.patch` keep every example
+  hermetic without suppressing health checks.
+  Date/Author: 2026-06-09, Milestone 2.
 - Decision: keep rendering to SVG (`-i in.mmd -o out.svg`) for both backends;
   do not adopt `merman-cli parse`.
   Rationale: nixie's contract is "this block renders", which subsumes
@@ -594,11 +612,18 @@ work proceeds):
   red evidence (see Decision Log).
   Green (observed 2026-06-09 14:55Z): `make test` passes with 156 tests
   (127 pre-existing plus the new seam coverage) and zero regressions.
-- Milestone 2 red: snapshot tests fail with "snapshot does not exist" on
-  first run, then are recorded deliberately with `--snapshot-update` and
-  reviewed by eye before committing; property tests must pass against the
-  implementation — any counter-example found is a bug to fix, recorded in
-  `Surprises & Discoveries`.
+- Milestone 2 red (observed 2026-06-09 15:25Z): all five snapshot tests
+  failed with "snapshot does not exist"; snapshots were then recorded with
+  `--snapshot-update` and reviewed by eye (concise mmdc parse block, verbatim
+  merman stderr, correct per-backend command shapes with `<tmpdir>`
+  normalisation). The first property run also failed —
+  `test_renderer_cmd_invariants` raised `NoNodeEnvironmentAvailableError` —
+  which exposed a flaw in the test's own strategy (it could pair the mmdc
+  backend with a merman-only machine), not in the production code; the
+  strategy now composes only valid backend/tool pairings. Green: all six
+  properties and five snapshots pass; `make test` reports 167 passed.
+  `format_cli_error` itself needed no production change — its stderr
+  fallback already handles merman output, as the plan predicted.
 - Milestone 3 red: the four scenarios in `renderer_selection.feature` fail
   before the steps are wired (pytest-bdd reports missing steps), then fail
   meaningfully once wired against a deliberately broken assertion, then pass.
