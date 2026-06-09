@@ -22,6 +22,8 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         idx: int,
         timeout: float,
         mermaid_version: str = "latest",
+        *,
+        renderer: object | None = None,
     ) -> None:
         _ = timeout
         _ = mermaid_version
@@ -29,6 +31,7 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         _ = cfg_path
         _ = path
         _ = idx
+        _ = renderer
         if "invalid" in block.lower():
             raise RuntimeError("Parse error on line 1: INVALID")
 

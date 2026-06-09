@@ -118,7 +118,13 @@ escalation, not workarounds.
   inventory, and merman upstream facts (parallel agent sweep).
 - [x] (2026-06-09 12:40Z) ExecPlan drafted.
 - [x] (2026-06-09 14:00Z) Plan approved by user; implementation authorized.
-- [ ] Milestone 1: renderer selection seam (red → green → refactor).
+- [x] (2026-06-09 14:20Z) Precursor: repaired the broken typecheck baseline
+  (`ty 0.0.32` drift; see Surprises) so all four gates pass before work
+  begins. Commit `15fe2f3`.
+- [x] (2026-06-09 15:00Z) Milestone 1: renderer selection seam
+  (red → green → refactor). All gates pass (156 tests). Manual checks:
+  `--help` documents `--renderer`; `--renderer merman` without the binary
+  exits 1 with the install-route message.
 - [ ] Milestone 2: error formatting, snapshot tests, property tests.
 - [ ] Milestone 3: behavioural (pytest-bdd) and end-to-end coverage.
 - [ ] Milestone 4: documentation (README, CHANGELOG, users' guide,
@@ -182,6 +188,23 @@ escalation, not workarounds.
   do not exist, so minimal versions are created covering the renderer change
   and pointing back to existing material rather than duplicating it.
   Date/Author: 2026-06-09, planning session.
+- Decision: demonstrate the Milestone 1 red stage via import-time failures
+  rather than strict-xfail markers.
+  Rationale: the new tests import seam symbols (`NoRendererAvailableError`,
+  `ResolvedRenderer`, `find_merman_cli`, …) that do not exist before the
+  green step, so pytest fails at collection; `xfail(strict=True)` never
+  executes for a module that cannot import. The ImportError transcript names
+  the exact unimplemented symbols, which is equivalent red evidence.
+  Date/Author: 2026-06-09, Milestone 1.
+- Decision: existing test stubs for `shutil.which` and `_render_diagram`
+  were made renderer-aware (name-sensitive `which` fakes; stubs accept a
+  keyword-only `renderer` argument) rather than freezing `_render_diagram`'s
+  old signature.
+  Rationale: blanket `which` fakes that returned `mmdc` for *any* lookup
+  would silently resolve the merman backend under `auto`, changing what the
+  tests exercise; name-sensitive fakes pin each test to its intended
+  backend.
+  Date/Author: 2026-06-09, Milestone 1.
 - Decision: keep rendering to SVG (`-i in.mmd -o out.svg`) for both backends;
   do not adopt `merman-cli parse`.
   Rationale: nixie's contract is "this block renders", which subsumes
@@ -560,10 +583,17 @@ Resolve all concerns before starting the next milestone.
 Red–Green–Refactor evidence to record per milestone (update this section as
 work proceeds):
 
-- Milestone 1 red: `uv run pytest nixie/unittests/test_get_renderer_cmd.py
-  -v` fails with strict-xfail-style failures (tests exist, seam does not);
-  green: same command passes and `make test` passes with zero regressions in
-  the four pre-existing renderer test files.
+- Milestone 1 red (observed 2026-06-09 14:40Z): the focused run failed for
+  the expected reason — `ImportError: cannot import name
+  'NoRendererAvailableError' from 'nixie.cli'` (and `ResolvedRenderer` in
+  `test_render_diagram.py`), plus six assertion failures in
+  `test_cli_executable_allowlist.py` because `merman-cli` was not yet in
+  `ALLOWED_EXECUTABLES`. Strict-xfail markers were not usable because the
+  missing symbols fail at import (collection) time rather than at test
+  execution; the ImportError naming the unimplemented seam serves as the
+  red evidence (see Decision Log).
+  Green (observed 2026-06-09 14:55Z): `make test` passes with 156 tests
+  (127 pre-existing plus the new seam coverage) and zero regressions.
 - Milestone 2 red: snapshot tests fail with "snapshot does not exist" on
   first run, then are recorded deliberately with `--snapshot-update` and
   reviewed by eye before committing; property tests must pass against the

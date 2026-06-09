@@ -10,6 +10,7 @@ import pytest
 
 from nixie.cli import (
     WINDOWS_EXECUTABLE_SUFFIXES,
+    ResolvedRenderer,
     _render_diagram,
     _run_mermaid_cli,
     get_mmdc_cmd,
@@ -41,7 +42,10 @@ async def test_render_diagram_writes_file_and_logs(
         "nixie.cli.asyncio.create_subprocess_exec", fake_create_subprocess_exec
     )
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr("nixie.cli.shutil.which", lambda _cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(
+        "nixie.cli.shutil.which",
+        lambda cmd: "/usr/bin/mmdc" if cmd == "mmdc" else None,
+    )
 
     with caplog.at_level(logging.INFO, logger="nixie.cli"):
         await _render_diagram(block, tmp_path, cfg_path, path, 1, 30.0)
@@ -77,7 +81,10 @@ async def test_render_diagram_raises_on_failure(
         "nixie.cli.asyncio.create_subprocess_exec", fake_create_subprocess_exec
     )
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr("nixie.cli.shutil.which", lambda _cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(
+        "nixie.cli.shutil.which",
+        lambda cmd: "/usr/bin/mmdc" if cmd == "mmdc" else None,
+    )
 
     with pytest.raises(RuntimeError) as err:
         await _render_diagram(block, tmp_path, cfg_path, path, 1, 30.0)
@@ -86,6 +93,44 @@ async def test_render_diagram_raises_on_failure(
     assert "Parse error on line 1" in msg
     assert "doc.md" in msg
     assert "mmdc" in msg
+
+
+@pytest.mark.asyncio
+async def test_render_diagram_merman_failure_reports_raw_stderr(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    fake_home_cwd: Path,
+) -> None:
+    """Surface merman-cli stderr verbatim when rendering fails."""
+    path = Path("doc.md")
+    block = "A-->B"
+
+    async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        return object()
+
+    async def fake_wait_for_proc(
+        _proc: object, _path: Path, _idx: int, _timeout: float
+    ) -> tuple[bool, bytes]:
+        return False, b"Mermaid error: unknown diagram type\n"
+
+    monkeypatch.setattr(
+        "nixie.cli.asyncio.create_subprocess_exec", fake_create_subprocess_exec
+    )
+    monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
+    monkeypatch.setattr(
+        "nixie.cli.shutil.which",
+        lambda cmd: "/usr/local/bin/merman-cli" if cmd == "merman-cli" else None,
+    )
+    renderer = ResolvedRenderer(backend="merman", needs_puppeteer_config=False)
+
+    with pytest.raises(RuntimeError) as err:
+        await _render_diagram(block, tmp_path, None, path, 1, 30.0, renderer=renderer)
+
+    msg = str(err.value)
+    assert "merman-cli" in msg
+    assert "doc.md" in msg
+    assert "Mermaid error: unknown diagram type" in msg
+    assert "--puppeteerConfigFile" not in msg
 
 
 @pytest.mark.asyncio
