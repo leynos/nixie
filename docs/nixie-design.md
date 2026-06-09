@@ -49,6 +49,24 @@ The new implementation separates execution order from output order.
 This enables across-file and within-file concurrency while preserving output
 order.
 
+### Renderer Backends
+
+Nixie renders diagrams through one of two backends, resolved **once per
+invocation** before any diagram work is scheduled (see
+[ADR 0001](adr/0001-adopt-merman-cli-renderer.md)):
+
+- `merman` — [merman-cli](https://github.com/Latias94/merman), a headless
+  Rust Mermaid implementation invoked as `merman-cli -i in.mmd -o out.svg`.
+  No Puppeteer configuration is generated for this backend.
+- `mmdc` — the Node-based `@mermaid-js/mermaid-cli`, discovered through the
+  historical `mmdc`/`bun`/`npx` chain and given a generated Puppeteer
+  configuration.
+
+The `--renderer` flag selects `auto` (default; prefer merman, fall back to
+mmdc), `merman` (required), or `mmdc` (forced). The resolved backend is
+threaded to every diagram task as a frozen `ResolvedRenderer` value, so
+workers never re-run discovery.
+
 ### Concurrency Limit
 
 Nixie computes a safe automatic ceiling:
@@ -84,7 +102,9 @@ Known failures include:
 
 - Mermaid parse/runtime failures
 - timeout failures
-- missing node runtime (`mmdc`, `bun`, `npx`)
+- a forced merman renderer with no `merman-cli` installed (reported once,
+  before any diagram task runs)
+- missing node runtime (`mmdc`, `bun`, `npx`) on the mmdc backend
 - file-level preparation errors
 
 No worker prints output directly. The emitter is the single writer, so ordering

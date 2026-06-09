@@ -135,8 +135,15 @@ escalation, not workarounds.
   then reverted; five end-to-end tests drive the real `cli()` entry point;
   the Windows-shim integration test now covers `merman-cli` shims. All
   gates pass (179 tests).
-- [ ] Milestone 4: documentation (README, CHANGELOG, users' guide,
-  developers' guide, design doc, ADR, sequence diagram).
+- [x] (2026-06-09 17:00Z) Milestone 4: documentation. README requirements
+  and flag docs updated; CHANGELOG entries added; `docs/users-guide.md` and
+  `docs/developers-guide.md` created;
+  `docs/adr/0001-adopt-merman-cli-renderer.md` created and linked from the
+  design doc; `docs/nixie-design.md` gained a Renderer Backends section and
+  updated failure list; `docs/diagram-processing.md` notes the selectable
+  Renderer participant. `make markdownlint` and `make nixie` pass (the
+  latter validated the docs end-to-end through the real `auto` fallback on
+  a merman-less machine). All code gates pass (179 tests).
 - [ ] Milestone 5: final gates, CodeRabbit review clean, retrospective.
 
 ## Surprises & discoveries
