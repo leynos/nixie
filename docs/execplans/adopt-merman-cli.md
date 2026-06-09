@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Purpose / big picture
 
@@ -144,7 +144,11 @@ escalation, not workarounds.
   Renderer participant. `make markdownlint` and `make nixie` pass (the
   latter validated the docs end-to-end through the real `auto` fallback on
   a merman-less machine). All code gates pass (179 tests).
-- [ ] Milestone 5: final gates, CodeRabbit review clean, retrospective.
+- [x] (2026-06-10 00:10Z) Milestone 5: full gate suite passes end to end
+  (check-fmt, typecheck, lint, 179 tests, markdownlint, `make nixie`);
+  CodeRabbit reviewed every milestone with zero findings (the Milestone 4
+  review hit the free-tier rate limit once and was retried after a pause);
+  retrospective completed below.
 
 ## Surprises & discoveries
 
@@ -244,7 +248,46 @@ escalation, not workarounds.
 
 ## Outcomes & retrospective
 
-To be completed at major milestones and at the end of the work.
+Outcome: delivered as planned. nixie now prefers `merman-cli` under the
+default `--renderer auto`, falls back to the unchanged `mmdc`/`bun`/`npx`
+chain, fails fast with an install hint when `merman` is forced without the
+binary, and only generates Puppeteer configuration for the mmdc backend.
+Every constraint held: no runtime dependencies were added, the legacy
+behaviour is byte-for-byte preserved (`get_mmdc_cmd` untouched; delegation
+covered by an exact-equality test), validation remains render-based, and
+the allow-list enforcement gained `merman-cli` without weakening.
+
+Compared with the original purpose: all observable-success criteria are
+met and test-verified — the merman command shape, the fallback, the
+fail-fast error, and the inertness of `--no-sandbox`/`--mermaid-version`
+under merman. The one criterion not demonstrable here (a real `merman-cli`
+binary rendering a real diagram) is mitigated by merman's documented
+mmdc-compatible interface and should be confirmed manually when a machine
+with `merman-cli` is available; `make nixie` did, however, exercise the
+real `auto` fallback path end to end on this merman-less machine.
+
+Coverage delivered: 52 new or updated tests (179 total, up from 127) across
+unit, snapshot (syrupy), property (Hypothesis), behavioural (pytest-bdd),
+and end-to-end layers, plus a deliberate-mutation check proving the BDD
+suite catches auto-preference regressions.
+
+Lessons learned:
+
+- The baseline gates were broken before work began (`ty` drift); gating the
+  baseline first made every later red observation trustworthy.
+- Blanket test fakes (a `shutil.which` stub answering every lookup) are a
+  trap when adding discovery for a new executable: they silently change
+  which backend a test exercises. Name-sensitive fakes are now the
+  documented convention.
+- The first Hypothesis run caught a bug in its own strategy (an impossible
+  backend/tool pairing), a useful reminder to audit strategies before
+  trusting green properties.
+- Import-time failures are the honest red signal when the test imports the
+  symbols it specifies; strict-xfail cannot express that stage.
+
+Follow-up (the second PR, out of scope here): fixture-corpus comparison of
+merman vs mmdc acceptance, then removal of the Node/Puppeteer machinery as
+recorded in ADR 0001.
 
 ## Context and orientation
 
@@ -732,3 +775,16 @@ Dependencies: no runtime additions. Dev additions: `syrupy` (snapshot
 fixtures for pytest) and `hypothesis` (property-based testing), both in
 `[dependency-groups] dev`. External tool referenced but not vendored:
 `merman-cli` ≥ 0.7.0 (crates.io), discovered at runtime, never bundled.
+
+## Revision note
+
+2026-06-10: marked COMPLETE. All five milestones (plus the unplanned
+typecheck-baseline precursor) landed with red–green evidence recorded in
+`Validation and acceptance`, decisions in the `Decision log`, and findings
+in `Surprises & discoveries`. The `Interfaces and dependencies` section
+matches the shipped code exactly except that `_render_diagram`'s new
+parameter is `renderer: ResolvedRenderer | None = None` (keyword-only,
+defaulting to per-call `auto` resolution) to preserve legacy callers — a
+narrowing noted in the Decision log. Remaining work is the deferred second
+PR (Node/Puppeteer removal after parity comparison), tracked in ADR 0001,
+not in this plan.
