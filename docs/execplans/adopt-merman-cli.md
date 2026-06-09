@@ -129,7 +129,12 @@ escalation, not workarounds.
   property tests. `syrupy` and `hypothesis` added as dev dependencies; five
   snapshots recorded and reviewed; six properties pass. All gates pass
   (167 tests).
-- [ ] Milestone 3: behavioural (pytest-bdd) and end-to-end coverage.
+- [x] (2026-06-09 16:20Z) Milestone 3: behavioural (pytest-bdd) and
+  end-to-end coverage. Four BDD scenarios pass; a deliberate mutation
+  (auto preferring mmdc) was caught by the auto-prefers-merman scenario and
+  then reverted; five end-to-end tests drive the real `cli()` entry point;
+  the Windows-shim integration test now covers `merman-cli` shims. All
+  gates pass (179 tests).
 - [ ] Milestone 4: documentation (README, CHANGELOG, users' guide,
   developers' guide, design doc, ADR, sequence diagram).
 - [ ] Milestone 5: final gates, CodeRabbit review clean, retrospective.
@@ -624,9 +629,15 @@ work proceeds):
   properties and five snapshots pass; `make test` reports 167 passed.
   `format_cli_error` itself needed no production change — its stderr
   fallback already handles merman output, as the plan predicted.
-- Milestone 3 red: the four scenarios in `renderer_selection.feature` fail
-  before the steps are wired (pytest-bdd reports missing steps), then fail
-  meaningfully once wired against a deliberately broken assertion, then pass.
+- Milestone 3 red (observed 2026-06-09 16:00Z): all four scenarios in
+  `renderer_selection.feature` failed with
+  `pytest_bdd.exceptions.StepDefinitionNotFoundError` before the steps were
+  wired. After wiring, a deliberate temporary mutation of
+  `resolve_renderer` (auto resolving to mmdc even when merman-cli exists)
+  made exactly the auto-prefers-merman scenario fail with
+  `assert '/usr/bin/mmdc' == '/usr/local/bin/merman-cli'`, proving the
+  scenarios detect the regression they exist to catch; the mutation was
+  reverted and all four scenarios pass.
 
 Behavioural acceptance:
 

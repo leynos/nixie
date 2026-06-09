@@ -11,15 +11,21 @@ from nixie.cli import render_block
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "executable",
+    ("executable", "which_name"),
     [
-        r"C:\Users\runneradmin\.bun\bin\mmdc.EXE",
-        r"C:\Users\runneradmin\.bun\bin\mmdc.CMD",
-        r"C:\Users\runneradmin\.bun\bin\mmdc.BAT",
+        (r"C:\Users\runneradmin\.bun\bin\mmdc.EXE", "mmdc"),
+        (r"C:\Users\runneradmin\.bun\bin\mmdc.CMD", "mmdc"),
+        (r"C:\Users\runneradmin\.bun\bin\mmdc.BAT", "mmdc"),
+        (r"C:\Users\runneradmin\.cargo\bin\merman-cli.EXE", "merman-cli"),
+        (r"C:\Users\runneradmin\.cargo\bin\merman-cli.CMD", "merman-cli"),
+        (r"C:\Users\runneradmin\.cargo\bin\merman-cli.BAT", "merman-cli"),
     ],
 )
 async def test_render_block_accepts_windows_executables(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, executable: str
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    executable: str,
+    which_name: str,
 ) -> None:
     """Allow Windows shims discovered via ``which`` when rendering."""
 
@@ -40,7 +46,7 @@ async def test_render_block_accepts_windows_executables(
     monkeypatch.chdir(tmp_path)
 
     def fake_which(cmd: str) -> str | None:
-        return executable if cmd == "mmdc" else None
+        return executable if cmd == which_name else None
 
     monkeypatch.setattr("nixie.cli.shutil.which", fake_which)
 
