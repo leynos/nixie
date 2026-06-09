@@ -260,11 +260,12 @@ the allow-list enforcement gained `merman-cli` without weakening.
 Compared with the original purpose: all observable-success criteria are
 met and test-verified — the merman command shape, the fallback, the
 fail-fast error, and the inertness of `--no-sandbox`/`--mermaid-version`
-under merman. The one criterion not demonstrable here (a real `merman-cli`
-binary rendering a real diagram) is mitigated by merman's documented
-mmdc-compatible interface and should be confirmed manually when a machine
-with `merman-cli` is available; `make nixie` did, however, exercise the
-real `auto` fallback path end to end on this merman-less machine.
+under merman. After `merman-cli` 0.7.0 was installed on the development
+machine (2026-06-10), the remaining criterion was demonstrated live: a
+real diagram rendered through merman in auto mode (exit 0), a genuinely
+invalid block surfaced merman's real stderr verbatim (exit 1), and the
+same inputs agreed with the forced mmdc backend — see `Artifacts and
+notes` for transcripts.
 
 Coverage delivered: 52 new or updated tests (179 total, up from 127) across
 unit, snapshot (syrupy), property (Hypothesis), behavioural (pytest-bdd),
@@ -730,6 +731,42 @@ Record, as work proceeds: the red-run transcripts for each milestone, the
 reviewed snapshot contents for the error-format tests, and (if a machine
 with a real `merman-cli` is available) the transcript of the manual
 end-to-end check.
+
+Manual end-to-end verification with a real `merman-cli` (0.7.0 installed at
+`~/.cargo/bin/merman-cli`, 2026-06-10):
+
+- Valid diagram, auto mode — merman preferred, renders, exit 0:
+
+```text
+$ nixie --verbose good.md
+INFO: /home/leynos/.cargo/bin/merman-cli -i …/good_1.mmd -o …/good_1.svg
+==> …/good.md
+--> line 4: flowchart
+<-- line 6: flowchart
+<== …/good.md
+🧜‍♀️✨ All diagrams validated successfully!
+exit=0
+```
+
+- Invalid diagram (unknown type) — real merman stderr surfaces verbatim
+  through the `format_cli_error` fallback, exit 1:
+
+```text
+Error running command /home/leynos/.cargo/bin/merman-cli -i … -o … for
+file '…/unknown.md' (diagram 1):
+No diagram type detected matching given configuration for text: notadiagram
+A-->B
+exit=1
+```
+
+- Same inputs forced through `--renderer mmdc` (bun-installed `mmdc`, with
+  the Puppeteer config in the command) — both backends agreed on every
+  tested input, including accepting `flowchart TD\n  A--oops`, so no parity
+  drift was observed in this (small) sample.
+- `make test` (179 passed) and `make nixie` both pass on the merman-present
+  machine, confirming the suite's discovery stubbing keeps tests hermetic
+  regardless of what is installed, and that the repository's own
+  documentation validates through real merman-cli.
 
 ## Interfaces and dependencies
 
