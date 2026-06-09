@@ -311,7 +311,7 @@ Terms used in this plan:
 - **renderer seam** — the narrow choke-point where nixie builds and runs the
   external command.
 - **allow-list** — a security control: before spawning a subprocess, nixie
-  normalises `cmd[0]` and rejects executables whose base name is not in
+  normalizes `cmd[0]` and rejects executables whose base name is not in
   `ALLOWED_EXECUTABLES`.
 
 Key code (all in `nixie/cli.py`):
@@ -349,7 +349,7 @@ Key tests:
 - `nixie/unittests/test_get_mmdc_cmd.py` — discovery order, `bun x --bun` /
   `npx --yes` argument shapes, version injection, non-executable skipping,
   `NoNodeEnvironmentAvailableError`.
-- `nixie/unittests/test_cli_executable_allowlist.py` — normalisation of
+- `nixie/unittests/test_cli_executable_allowlist.py` — normalization of
   POSIX/Windows paths and `.exe`/`.cmd`/`.bat` suffixes; accept/reject sets.
 - `nixie/unittests/test_render_diagram.py` — error message contains the
   joined command and `mmdc`; logging of the command; Windows-suffix
@@ -382,7 +382,7 @@ Tooling: `make test` (`uv run pytest -v`), `make lint` (`uv run ruff check`),
 Relevant skills for the implementer: `leta` (load at session start; use
 `leta show`, `leta refs`, `leta calls` to navigate `nixie/cli.py` instead of
 reading the whole 900-line module), `python-router` (route deeper questions),
-`python-testing` (fixture and parametrisation patterns), `hypothesis`
+`python-testing` (fixture and parametrization patterns), `hypothesis`
 (property-test strategy design for Milestone 2),
 `python-errors-and-logging` (exception shape for the new error type),
 `commit-message` and `changelog` (Milestone 4/5 hygiene). Repository
@@ -448,10 +448,10 @@ Test edits in this milestone:
 - `test_get_mmdc_cmd.py`: unchanged in substance (mmdc builder is intact);
   add an assertion that `get_renderer_cmd` with a forced-mmdc
   `ResolvedRenderer` delegates to it byte-for-byte.
-- `test_cli_executable_allowlist.py`: extend the parametrised accept cases
+- `test_cli_executable_allowlist.py`: extend the parametrized accept cases
   with `merman-cli`, `merman-cli.exe`, `merman-cli.cmd`, `merman-cli.bat`,
   and a POSIX path `/home/user/.cargo/bin/merman-cli`; keep all reject cases.
-- `test_render_diagram.py`: the failure-message test parametrises over both
+- `test_render_diagram.py`: the failure-message test parametrizes over both
   backends; for merman it asserts the message contains `merman-cli` and the
   raw stderr fallback text.
 - `test_get_renderer_cmd.py` (new): auto-prefers-merman; auto-falls-back;
@@ -482,7 +482,7 @@ Stage B (red): add `syrupy` and `hypothesis` to
     and strips exactly one known Windows suffix, for generated mixes of path
     separators, case, whitespace, and suffixes.
   - `_is_allowed_executable` is False for any generated name whose
-    normalised base is outside `ALLOWED_EXECUTABLES`, however decorated with
+    normalized base is outside `ALLOWED_EXECUTABLES`, however decorated with
     directories and known suffixes (the allow-list cannot be bypassed by
     path or suffix games).
   - `get_renderer_cmd` invariant: for arbitrary valid temp paths and both
@@ -536,7 +536,7 @@ Steps in `tests/bdd/test_renderer_selection_bdd.py`, following the
 
 End-to-end and integration updates:
 
-- `tests/integration/test_windows_executables.py`: parametrise the accepted
+- `tests/integration/test_windows_executables.py`: parametrize the accepted
   shim names over `merman-cli.EXE`/`.CMD`/`.BAT` alongside the mmdc cases.
 - `tests/integration/test_cli_behavior.py` (or a new
   `tests/integration/test_renderer_selection.py`): drive `parse_args` +
@@ -672,7 +672,7 @@ work proceeds):
   failed with "snapshot does not exist"; snapshots were then recorded with
   `--snapshot-update` and reviewed by eye (concise mmdc parse block, verbatim
   merman stderr, correct per-backend command shapes with `<tmpdir>`
-  normalisation). The first property run also failed —
+  normalization). The first property run also failed —
   `test_renderer_cmd_invariants` raised `NoNodeEnvironmentAvailableError` —
   which exposed a flaw in the test's own strategy (it could pair the mmdc
   backend with a merman-only machine), not in the production code; the

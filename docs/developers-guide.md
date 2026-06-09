@@ -28,7 +28,7 @@ shape in the builders, and process control in `_run_mermaid_cli`.
 
 ## The executable allow-list
 
-`_run_mermaid_cli` refuses to spawn anything whose normalised base name is
+`_run_mermaid_cli` refuses to spawn anything whose normalized base name is
 not in `ALLOWED_EXECUTABLES` (`mmdc`, `bun`, `npx`, `merman-cli`).
 `_normalize_executable_name` strips directories, one known Windows suffix
 (`.exe`, `.cmd`, `.bat`), surrounding whitespace, and case before the check.
@@ -36,7 +36,7 @@ not in `ALLOWED_EXECUTABLES` (`mmdc`, `bun`, `npx`, `merman-cli`).
 To extend the allow-list safely:
 
 1. Add the bare executable name to `ALLOWED_EXECUTABLES`.
-2. Extend the accept/reject parametrisations in
+2. Extend the accept/reject parametrizations in
    `nixie/unittests/test_cli_executable_allowlist.py`, including Windows
    shim forms.
 3. Confirm the Hypothesis properties in
@@ -47,7 +47,7 @@ To extend the allow-list safely:
 ## Test layering
 
 - `nixie/unittests/` — unit tests colocated with the package: discovery,
-  resolution, command construction, allow-list normalisation, error
+  resolution, command construction, allow-list normalization, error
   formatting.
 - `tests/integration/` — end-to-end tests driving `main` or the real
   `cli()` entry point with patched `sys.argv`, stubbed discovery, and a
@@ -73,7 +73,7 @@ To extend the allow-list safely:
 `nixie/unittests/test_format_cli_error.py` pins the user-visible error
 formatting with [syrupy](https://github.com/syrupy-project/syrupy)
 snapshots stored in `__snapshots__/`. Temporary directory paths are
-normalised to `<tmpdir>` before snapshotting so the recorded text is
+normalized to `<tmpdir>` before snapshotting so the recorded text is
 stable. Regenerate intentionally with:
 
 ```bash

@@ -34,7 +34,7 @@ from nixie.cli import (
 
 # Base names deliberately exclude "." so that exactly zero or one known
 # suffix decorates each generated executable; double suffixes (mmdc.exe.exe)
-# are normalised one layer at a time and are out of scope for these
+# are normalized one layer at a time and are out of scope for these
 # invariants.
 _BASE_NAME_ALPHABET: typ.Final[str] = (
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
@@ -96,7 +96,7 @@ def test_normalize_recovers_base_name(executable: str) -> None:
 
 @given(executable=decorated(base_names))
 def test_normalize_is_idempotent_for_single_suffix_names(executable: str) -> None:
-    """Normalise decorated single-suffix names to a fixed point."""
+    """Normalize decorated single-suffix names to a fixed point."""
     once = _normalize_executable_name(executable)
     assert _normalize_executable_name(once) == once
 

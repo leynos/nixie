@@ -66,7 +66,7 @@ async def _capture_render_failure(
 ) -> str:
     """Run ``_render_diagram`` against a failing stub and return the message.
 
-    Temporary directory paths vary per run, so they are normalised to
+    Temporary directory paths vary per run, so they are normalized to
     ``<tmpdir>`` to keep the snapshot stable.
     """
 
