@@ -74,7 +74,7 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
                         return True
             return False
 
-    pathspec = SimpleNamespace(PathSpec=_ShimPathSpec)  # type: ignore[no-redef]
+    pathspec = SimpleNamespace(PathSpec=_ShimPathSpec)  # type: ignore[no-redef]  # ty: ignore[invalid-assignment]
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc

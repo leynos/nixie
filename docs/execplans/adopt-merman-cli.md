@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT
+Status: IN PROGRESS
 
 ## Purpose / big picture
 
@@ -117,7 +117,7 @@ escalation, not workarounds.
 - [x] (2026-06-09 12:30Z) Explored codebase seam, test inventory, docs
   inventory, and merman upstream facts (parallel agent sweep).
 - [x] (2026-06-09 12:40Z) ExecPlan drafted.
-- [ ] Plan approved by user.
+- [x] (2026-06-09 14:00Z) Plan approved by user; implementation authorized.
 - [ ] Milestone 1: renderer selection seam (red → green → refactor).
 - [ ] Milestone 2: error formatting, snapshot tests, property tests.
 - [ ] Milestone 3: behavioural (pytest-bdd) and end-to-end coverage.
@@ -144,6 +144,18 @@ escalation, not workarounds.
   Evidence: `pyproject.toml` `[dependency-groups] dev`.
   Impact: both are added (dev-only) in Milestones 2; recorded as a tolerated
   dependency addition.
+- Observation: the baseline `make typecheck` gate was already broken at the
+  branch point — `ty 0.0.32` reports three diagnostics: it cannot see through
+  pytest's `_WithException` protocol wrapper (so valid `pytest.skip` /
+  `pytest.fail` calls are rejected in `tests/integration/test_packaging.py`
+  and `tests/integration/test_windows_executables.py`), and it rejects the
+  `pathspec` `SimpleNamespace` shim assignment in `nixie/cli.py`.
+  Evidence: `make typecheck` at `3cd9880` exits 1 with those three
+  diagnostics; `make test` passes 127 tests, so the code is correct.
+  Impact: fixed in a precursor commit before Milestone 1 (keyword `reason=`
+  arguments plus narrowly scoped `# ty: ignore[...]` comments explaining the
+  checker limitation) so every later milestone gates against a green
+  baseline.
 
 ## Decision log
 

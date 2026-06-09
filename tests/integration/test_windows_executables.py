@@ -55,7 +55,9 @@ async def test_render_block_rejects_unexpected_executable(
     """Surface a clear error when a non-allowlisted executable is discovered."""
 
     async def fail_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
-        pytest.fail("create_subprocess_exec should not be called")
+        # ``ty`` cannot see through pytest's ``_WithException`` protocol
+        # wrapper, so it rejects valid ``skip``/``fail`` call signatures.
+        pytest.fail(reason="create_subprocess_exec should not be called")  # ty: ignore[unknown-argument]
 
     monkeypatch.setattr(
         "nixie.cli.asyncio.create_subprocess_exec", fail_create_subprocess_exec
