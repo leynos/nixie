@@ -1,6 +1,6 @@
-# ADR 0001: Adopt merman-cli as the preferred Mermaid renderer
+# ADR 0001: Prefer merman-cli over mmdc
 
-Status: accepted (2026-06-09)
+Status: Accepted (2026-06-09)
 
 ## Context
 

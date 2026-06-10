@@ -53,7 +53,7 @@ order.
 
 Nixie renders diagrams through one of two backends, resolved **once per
 invocation** before any diagram work is scheduled (see
-[ADR 0001](adr/0001-adopt-merman-cli-renderer.md)):
+[ADR 0001](adr/0001-prefer-merman-cli-over-mmdc.md)):
 
 - `merman` — [merman-cli](https://github.com/Latias94/merman), a headless
   Rust Mermaid implementation invoked as `merman-cli -i in.mmd -o out.svg`.

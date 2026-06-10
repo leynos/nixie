@@ -8,23 +8,46 @@ architecture lives in [nixie-design.md](nixie-design.md).
 
 All rendering flows through a narrow seam in `nixie/cli.py`:
 
-1. `resolve_renderer(choice)` runs **once per invocation** (in `main`) and
+1. `RendererChoice` is the `Literal["auto", "merman", "mmdc"]` accepted by
+   `--renderer` and threaded into `main`. `find_merman_cli()` performs
+   discovery, returning the `merman-cli` path (from `~/.cargo/bin` then
+   `PATH`) or `None`.
+2. `resolve_renderer(choice)` runs **once per invocation** (in `main`) and
    returns a frozen `ResolvedRenderer` dataclass naming the backend
    (`merman` or `mmdc`) and whether a Puppeteer configuration is needed.
    Per-diagram code never re-decides the backend; it receives the resolved
    value. `--renderer merman` without the binary raises
    `NoRendererAvailableError`, which `main` reports and converts to exit 1
    before any diagram is processed.
-2. `get_renderer_cmd(mmd, svg, cfg_path, *, renderer, mermaid_version)`
+3. `get_renderer_cmd(mmd, svg, cfg_path, *, renderer, mermaid_version)`
    dispatches to a backend-specific command builder: `get_merman_cmd`
    (exactly `merman-cli -i <mmd> -o <svg>`; never a Puppeteer config or
    version spec) or `get_mmdc_cmd` (the historical mmdc/bun/npx chain).
-3. `_run_mermaid_cli(cmd, …)` validates `cmd[0]` against the executable
+4. `_run_mermaid_cli(cmd, …)` validates `cmd[0]` against the executable
    allow-list and spawns the subprocess.
 
 When changing renderer behaviour, keep this layering: discovery in
 `find_merman_cli`/`get_mmdc_cmd`, policy in `resolve_renderer`, command
 shape in the builders, and process control in `_run_mermaid_cli`.
+
+### Adding a renderer backend
+
+To introduce a third backend (call it `foo`) without disturbing the
+existing two:
+
+1. Add `"foo"` to the `RendererChoice` literal and to the `--renderer`
+   choices in `parse_args`.
+2. Add a `find_foo_cli()` discovery helper following the
+   `find_merman_cli` pattern (preferred install location first, then
+   `PATH`), and add the executable's bare name to `ALLOWED_EXECUTABLES`
+   (see the next section).
+3. Extend `ResolvedRenderer.backend` to include `"foo"` and teach
+   `resolve_renderer` how `auto` ranks it against the others.
+4. Add a `get_foo_cmd(mmd, svg)` command builder and a branch in
+   `get_renderer_cmd`. Keep flags that do not apply to the new backend
+   (such as the Puppeteer config) out of its command line.
+5. Cover the new branch with unit, property, behavioural, and end-to-end
+   tests mirroring the merman coverage.
 
 ## The executable allow-list
 

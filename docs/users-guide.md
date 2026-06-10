@@ -81,6 +81,29 @@ ignored).
 - `--max-concurrency N` — bound the number of simultaneous renderer
   processes. Clamped to `max(1, cpu_count - 1)`.
 
+### Examples
+
+Validate with whichever backend is available, preferring merman-cli (the
+default `auto` mode searches `~/.cargo/bin/merman-cli`, then `PATH`, then
+the `mmdc`/`bun`/`npx` chain):
+
+```bash
+nixie docs/
+nixie --renderer auto docs/
+```
+
+Require the Rust backend, failing fast if `merman-cli` is not installed:
+
+```bash
+nixie --renderer merman README.md
+```
+
+Force the official Node-based renderer, even when merman-cli is present:
+
+```bash
+nixie --renderer mmdc --no-sandbox README.md
+```
+
 ### Exit codes
 
 - `0` — all diagrams in the processed files validated successfully.

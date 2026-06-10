@@ -138,7 +138,7 @@ escalation, not workarounds.
 - [x] (2026-06-09 17:00Z) Milestone 4: documentation. README requirements
   and flag docs updated; CHANGELOG entries added; `docs/users-guide.md` and
   `docs/developers-guide.md` created;
-  `docs/adr/0001-adopt-merman-cli-renderer.md` created and linked from the
+  `docs/adr/0001-prefer-merman-cli-over-mmdc.md` created and linked from the
   design doc; `docs/nixie-design.md` gained a Renderer Backends section and
   updated failure list; `docs/diagram-processing.md` notes the selectable
   Renderer participant. `make markdownlint` and `make nixie` pass (the
@@ -161,7 +161,7 @@ escalation, not workarounds.
 - Observation: no ADR directory or ADR convention exists in the repository.
   Evidence: same directory listing; no `docs/adr/` and no ADR references in
   `docs/`.
-  Impact: Milestone 4 creates `docs/adr/0001-adopt-merman-cli-renderer.md`
+  Impact: Milestone 4 creates `docs/adr/0001-prefer-merman-cli-over-mmdc.md`
   using the Y-Statement-plus-context format and links it from
   `docs/nixie-design.md`.
 - Observation: `syrupy` and `hypothesis` are not yet dev dependencies; the
@@ -202,7 +202,7 @@ escalation, not workarounds.
   single resolution also lets Puppeteer config creation become conditional.
   Date/Author: 2026-06-09, planning session.
 - Decision: create `docs/users-guide.md`, `docs/developers-guide.md`, and
-  `docs/adr/0001-adopt-merman-cli-renderer.md` as new documents.
+  `docs/adr/0001-prefer-merman-cli-over-mmdc.md` as new documents.
   Rationale: the change request requires these documents to be updated; they
   do not exist, so minimal versions are created covering the renderer change
   and pointing back to existing material rather than duplicating it.
@@ -567,7 +567,7 @@ Stage D: gates, CodeRabbit, commit.
   layering (unit in `nixie/unittests/`, integration and BDD under `tests/`),
   the snapshot and property-test conventions introduced in Milestone 2, and
   the quality gates.
-- `docs/adr/0001-adopt-merman-cli-renderer.md` (new): records the change of
+- `docs/adr/0001-prefer-merman-cli-over-mmdc.md` (new): records the change of
   validation authority from `@mermaid-js/mermaid-cli` to merman-with-fallback,
   the alternatives considered (hard cut-over; parse-only validation; staying
   on mmdc), and the planned second-phase removal of the Node path.
