@@ -172,7 +172,19 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
 
 
 class NoRendererAvailableError(RuntimeError):
-    """Indicates that no supported Mermaid renderer could be found."""
+    """Raised when no supported Mermaid renderer can be found.
+
+    nixie renders each diagram with an external backend: ``merman-cli`` (a
+    headless Rust implementation) or the Node-based ``@mermaid-js/mermaid-cli``
+    (discovered as ``mmdc``, ``bun``, or ``npx``). This error signals that the
+    requested renderer is unavailable — in practice, ``--renderer merman`` was
+    forced but ``merman-cli`` is not installed.
+
+    Resolution: install ``merman-cli`` (``cargo install merman-cli`` or a
+    prebuilt release binary) or provide a Node environment with
+    ``@mermaid-js/mermaid-cli``. The ``auto`` renderer avoids this error by
+    falling back to the Node backend when ``merman-cli`` is absent.
+    """
 
     def __init__(self) -> None:
         super().__init__(
@@ -443,7 +455,7 @@ def resolve_renderer(choice: RendererChoice) -> ResolvedRenderer:
             return ResolvedRenderer(backend="merman", needs_puppeteer_config=False)
         case "mmdc":
             return ResolvedRenderer(backend="mmdc", needs_puppeteer_config=True)
-        case _:
+        case "auto":
             if find_merman_cli() is not None:
                 return ResolvedRenderer(backend="merman", needs_puppeteer_config=False)
             return ResolvedRenderer(backend="mmdc", needs_puppeteer_config=True)

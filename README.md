@@ -83,7 +83,7 @@ Only the `.gitignore` file in the working directory is used; nested
 `mmdc` uses the Node-based `@mermaid-js/mermaid-cli`, and the default `auto`
 prefers `merman-cli` (searching `~/.cargo/bin` then `PATH`) with a fallback
 to the mmdc discovery chain. Forcing `--renderer merman` without `merman-cli`
-installed exits with an error naming the install route.
+installed exits with an error explaining how to install it.
 `--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact renderer
 command for each diagram.
 
