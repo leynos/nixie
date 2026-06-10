@@ -609,6 +609,32 @@ async def _run_mermaid_cli(
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
+    """Spawn an allow-listed renderer command and await its result.
+
+    Validates ``cmd[0]`` against :data:`ALLOWED_EXECUTABLES` before spawning,
+    then runs the subprocess under ``timeout`` seconds.
+
+    Parameters
+    ----------
+    cmd
+        The full renderer command; ``cmd[0]`` is the executable to validate.
+    path
+        Markdown file the diagram belongs to; used only for timeout messages.
+    idx
+        Index of the diagram within ``path``; used only for timeout messages.
+    timeout
+        Maximum time in seconds to wait for the process to finish.
+
+    Returns
+    -------
+    tuple[bool, bytes]
+        ``(success, stderr)`` where ``success`` is ``True`` on a zero exit.
+
+    Raises
+    ------
+    UnexpectedExecutableError
+        If ``cmd[0]`` is not an allow-listed executable.
+    """
     executable = cmd[0] if cmd else ""
     if not _is_allowed_executable(executable):
         raise UnexpectedExecutableError(executable)
@@ -932,6 +958,10 @@ async def main(
     except NoRendererAvailableError as exc:
         print(str(exc), file=sys.stderr, flush=True)
         return 1
+    # Record the resolved backend so operators can see which renderer was
+    # chosen at the decision point, not only inferred from per-diagram command
+    # logs (visible at INFO, i.e. under ``--verbose``).
+    LOGGER.info("Selected renderer backend: %s", resolved_renderer.backend)
     cfg_ctx: typ.ContextManager[Path | None] = (
         create_puppeteer_config(force_no_sandbox=no_sandbox)
         if resolved_renderer.needs_puppeteer_config

@@ -18,11 +18,11 @@ from nixie.cli import (
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("fake_home_cwd")
 async def test_render_diagram_writes_file_and_logs(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
-    fake_home_cwd: Path,
 ) -> None:
     """Write diagram to disk and log the CLI invocation."""
     cfg_path = tmp_path / "cfg.json"
@@ -58,10 +58,10 @@ async def test_render_diagram_writes_file_and_logs(
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("fake_home_cwd")
 async def test_render_diagram_raises_on_failure(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    fake_home_cwd: Path,
 ) -> None:
     """Raise ``RuntimeError`` when the CLI reports failure."""
     cfg_path = tmp_path / "cfg.json"
@@ -96,10 +96,10 @@ async def test_render_diagram_raises_on_failure(
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("fake_home_cwd")
 async def test_render_diagram_merman_failure_reports_raw_stderr(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    fake_home_cwd: Path,
 ) -> None:
     """Surface merman-cli stderr verbatim when rendering fails."""
     path = Path("doc.md")
