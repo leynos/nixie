@@ -44,7 +44,7 @@ escalation, not workarounds.
   `--renderer mmdc` must reproduce today's behaviour exactly, and `auto`
   without `merman-cli` installed must be indistinguishable from today.
 - Validation stays render-based. nixie renders each block to SVG; it must not
-  switch to `merman-cli parse`, because "parses" is a weaker guarantee than
+  switch to `merman-cli parse` because "parses" is a weaker guarantee than
   "renders".
 - The `nixie` console-script interface remains backwards compatible: all
   existing flags (`--verbose`, `--no-sandbox`, `--mermaid-version`,
