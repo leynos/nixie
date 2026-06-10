@@ -68,98 +68,102 @@ def _run_cli(monkeypatch: pytest.MonkeyPatch, argv: list[str]) -> int:
     return code
 
 
-def test_cli_auto_prefers_merman(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    spawned_commands: list[tuple[str, ...]],
-) -> None:
-    """Render with merman-cli by default when it is installed."""
-    _stub_discovery(monkeypatch, {"merman-cli": MERMAN_PATH, "mmdc": MMDC_PATH})
-    fixture = _write_fixture(tmp_path)
+class TestRendererSelection:
+    """End-to-end ``--renderer`` selection through the console script."""
 
-    exit_code = _run_cli(monkeypatch, [str(fixture)])
+    def test_cli_auto_prefers_merman(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        spawned_commands: list[tuple[str, ...]],
+    ) -> None:
+        """Render with merman-cli by default when it is installed."""
+        _stub_discovery(monkeypatch, {"merman-cli": MERMAN_PATH, "mmdc": MMDC_PATH})
+        fixture = _write_fixture(tmp_path)
 
-    assert exit_code == 0
-    assert len(spawned_commands) == 1
-    assert spawned_commands[0][0] == MERMAN_PATH
-    assert "--puppeteerConfigFile" not in spawned_commands[0]
+        exit_code = _run_cli(monkeypatch, [str(fixture)])
 
+        assert exit_code == 0
+        assert len(spawned_commands) == 1
+        assert spawned_commands[0][0] == MERMAN_PATH
+        assert "--puppeteerConfigFile" not in spawned_commands[0]
 
-def test_cli_forced_mmdc_uses_legacy_pipeline(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    spawned_commands: list[tuple[str, ...]],
-) -> None:
-    """Render with mmdc and a Puppeteer config when mmdc is forced."""
-    _stub_discovery(monkeypatch, {"merman-cli": MERMAN_PATH, "mmdc": MMDC_PATH})
-    fixture = _write_fixture(tmp_path)
+    def test_cli_forced_mmdc_uses_legacy_pipeline(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        spawned_commands: list[tuple[str, ...]],
+    ) -> None:
+        """Render with mmdc and a Puppeteer config when mmdc is forced."""
+        _stub_discovery(monkeypatch, {"merman-cli": MERMAN_PATH, "mmdc": MMDC_PATH})
+        fixture = _write_fixture(tmp_path)
 
-    exit_code = _run_cli(monkeypatch, ["--renderer", "mmdc", str(fixture)])
+        exit_code = _run_cli(monkeypatch, ["--renderer", "mmdc", str(fixture)])
 
-    assert exit_code == 0
-    assert len(spawned_commands) == 1
-    assert spawned_commands[0][0] == MMDC_PATH
-    assert "--puppeteerConfigFile" in spawned_commands[0]
+        assert exit_code == 0
+        assert len(spawned_commands) == 1
+        assert spawned_commands[0][0] == MMDC_PATH
+        assert "--puppeteerConfigFile" in spawned_commands[0]
 
+    def test_cli_forced_merman_fails_fast_when_absent(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        spawned_commands: list[tuple[str, ...]],
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Exit 1 with an install hint, before any render, when merman is forced."""
+        _stub_discovery(monkeypatch, {})
+        fixture = _write_fixture(tmp_path)
 
-def test_cli_forced_merman_fails_fast_when_absent(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    spawned_commands: list[tuple[str, ...]],
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    """Exit 1 with an install hint, before any render, when merman is forced."""
-    _stub_discovery(monkeypatch, {})
-    fixture = _write_fixture(tmp_path)
+        exit_code = _run_cli(monkeypatch, ["--renderer", "merman", str(fixture)])
 
-    exit_code = _run_cli(monkeypatch, ["--renderer", "merman", str(fixture)])
+        assert exit_code == 1
+        assert spawned_commands == []
+        captured = capsys.readouterr()
+        assert "merman-cli" in captured.err
+        assert "cargo install merman-cli" in captured.err
 
-    assert exit_code == 1
-    assert spawned_commands == []
-    captured = capsys.readouterr()
-    assert "merman-cli" in captured.err
-    assert "cargo install merman-cli" in captured.err
+    def test_cli_auto_without_any_renderer_keeps_node_guidance(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        spawned_commands: list[tuple[str, ...]],
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Preserve today's per-diagram node-environment error in auto mode."""
+        _stub_discovery(monkeypatch, {})
+        fixture = _write_fixture(tmp_path)
 
+        exit_code = _run_cli(monkeypatch, [str(fixture)])
 
-def test_cli_auto_without_any_renderer_keeps_node_guidance(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    spawned_commands: list[tuple[str, ...]],
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    """Preserve today's per-diagram node-environment error in auto mode."""
-    _stub_discovery(monkeypatch, {})
-    fixture = _write_fixture(tmp_path)
+        assert exit_code == 1
+        assert spawned_commands == []
+        captured = capsys.readouterr()
+        assert "No supported node environment found" in captured.err
 
-    exit_code = _run_cli(monkeypatch, [str(fixture)])
+    def test_cli_no_sandbox_with_merman_creates_no_puppeteer_config(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        spawned_commands: list[tuple[str, ...]],
+    ) -> None:
+        """Accept ``--no-sandbox`` as inert when the merman backend is resolved."""
+        _stub_discovery(monkeypatch, {"merman-cli": MERMAN_PATH})
+        fixture = _write_fixture(tmp_path)
+        configs_created: list[object] = []
+        real_create = cli_module.create_puppeteer_config
 
-    assert exit_code == 1
-    assert spawned_commands == []
-    captured = capsys.readouterr()
-    assert "No supported node environment found" in captured.err
+        def recording_create(*, force_no_sandbox: bool = False) -> object:
+            ctx = real_create(force_no_sandbox=force_no_sandbox)
+            configs_created.append(ctx)
+            return ctx
 
+        monkeypatch.setattr("nixie.cli.create_puppeteer_config", recording_create)
 
-def test_cli_no_sandbox_with_merman_creates_no_puppeteer_config(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    spawned_commands: list[tuple[str, ...]],
-) -> None:
-    """Accept ``--no-sandbox`` as inert when the merman backend is resolved."""
-    _stub_discovery(monkeypatch, {"merman-cli": MERMAN_PATH})
-    fixture = _write_fixture(tmp_path)
-    configs_created: list[object] = []
-    real_create = cli_module.create_puppeteer_config
+        exit_code = _run_cli(monkeypatch, ["--no-sandbox", str(fixture)])
 
-    def recording_create(*, force_no_sandbox: bool = False) -> object:
-        ctx = real_create(force_no_sandbox=force_no_sandbox)
-        configs_created.append(ctx)
-        return ctx
-
-    monkeypatch.setattr("nixie.cli.create_puppeteer_config", recording_create)
-
-    exit_code = _run_cli(monkeypatch, ["--no-sandbox", str(fixture)])
-
-    assert exit_code == 0
-    assert len(spawned_commands) == 1
-    assert spawned_commands[0][0] == MERMAN_PATH
-    assert configs_created == []
+        assert exit_code == 0
+        assert len(spawned_commands) == 1
+        assert spawned_commands[0][0] == MERMAN_PATH
+        assert configs_created == []

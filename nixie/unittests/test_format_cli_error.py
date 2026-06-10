@@ -82,6 +82,12 @@ async def _capture_render_failure(
         "nixie.cli.asyncio.create_subprocess_exec", fake_create_subprocess_exec
     )
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
+    # Isolate renderer discovery from the host: point ``Path.home`` at an empty
+    # temporary directory and change into it so a real
+    # ``~/.cargo/bin/merman-cli`` or ``~/.bun/bin/mmdc`` cannot be discovered
+    # ahead of the stubbed ``which`` below, keeping the snapshot stable.
+    monkeypatch.setattr("nixie.cli.Path.home", lambda: tmp_path / "home")
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
         "nixie.cli.shutil.which",
         lambda cmd: which_path if cmd == which_name else None,
@@ -98,7 +104,6 @@ async def _capture_render_failure(
 async def test_render_diagram_error_shape_mmdc(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    fake_home_cwd: Path,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Pin the full RuntimeError message shape for the mmdc backend."""
@@ -120,7 +125,6 @@ async def test_render_diagram_error_shape_mmdc(
 async def test_render_diagram_error_shape_merman(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    fake_home_cwd: Path,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Pin the full RuntimeError message shape for the merman backend."""
