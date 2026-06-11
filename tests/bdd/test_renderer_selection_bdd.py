@@ -145,39 +145,69 @@ def when_i_validate_with_renderer(
 @then("the diagram is rendered with merman-cli")
 def then_rendered_with_merman(scenario_state: ScenarioState) -> None:
     """Assert the spawned command used merman-cli."""
-    assert scenario_state["exit_code"] == 0
+    assert scenario_state["exit_code"] == 0, (
+        f"expected exit code 0 but got {scenario_state['exit_code']}"
+    )
     commands = scenario_state["spawned_commands"]
-    assert len(commands) == 1
-    assert commands[0][0] == MERMAN_PATH
-    assert "--puppeteerConfigFile" not in commands[0]
+    assert len(commands) == 1, (
+        f"expected exactly 1 spawned command but got {len(commands)}: {commands}"
+    )
+    assert commands[0][0] == MERMAN_PATH, (
+        f"expected merman-cli at '{MERMAN_PATH}' but got '{commands[0][0]}'"
+    )
+    assert "--puppeteerConfigFile" not in commands[0], (
+        "expected --puppeteerConfigFile absent from merman command but found it "
+        f"in {commands[0]}"
+    )
 
 
 @then("no Puppeteer configuration file is created")
 def then_no_puppeteer_config(scenario_state: ScenarioState) -> None:
     """Assert no Puppeteer configuration was generated."""
-    assert scenario_state["puppeteer_configs_created"] == []
+    assert scenario_state["puppeteer_configs_created"] == [], (
+        "expected no Puppeteer config files created but got "
+        f"{scenario_state['puppeteer_configs_created']}"
+    )
 
 
 @then("the diagram is rendered with the Node-based mermaid-cli")
 def then_rendered_with_mmdc(scenario_state: ScenarioState) -> None:
     """Assert the spawned command used the Node-based mermaid-cli."""
-    assert scenario_state["exit_code"] == 0
+    assert scenario_state["exit_code"] == 0, (
+        f"expected exit code 0 but got {scenario_state['exit_code']}"
+    )
     commands = scenario_state["spawned_commands"]
-    assert len(commands) == 1
-    assert commands[0][0] == MMDC_PATH
-    assert "--puppeteerConfigFile" in commands[0]
+    assert len(commands) == 1, (
+        f"expected exactly 1 spawned command but got {len(commands)}: {commands}"
+    )
+    assert commands[0][0] == MMDC_PATH, (
+        f"expected mmdc at '{MMDC_PATH}' but got '{commands[0][0]}'"
+    )
+    assert "--puppeteerConfigFile" in commands[0], (
+        "expected --puppeteerConfigFile present in mmdc command but absent from "
+        f"{commands[0]}"
+    )
 
 
 @then("validation fails before any diagram is rendered")
 def then_fails_before_rendering(scenario_state: ScenarioState) -> None:
     """Assert a non-zero exit with no subprocess spawned."""
-    assert scenario_state["exit_code"] == 1
-    assert scenario_state["spawned_commands"] == []
+    assert scenario_state["exit_code"] == 1, (
+        f"expected exit code 1 (early failure) but got {scenario_state['exit_code']}"
+    )
+    assert scenario_state["spawned_commands"] == [], (
+        f"expected no subprocess spawned but got {scenario_state['spawned_commands']}"
+    )
 
 
 @then("the error names merman-cli and how to install it")
 def then_error_names_install_route(scenario_state: ScenarioState) -> None:
     """Assert stderr names the binary and an installation route."""
     captured = scenario_state["captured"]
-    assert "merman-cli" in captured.err
-    assert "cargo install merman-cli" in captured.err
+    assert "merman-cli" in captured.err, (
+        f"expected 'merman-cli' in stderr but got: {captured.err!r}"
+    )
+    assert "cargo install merman-cli" in captured.err, (
+        "expected install-route hint 'cargo install merman-cli' in stderr but "
+        f"got: {captured.err!r}"
+    )
