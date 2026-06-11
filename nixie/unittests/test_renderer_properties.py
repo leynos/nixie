@@ -79,7 +79,9 @@ def decorated(draw: st.DrawFn, base_strategy: st.SearchStrategy[str]) -> str:
 def test_normalize_output_is_lowercase(executable: str) -> None:
     """Return lowercase output for arbitrary input."""
     normalized = _normalize_executable_name(executable)
-    assert normalized == normalized.lower()
+    assert normalized == normalized.lower(), (
+        f"expected _normalize_executable_name output to be lowercase: {normalized!r}"
+    )
 
 
 @given(executable=decorated(base_names))
@@ -91,26 +93,35 @@ def test_normalize_recovers_base_name(executable: str) -> None:
         if base.lower().endswith(suffix):
             base = base[: -len(suffix)]
             break
-    assert _normalize_executable_name(executable) == base.lower()
+    assert _normalize_executable_name(executable) == base.lower(), (
+        "expected _normalize_executable_name to recover lowercased base name "
+        f"from {executable!r}"
+    )
 
 
 @given(executable=decorated(base_names))
 def test_normalize_is_idempotent_for_single_suffix_names(executable: str) -> None:
     """Normalize decorated single-suffix names to a fixed point."""
     once = _normalize_executable_name(executable)
-    assert _normalize_executable_name(once) == once
+    assert _normalize_executable_name(once) == once, (
+        f"expected _normalize_executable_name to be idempotent for {once!r}"
+    )
 
 
 @given(executable=decorated(disallowed_base_names))
 def test_allowlist_cannot_be_bypassed_by_decoration(executable: str) -> None:
     """Reject non-allow-listed names however they are decorated."""
-    assert not _is_allowed_executable(executable)
+    assert not _is_allowed_executable(executable), (
+        f"expected _is_allowed_executable to reject {executable!r}"
+    )
 
 
 @given(executable=decorated(st.sampled_from(sorted(ALLOWED_EXECUTABLES))))
 def test_allowlist_accepts_decorated_allowed_names(executable: str) -> None:
     """Accept allow-listed names under any supported decoration."""
-    assert _is_allowed_executable(executable)
+    assert _is_allowed_executable(executable), (
+        f"expected _is_allowed_executable to accept {executable!r}"
+    )
 
 
 _DISCOVERY_PATHS: typ.Final[dict[str, str]] = {
@@ -165,7 +176,13 @@ def test_renderer_cmd_invariants(
     ):
         cmd = get_renderer_cmd(mmd, svg, cfg_path, renderer=renderer)
 
-    assert _is_allowed_executable(cmd[0])
-    assert cmd[-4:] == ["-i", str(mmd), "-o", str(svg)]
+    assert _is_allowed_executable(cmd[0]), (
+        f"expected get_renderer_cmd executable to be allow-listed: {cmd[0]!r}"
+    )
+    assert cmd[-4:] == ["-i", str(mmd), "-o", str(svg)], (
+        f"expected get_renderer_cmd to end with mmd/svg arguments: {cmd!r}"
+    )
     if renderer.backend == "merman":
-        assert "--puppeteerConfigFile" not in cmd
+        assert "--puppeteerConfigFile" not in cmd, (
+            "expected ResolvedRenderer merman backend to omit Puppeteer config"
+        )

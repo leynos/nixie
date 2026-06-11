@@ -25,7 +25,7 @@
   - Node.js with `npx` or Bun with `bun x --bun` and
     `@mermaid-js/mermaid-cli`.
 
-By default nixie prefers `merman-cli` when it is installed and falls back to
+By default, nixie prefers `merman-cli` when it is installed and falls back to
 the Node-based `mermaid-cli` otherwise. Note that merman is an independent
 re-implementation targeting Mermaid 11.15.0; acceptance may differ at the
 margins from the official renderer. Use `--renderer mmdc` to validate with

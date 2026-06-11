@@ -35,11 +35,10 @@ invocation**:
 
 The `--renderer` flag selects between them:
 
-| Value    | Behaviour                                                     |
-| -------- | ------------------------------------------------------------- |
-| `auto`   | Default. Prefer `merman-cli`; fall back to the mmdc chain.    |
-| `merman` | Require `merman-cli`; exit 1 with an install hint if absent.  |
-| `mmdc`   | Always use the Node-based chain, even if merman is installed. |
+- `auto`: Default. Prefer `merman-cli`; fall back to the mmdc chain.
+- `merman`: Require `merman-cli`; exit 1 with a hint explaining how to install
+  it if absent.
+- `mmdc`: Always use the Node-based chain, even if merman is installed.
 
 ### Compatibility note
 

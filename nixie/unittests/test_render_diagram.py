@@ -127,10 +127,14 @@ async def test_render_diagram_merman_failure_reports_raw_stderr(
         await _render_diagram(block, tmp_path, None, path, 1, 30.0, renderer=renderer)
 
     msg = str(err.value)
-    assert "merman-cli" in msg
-    assert "doc.md" in msg
-    assert "Mermaid error: unknown diagram type" in msg
-    assert "--puppeteerConfigFile" not in msg
+    assert "merman-cli" in msg, "expected error to name merman-cli"
+    assert "doc.md" in msg, "expected error to include markdown path"
+    assert "Mermaid error: unknown diagram type" in msg, (
+        "expected error to include raw merman stderr"
+    )
+    assert "--puppeteerConfigFile" not in msg, (
+        "expected merman error not to mention Puppeteer config"
+    )
 
 
 @pytest.mark.asyncio

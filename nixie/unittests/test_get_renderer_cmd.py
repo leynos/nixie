@@ -45,7 +45,9 @@ def _which_nothing(_cmd: str) -> str | None:
 
 def test_allowed_executables_includes_merman_cli() -> None:
     """Permit merman-cli through the executable allow-list."""
-    assert "merman-cli" in ALLOWED_EXECUTABLES
+    assert "merman-cli" in ALLOWED_EXECUTABLES, (
+        "expected merman-cli in ALLOWED_EXECUTABLES"
+    )
 
 
 class TestFindMermanCli:
@@ -71,14 +73,18 @@ class TestFindMermanCli:
         merman_path.chmod(0o755)
         monkeypatch.setattr(shutil, "which", _which_merman_only)
 
-        assert find_merman_cli() == str(merman_path)
+        assert find_merman_cli() == str(merman_path), (
+            "expected find_merman_cli to return cargo path"
+        )
 
     @pytest.mark.usefixtures("fake_home_cwd")
     def test_falls_back_to_path(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Fall back to ``shutil.which`` when no cargo install exists."""
         monkeypatch.setattr(shutil, "which", _which_merman_only)
 
-        assert find_merman_cli() == MERMAN_ON_PATH
+        assert find_merman_cli() == MERMAN_ON_PATH, (
+            "expected find_merman_cli to fall back to PATH"
+        )
 
     def test_skips_non_executable_cargo_candidate(
         self,
@@ -93,14 +99,16 @@ class TestFindMermanCli:
         merman_path.chmod(0o644)  # not executable
         monkeypatch.setattr(shutil, "which", _which_nothing)
 
-        assert find_merman_cli() is None
+        assert find_merman_cli() is None, (
+            "expected non-executable cargo candidate to be ignored"
+        )
 
     @pytest.mark.usefixtures("fake_home_cwd")
     def test_returns_none_when_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Return ``None`` when merman-cli cannot be discovered."""
         monkeypatch.setattr(shutil, "which", _which_nothing)
 
-        assert find_merman_cli() is None
+        assert find_merman_cli() is None, "expected None when merman-cli absent"
 
 
 @pytest.mark.usefixtures("fake_home_cwd")
@@ -117,16 +125,20 @@ class TestResolveRenderer:
         monkeypatch.setattr(shutil, "which", _which_merman_only)
 
         resolved = resolve_renderer("auto")
-        assert resolved.backend == "merman"
-        assert resolved.needs_puppeteer_config is False
+        assert resolved.backend == "merman", "expected auto to prefer merman"
+        assert resolved.needs_puppeteer_config is False, (
+            "expected merman renderer not to need Puppeteer config"
+        )
 
     def test_auto_falls_back_to_mmdc(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Fall back to the mmdc backend when merman-cli is absent."""
         monkeypatch.setattr(shutil, "which", _which_nothing)
 
         resolved = resolve_renderer("auto")
-        assert resolved.backend == "mmdc"
-        assert resolved.needs_puppeteer_config is True
+        assert resolved.backend == "mmdc", "expected auto to fall back to mmdc"
+        assert resolved.needs_puppeteer_config is True, (
+            "expected mmdc renderer to need Puppeteer config"
+        )
 
     def test_forced_merman_raises_when_absent(
         self, monkeypatch: pytest.MonkeyPatch
@@ -146,8 +158,10 @@ class TestResolveRenderer:
         with pytest.raises(NoRendererAvailableError) as err:
             resolve_renderer("merman")
         message = str(err.value)
-        assert "merman-cli" in message
-        assert "cargo install merman-cli" in message
+        assert "merman-cli" in message, "expected error to name merman-cli"
+        assert "cargo install merman-cli" in message, (
+            "expected error to name cargo install route"
+        )
 
     def test_forced_mmdc_even_when_merman_available(
         self, monkeypatch: pytest.MonkeyPatch
@@ -156,8 +170,10 @@ class TestResolveRenderer:
         monkeypatch.setattr(shutil, "which", _which_merman_only)
 
         resolved = resolve_renderer("mmdc")
-        assert resolved.backend == "mmdc"
-        assert resolved.needs_puppeteer_config is True
+        assert resolved.backend == "mmdc", "expected forced mmdc backend"
+        assert resolved.needs_puppeteer_config is True, (
+            "expected forced mmdc to need Puppeteer config"
+        )
 
 
 @pytest.mark.usefixtures("fake_home_cwd")
@@ -178,7 +194,9 @@ class TestGetMermanCmd:
         monkeypatch.setattr(shutil, "which", _which_merman_only)
 
         cmd = get_merman_cmd(mmd, svg)
-        assert cmd == [MERMAN_ON_PATH, "-i", str(mmd), "-o", str(svg)]
+        assert cmd == [MERMAN_ON_PATH, "-i", str(mmd), "-o", str(svg)], (
+            "expected get_merman_cmd command shape"
+        )
 
     def test_raises_when_absent(
         self,
@@ -212,8 +230,12 @@ class TestGetRendererCmd:
         renderer = ResolvedRenderer(backend="merman", needs_puppeteer_config=False)
 
         cmd = get_renderer_cmd(mmd, svg, cfg, renderer=renderer)
-        assert "--puppeteerConfigFile" not in cmd
-        assert cmd == get_merman_cmd(mmd, svg)
+        assert "--puppeteerConfigFile" not in cmd, (
+            "expected merman backend to omit Puppeteer config"
+        )
+        assert cmd == get_merman_cmd(mmd, svg), (
+            "expected get_renderer_cmd to delegate to get_merman_cmd"
+        )
 
     def test_merman_backend_omits_version_spec(
         self,
@@ -228,8 +250,12 @@ class TestGetRendererCmd:
         cmd = get_renderer_cmd(
             mmd, svg, cfg, renderer=renderer, mermaid_version="10.9.1"
         )
-        assert all("mermaid-cli" not in part for part in cmd)
-        assert cmd == [MERMAN_ON_PATH, "-i", str(mmd), "-o", str(svg)]
+        assert all("mermaid-cli" not in part for part in cmd), (
+            "expected merman backend to omit mermaid-cli version spec"
+        )
+        assert cmd == [MERMAN_ON_PATH, "-i", str(mmd), "-o", str(svg)], (
+            "expected merman backend command shape"
+        )
 
     def test_mmdc_backend_delegates_byte_for_byte(
         self,
@@ -248,4 +274,6 @@ class TestGetRendererCmd:
         cmd = get_renderer_cmd(
             mmd, svg, cfg, renderer=renderer, mermaid_version="10.9.1"
         )
-        assert cmd == get_mmdc_cmd(mmd, svg, cfg, mermaid_version="10.9.1")
+        assert cmd == get_mmdc_cmd(mmd, svg, cfg, mermaid_version="10.9.1"), (
+            "expected mmdc backend to delegate byte-for-byte"
+        )

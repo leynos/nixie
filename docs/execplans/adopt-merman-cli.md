@@ -250,8 +250,9 @@ escalation, not workarounds.
 
 Outcome: delivered as planned. nixie now prefers `merman-cli` under the
 default `--renderer auto`, falls back to the unchanged `mmdc`/`bun`/`npx`
-chain, fails fast with an install hint when `merman` is forced without the
-binary, and only generates Puppeteer configuration for the mmdc backend.
+chain, fails fast with a hint explaining how to install it when `merman` is
+forced without the binary, and only generates Puppeteer configuration for the
+mmdc backend.
 Every constraint held: no runtime dependencies were added, the legacy
 behaviour is byte-for-byte preserved (`get_mmdc_cmd` untouched; delegation
 covered by an exact-equality test), validation remains render-based, and

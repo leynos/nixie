@@ -96,7 +96,7 @@ To extend the allow-list safely:
 `nixie/unittests/test_format_cli_error.py` pins the user-visible error
 formatting with [syrupy](https://github.com/syrupy-project/syrupy)
 snapshots stored in `__snapshots__/`. Temporary directory paths are
-normalized to `<tmpdir>` before snapshotting so the recorded text is
+normalized to `<tmpdir>` before snapshotting, so the recorded text is
 stable. Regenerate intentionally with:
 
 ```bash
