@@ -64,7 +64,9 @@ def _run_cli(monkeypatch: pytest.MonkeyPatch, argv: list[str]) -> int:
     with pytest.raises(SystemExit) as excinfo:
         cli_module.cli()
     code = excinfo.value.code
-    assert isinstance(code, int)
+    assert isinstance(code, int), (
+        f"expected exit code to be int, got {type(code).__name__!r}: {code!r}"
+    )
     return code
 
 
@@ -83,10 +85,18 @@ class TestRendererSelection:
 
         exit_code = _run_cli(monkeypatch, [str(fixture)])
 
-        assert exit_code == 0
-        assert len(spawned_commands) == 1
-        assert spawned_commands[0][0] == MERMAN_PATH
-        assert "--puppeteerConfigFile" not in spawned_commands[0]
+        assert exit_code == 0, f"expected exit code 0, got {exit_code!r}"
+        assert len(spawned_commands) == 1, (
+            "expected exactly 1 spawned command, got "
+            f"{len(spawned_commands)}: {spawned_commands!r}"
+        )
+        assert spawned_commands[0][0] == MERMAN_PATH, (
+            f"expected merman-cli at {MERMAN_PATH!r}, got {spawned_commands[0][0]!r}"
+        )
+        assert "--puppeteerConfigFile" not in spawned_commands[0], (
+            "expected no --puppeteerConfigFile in merman command, got "
+            f"{spawned_commands[0]!r}"
+        )
 
     def test_cli_forced_mmdc_uses_legacy_pipeline(
         self,
@@ -100,10 +110,18 @@ class TestRendererSelection:
 
         exit_code = _run_cli(monkeypatch, ["--renderer", "mmdc", str(fixture)])
 
-        assert exit_code == 0
-        assert len(spawned_commands) == 1
-        assert spawned_commands[0][0] == MMDC_PATH
-        assert "--puppeteerConfigFile" in spawned_commands[0]
+        assert exit_code == 0, f"expected exit code 0, got {exit_code!r}"
+        assert len(spawned_commands) == 1, (
+            "expected exactly 1 spawned command, got "
+            f"{len(spawned_commands)}: {spawned_commands!r}"
+        )
+        assert spawned_commands[0][0] == MMDC_PATH, (
+            f"expected mmdc at {MMDC_PATH!r}, got {spawned_commands[0][0]!r}"
+        )
+        assert "--puppeteerConfigFile" in spawned_commands[0], (
+            "expected --puppeteerConfigFile in mmdc command, got "
+            f"{spawned_commands[0]!r}"
+        )
 
     def test_cli_forced_merman_fails_fast_when_absent(
         self,
@@ -118,11 +136,17 @@ class TestRendererSelection:
 
         exit_code = _run_cli(monkeypatch, ["--renderer", "merman", str(fixture)])
 
-        assert exit_code == 1
-        assert spawned_commands == []
+        assert exit_code == 1, f"expected exit code 1, got {exit_code!r}"
+        assert spawned_commands == [], (
+            f"expected no subprocess to be spawned, got {spawned_commands!r}"
+        )
         captured = capsys.readouterr()
-        assert "merman-cli" in captured.err
-        assert "cargo install merman-cli" in captured.err
+        assert "merman-cli" in captured.err, (
+            f"expected 'merman-cli' in stderr, got {captured.err!r}"
+        )
+        assert "cargo install merman-cli" in captured.err, (
+            f"expected 'cargo install merman-cli' in stderr, got {captured.err!r}"
+        )
 
     def test_cli_auto_without_any_renderer_keeps_node_guidance(
         self,
@@ -137,10 +161,15 @@ class TestRendererSelection:
 
         exit_code = _run_cli(monkeypatch, [str(fixture)])
 
-        assert exit_code == 1
-        assert spawned_commands == []
+        assert exit_code == 1, f"expected exit code 1, got {exit_code!r}"
+        assert spawned_commands == [], (
+            f"expected no subprocess to be spawned, got {spawned_commands!r}"
+        )
         captured = capsys.readouterr()
-        assert "No supported node environment found" in captured.err
+        assert "No supported node environment found" in captured.err, (
+            "expected 'No supported node environment found' in stderr, got "
+            f"{captured.err!r}"
+        )
 
     def test_cli_no_sandbox_with_merman_creates_no_puppeteer_config(
         self,
@@ -163,7 +192,14 @@ class TestRendererSelection:
 
         exit_code = _run_cli(monkeypatch, ["--no-sandbox", str(fixture)])
 
-        assert exit_code == 0
-        assert len(spawned_commands) == 1
-        assert spawned_commands[0][0] == MERMAN_PATH
-        assert configs_created == []
+        assert exit_code == 0, f"expected exit code 0, got {exit_code!r}"
+        assert len(spawned_commands) == 1, (
+            "expected exactly 1 spawned command, got "
+            f"{len(spawned_commands)}: {spawned_commands!r}"
+        )
+        assert spawned_commands[0][0] == MERMAN_PATH, (
+            f"expected merman-cli at {MERMAN_PATH!r}, got {spawned_commands[0][0]!r}"
+        )
+        assert configs_created == [], (
+            f"expected no Puppeteer configs to be created, got {configs_created!r}"
+        )
