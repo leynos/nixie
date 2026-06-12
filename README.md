@@ -7,7 +7,9 @@
 - Recursively searches directories for Markdown files while honouring
   `.gitignore`
 - Scans the current directory for Markdown files when run without arguments
-- Parses `mermaid` code blocks and uses `@mermaid-js/mermaid-cli` to validate
+- Parses `mermaid` code blocks and validates them by rendering each one with
+  [merman-cli](https://github.com/Latias94/merman) (preferred) or
+  `@mermaid-js/mermaid-cli`
 - Processes diagrams sequentially within each file to guarantee stable,
   bracketed output
 - Prints clear error messages for failing diagrams
@@ -15,7 +17,19 @@
 ## Requirements
 
 - Python 3.14+
-- Node.js with `npx` or Bun with `bun x --bun` and `@mermaid-js/mermaid-cli`
+- A Mermaid renderer, either of:
+  - `merman-cli` (recommended): a headless Rust implementation with no
+    Node.js or Chromium dependency. Install with `cargo install merman-cli`
+    or download a release binary from the
+    [merman releases page](https://github.com/Latias94/merman/releases).
+  - Node.js with `npx` or Bun with `bun x --bun` and
+    `@mermaid-js/mermaid-cli`.
+
+By default, nixie prefers `merman-cli` when it is installed and falls back to
+the Node-based `mermaid-cli` otherwise. Note that merman is an independent
+re-implementation targeting Mermaid 11.15.0; acceptance may differ at the
+margins from the official renderer. Use `--renderer mmdc` to validate with
+the official `@mermaid-js/mermaid-cli` instead.
 
 ## Installation
 
@@ -43,8 +57,8 @@ uv sync --include dev
 ## Usage
 
 ```bash
-nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION]
-      [--max-concurrency N] [FILE ...]
+nixie [--verbose] [--renderer {auto,merman,mmdc}] [--no-sandbox]
+      [--mermaid-version VERSION] [--max-concurrency N] [FILE ...]
 ```
 
 Diagram checks are scheduled concurrently across and within files using a
@@ -65,15 +79,24 @@ command line.
 Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.
 
-`--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact
-`mermaid-cli` command for each diagram. By default, nixie launches Puppeteer
-with `--disable-setuid-sandbox`, `--disable-gpu`, and
+`--renderer` selects the rendering backend. `merman` uses `merman-cli`,
+`mmdc` uses the Node-based `@mermaid-js/mermaid-cli`, and the default `auto`
+prefers `merman-cli` (searching `~/.cargo/bin` then `PATH`) with a fallback
+to the mmdc discovery chain. Forcing `--renderer merman` without `merman-cli`
+installed exits with an error explaining how to install it.
+`--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact renderer
+command for each diagram.
+
+The following flags apply only to the `mmdc` backend and are accepted but
+inert when the merman backend is in use. When using mmdc, nixie launches
+Puppeteer with `--disable-setuid-sandbox`, `--disable-gpu`, and
 `--disable-dev-shm-usage` for reliable headless operation. Use `--no-sandbox`
 to also pass `--no-sandbox` to Chromium.
 `--mermaid-version` selects the `@mermaid-js/mermaid-cli` version when nixie
 launches `npx` or `bun`. The default is `latest`, and the flag is ignored when
-`mmdc` is found on disk.
-`--max-concurrency` bounds the number of simultaneous `mermaid-cli` processes.
+`mmdc` is found on disk. `merman-cli` renders headlessly in Rust and needs no
+Puppeteer configuration.
+`--max-concurrency` bounds the number of simultaneous renderer processes.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed

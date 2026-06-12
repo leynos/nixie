@@ -33,7 +33,9 @@ def test_cli_scans_cwd_when_no_args(
         no_sandbox: bool = False,
         mermaid_version: str = "latest",
         max_concurrency: int | None = None,
+        renderer: str = "auto",
     ) -> int:
+        _ = renderer
         _ = mermaid_version
         _ = max_concurrency
         captured.extend(paths)
@@ -67,7 +69,9 @@ def test_cli_handles_empty_directory(
         no_sandbox: bool = False,
         mermaid_version: str = "latest",
         max_concurrency: int | None = None,
+        renderer: str = "auto",
     ) -> int:
+        _ = renderer
         nonlocal called
         _ = mermaid_version
         _ = max_concurrency
@@ -105,7 +109,9 @@ def test_cli_accepts_no_sandbox_flag(
         no_sandbox: bool = False,
         mermaid_version: str = "latest",
         max_concurrency: int | None = None,
+        renderer: str = "auto",
     ) -> int:
+        _ = renderer
         nonlocal received_no_sandbox
         _ = mermaid_version
         _ = max_concurrency

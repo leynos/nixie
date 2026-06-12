@@ -17,7 +17,9 @@ def _require_executable(name: str, *, purpose: str) -> str:
     """Return an executable path or skip when the host tool is unavailable."""
     executable = shutil.which(name)
     if executable is None:
-        pytest.skip(f"{name} must be available to {purpose}")
+        # ``ty`` cannot see through pytest's ``_WithException`` protocol
+        # wrapper, so it rejects valid ``skip``/``fail`` call signatures.
+        pytest.skip(reason=f"{name} must be available to {purpose}")  # ty: ignore[unknown-argument]
     assert executable is not None
     return executable
 
