@@ -14,6 +14,11 @@ import nixie.cli as cli
         ("mmdc", "mmdc"),
         ("bun", "bun"),
         ("npx", "npx"),
+        ("merman-cli", "merman-cli"),
+        ("merman-cli.exe", "merman-cli"),
+        ("merman-cli.EXE", "merman-cli"),
+        ("/home/user/.cargo/bin/merman-cli", "merman-cli"),
+        (r"C:\Users\runneradmin\.cargo\bin\merman-cli.exe", "merman-cli"),
         ("mmdc.exe", "mmdc"),
         ("mmdc.EXE", "mmdc"),
         ("mmdc.cmd", "mmdc"),
@@ -62,6 +67,12 @@ def test_normalize_executable_name_unknown_suffix(
         "bun",
         "npx",
         r"C:\Program Files\nodejs\npx.cmd",
+        "merman-cli",
+        "merman-cli.exe",
+        "merman-cli.cmd",
+        "merman-cli.bat",
+        "/home/user/.cargo/bin/merman-cli",
+        r"C:\Users\runneradmin\.cargo\bin\merman-cli.EXE",
     ],
 )
 def test_is_allowed_executable_accepts_allowlisted(executable: str) -> None:
@@ -78,6 +89,8 @@ def test_is_allowed_executable_accepts_allowlisted(executable: str) -> None:
         r"C:\Windows\System32\python.exe",
         "mmdc.exe.bak",
         r"C:\Users\runneradmin\.bun\bin\mmdc.exe.bak",
+        "merman",
+        "merman-cli.exe.bak",
     ],
 )
 def test_is_allowed_executable_rejects_unexpected(executable: str) -> None:

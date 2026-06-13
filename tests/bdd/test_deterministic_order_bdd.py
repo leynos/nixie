@@ -76,9 +76,12 @@ def scenario_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ScenarioS
         _idx: int,
         timeout: float,
         mermaid_version: str = "latest",
+        *,
+        renderer: object | None = None,
     ) -> None:
         _ = timeout
         _ = mermaid_version
+        _ = renderer
         if "slow-valid" in block:
             await asyncio.sleep(0.2)
             completion_order.append("a1")

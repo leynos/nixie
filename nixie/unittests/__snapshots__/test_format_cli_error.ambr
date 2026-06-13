@@ -1,0 +1,34 @@
+# serializer version: 1
+# name: test_format_cli_error_extracts_mmdc_parse_error
+  '''
+  Parse error on line 2:
+  graph TD; A--oops
+  ----------^
+  Expecting 'SEMI', 'NEWLINE', got 'NODE_STRING'
+  '''
+# ---
+# name: test_format_cli_error_handles_truncated_parse_error
+  'Parse error on line 7:'
+# ---
+# name: test_format_cli_error_passes_merman_stderr_through
+  '''
+  Mermaid error: unknown diagram type at line 1
+  help: see merman parse
+  '''
+# ---
+# name: test_render_diagram_error_shape_merman
+  '''
+  Error running command /usr/local/bin/merman-cli -i <tmpdir>/doc_1.mmd -o <tmpdir>/doc_1.svg for file 'doc.md' (diagram 1):
+  Mermaid error: unknown diagram type at line 1
+  help: see merman parse
+  '''
+# ---
+# name: test_render_diagram_error_shape_mmdc
+  '''
+  Error running command /usr/bin/mmdc --puppeteerConfigFile <tmpdir>/cfg.json -i <tmpdir>/doc_1.mmd -o <tmpdir>/doc_1.svg for file 'doc.md' (diagram 1):
+  Parse error on line 2:
+  graph TD; A--oops
+  ----------^
+  Expecting 'SEMI', 'NEWLINE', got 'NODE_STRING'
+  '''
+# ---

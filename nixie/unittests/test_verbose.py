@@ -64,7 +64,9 @@ async def test_render_block_emits_command(
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/mmdc" if cmd == "mmdc" else None
+    )
 
     block = "A-->B"
     with caplog.at_level(logging.INFO, logger="nixie.cli"):
@@ -98,7 +100,9 @@ async def test_render_block_verbose_deprecated(
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/mmdc" if cmd == "mmdc" else None
+    )
 
     block = "A-->B"
     logging.getLogger("nixie.cli").setLevel(logging.WARNING)
@@ -149,7 +153,9 @@ async def test_render_block_silent_without_verbose(
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr("nixie.cli.wait_for_proc", fake_wait_for_proc)
-    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/mmdc" if cmd == "mmdc" else None
+    )
 
     block = "A-->B"
     with caplog.at_level(logging.WARNING, logger="nixie.cli"):
@@ -177,7 +183,9 @@ async def test_render_block_logs_missing_cli(
         raise FileNotFoundError(2, "No such file or directory", _cmd[0])
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
-    monkeypatch.setattr(shutil, "which", lambda _cmd: "/usr/bin/mmdc")
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/mmdc" if cmd == "mmdc" else None
+    )
 
     block = "A-->B"
     with caplog.at_level(logging.ERROR, logger="nixie.cli"):

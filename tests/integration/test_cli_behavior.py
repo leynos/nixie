@@ -332,7 +332,10 @@ async def test_cli_preserves_deterministic_order_with_out_of_order_completions(
         _idx: int,
         timeout: float,
         mermaid_version: str = "latest",
+        *,
+        renderer: object | None = None,
     ) -> None:
+        _ = renderer
         _ = timeout
         _ = mermaid_version
         if "slowA" in block:
@@ -398,7 +401,10 @@ async def test_cli_caps_concurrency_to_cpu_count_minus_one(
         _idx: int,
         timeout: float,
         mermaid_version: str = "latest",
+        *,
+        renderer: object | None = None,
     ) -> None:
+        _ = renderer
         nonlocal active, peak_active
         _ = timeout
         _ = mermaid_version

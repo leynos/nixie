@@ -2,15 +2,19 @@
 """Command-line interface for validating Mermaid diagrams in Markdown files.
 
 This module parses Markdown files, extracts Mermaid blocks, and validates them
-with the `mermaid-cli` tool. Rendering is scheduled concurrently with a bounded
-worker limit while output is emitted in deterministic file/diagram order. The
-CLI falls back between `mmdc`, `npx`, and `bun` executables.
+by rendering each block with an external Mermaid renderer. Rendering is
+scheduled concurrently with a bounded worker limit while output is emitted in
+deterministic file/diagram order. The renderer is selected once per run:
+``merman-cli`` (a headless Rust implementation) is preferred when installed,
+with a fallback to the Node-based ``mermaid-cli`` via the ``mmdc``, ``npx``,
+and ``bun`` executables.
 
 Usage:
-    nixie [--verbose] [--no-sandbox] [--mermaid-version VERSION] [FILE ...]
+    nixie [--verbose] [--renderer {auto,merman,mmdc}] [--no-sandbox]
+          [--mermaid-version VERSION] [FILE ...]
 
 The ``--verbose`` flag sets the ``nixie.cli`` logger to ``INFO`` to emit the
-underlying ``mermaid-cli`` commands.
+underlying renderer commands.
 """
 
 from __future__ import annotations
@@ -30,7 +34,7 @@ import sys
 import tempfile
 import typing as typ
 import warnings
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, nullcontext, suppress
 from pathlib import Path, PureWindowsPath
 
 try:
@@ -74,7 +78,7 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
                         return True
             return False
 
-    pathspec = SimpleNamespace(PathSpec=_ShimPathSpec)  # type: ignore[no-redef]
+    pathspec = SimpleNamespace(PathSpec=_ShimPathSpec)  # type: ignore[no-redef]  # ty: ignore[invalid-assignment]
 
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
@@ -94,8 +98,14 @@ BLOCK_RE = re.compile(
     re.DOTALL | re.MULTILINE,
 )
 
-ALLOWED_EXECUTABLES: typ.Final[frozenset[str]] = frozenset({"mmdc", "bun", "npx"})
+ALLOWED_EXECUTABLES: typ.Final[frozenset[str]] = frozenset(
+    {"mmdc", "bun", "npx", "merman-cli"}
+)
 WINDOWS_EXECUTABLE_SUFFIXES: typ.Final[tuple[str, ...]] = (".exe", ".cmd", ".bat")
+
+MERMAN_EXECUTABLE: typ.Final[str] = "merman-cli"
+RendererChoice = typ.Literal["auto", "merman", "mmdc"]
+RENDERER_CHOICES: typ.Final[tuple[str, ...]] = ("auto", "merman", "mmdc")
 
 DEFAULT_PUPPETEER_ARGS: typ.Final[tuple[str, ...]] = (
     "--disable-setuid-sandbox",
@@ -159,6 +169,48 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
 
     def __init__(self) -> None:
         super().__init__("No node environment available.")
+
+
+class NoRendererAvailableError(RuntimeError):
+    """Raised when no supported Mermaid renderer can be found.
+
+    nixie renders each diagram with an external backend: ``merman-cli`` (a
+    headless Rust implementation) or the Node-based ``@mermaid-js/mermaid-cli``
+    (discovered as ``mmdc``, ``bun``, or ``npx``). This error signals that the
+    requested renderer is unavailable — in practice, ``--renderer merman`` was
+    forced but ``merman-cli`` is not installed.
+
+    Resolution: install ``merman-cli`` (``cargo install merman-cli`` or a
+    prebuilt release binary) or provide a Node environment with
+    ``@mermaid-js/mermaid-cli``. The ``auto`` renderer avoids this error by
+    falling back to the Node backend when ``merman-cli`` is absent.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            "No Mermaid renderer available. Install merman-cli "
+            "(cargo install merman-cli) or a Node environment with "
+            "@mermaid-js/mermaid-cli."
+        )
+
+
+@dc.dataclass(slots=True, frozen=True)
+class ResolvedRenderer:
+    """Renderer backend resolved once per CLI invocation.
+
+    Attributes
+    ----------
+    backend
+        The selected renderer implementation: ``merman`` runs ``merman-cli``
+        directly, while ``mmdc`` uses the Node-based ``mermaid-cli`` discovery
+        chain.
+    needs_puppeteer_config
+        ``True`` only for the ``mmdc`` backend, which launches Chromium via
+        Puppeteer; ``merman-cli`` renders headlessly without a browser.
+    """
+
+    backend: typ.Literal["merman", "mmdc"]
+    needs_puppeteer_config: bool
 
 
 @dc.dataclass(slots=True, frozen=True)
@@ -368,6 +420,47 @@ def _resolve_mermaid_cli_package(version: str) -> str:
     return f"{MERMAID_CLI_PACKAGE}@{normalized}"
 
 
+def find_merman_cli() -> str | None:
+    """Return the path to ``merman-cli`` or ``None`` when not installed.
+
+    A cargo-installed binary in ``~/.cargo/bin`` is preferred so that users do
+    not need to modify ``PATH`` just to run ``nixie``; otherwise ``PATH`` is
+    searched via :func:`shutil.which`.
+    """
+    cargo_candidate = Path.home() / ".cargo" / "bin" / MERMAN_EXECUTABLE
+    if cargo_candidate.is_file():
+        if os.access(cargo_candidate, os.X_OK):
+            return str(cargo_candidate)
+        LOGGER.debug("Skipping non-executable %s", cargo_candidate)
+    return shutil.which(MERMAN_EXECUTABLE)
+
+
+def resolve_renderer(choice: RendererChoice) -> ResolvedRenderer:
+    """Resolve ``choice`` to a concrete renderer backend.
+
+    ``merman`` requires ``merman-cli`` and raises when it is absent. ``mmdc``
+    always selects the Node-based backend; its own discovery chain raises
+    later if no Node environment exists, preserving historical behaviour.
+    ``auto`` prefers ``merman-cli`` and otherwise falls back to ``mmdc``.
+
+    Raises
+    ------
+    NoRendererAvailableError
+        If ``choice`` is ``merman`` and ``merman-cli`` cannot be found.
+    """
+    match choice:
+        case "merman":
+            if find_merman_cli() is None:
+                raise NoRendererAvailableError
+            return ResolvedRenderer(backend="merman", needs_puppeteer_config=False)
+        case "mmdc":
+            return ResolvedRenderer(backend="mmdc", needs_puppeteer_config=True)
+        case "auto":
+            if find_merman_cli() is not None:
+                return ResolvedRenderer(backend="merman", needs_puppeteer_config=False)
+            return ResolvedRenderer(backend="mmdc", needs_puppeteer_config=True)
+
+
 def get_mmdc_cmd(
     mmd: Path,
     svg: Path,
@@ -417,6 +510,42 @@ def get_mmdc_cmd(
         cmd += ["--puppeteerConfigFile", str(cfg_path)]
     cmd += ["-i", str(mmd), "-o", str(svg)]
     return cmd
+
+
+def get_merman_cmd(mmd: Path, svg: Path) -> list[str]:
+    """Return the command to render via ``merman-cli``.
+
+    merman-cli renders headlessly in Rust, so no Puppeteer configuration and
+    no package-version spec apply.
+
+    Raises
+    ------
+    NoRendererAvailableError
+        If ``merman-cli`` cannot be found (e.g. removed between renderer
+        resolution and use).
+    """
+    cli = find_merman_cli()
+    if cli is None:
+        raise NoRendererAvailableError
+    return [cli, "-i", str(mmd), "-o", str(svg)]
+
+
+def get_renderer_cmd(
+    mmd: Path,
+    svg: Path,
+    cfg_path: Path | None,
+    *,
+    renderer: ResolvedRenderer,
+    mermaid_version: str = DEFAULT_MERMAID_VERSION,
+) -> list[str]:
+    """Return the render command for the resolved ``renderer`` backend.
+
+    The ``cfg_path`` and ``mermaid_version`` parameters only apply to the
+    ``mmdc`` backend; the ``merman`` backend ignores both.
+    """
+    if renderer.backend == "merman":
+        return get_merman_cmd(mmd, svg)
+    return get_mmdc_cmd(mmd, svg, cfg_path, mermaid_version=mermaid_version)
 
 
 def format_cli_error(stderr: str) -> str:
@@ -480,6 +609,32 @@ async def _run_mermaid_cli(
     idx: int,
     timeout: float,
 ) -> tuple[bool, bytes]:
+    """Spawn an allow-listed renderer command and await its result.
+
+    Validates ``cmd[0]`` against :data:`ALLOWED_EXECUTABLES` before spawning,
+    then runs the subprocess under ``timeout`` seconds.
+
+    Parameters
+    ----------
+    cmd
+        The full renderer command; ``cmd[0]`` is the executable to validate.
+    path
+        Markdown file the diagram belongs to; used only for timeout messages.
+    idx
+        Index of the diagram within ``path``; used only for timeout messages.
+    timeout
+        Maximum time in seconds to wait for the process to finish.
+
+    Returns
+    -------
+    tuple[bool, bytes]
+        ``(success, stderr)`` where ``success`` is ``True`` on a zero exit.
+
+    Raises
+    ------
+    UnexpectedExecutableError
+        If ``cmd[0]`` is not an allow-listed executable.
+    """
     executable = cmd[0] if cmd else ""
     if not _is_allowed_executable(executable):
         raise UnexpectedExecutableError(executable)
@@ -501,8 +656,10 @@ async def _render_diagram(
     idx: int,
     timeout: float,
     mermaid_version: str = DEFAULT_MERMAID_VERSION,
+    *,
+    renderer: ResolvedRenderer | None = None,
 ) -> None:
-    """Write ``block`` to disk and invoke ``mermaid-cli``.
+    """Write ``block`` to disk and invoke the selected renderer.
 
     This consolidates temporary file handling and CLI invocation so callers only
     coordinate error handling.
@@ -514,13 +671,17 @@ async def _render_diagram(
     tmpdir
         Directory for intermediate files.
     cfg_path
-        Optional Puppeteer configuration passed to the CLI.
+        Optional Puppeteer configuration passed to the mmdc backend.
     path
         Markdown file containing the diagram; used for naming only.
     idx
         Index of the diagram within ``path``.
     timeout
         Maximum time in seconds to wait for the CLI to finish.
+    renderer
+        Resolved renderer backend. ``None`` resolves ``auto`` per call,
+        preserving the behaviour of legacy callers that predate renderer
+        selection.
 
     Raises
     ------
@@ -533,7 +694,10 @@ async def _render_diagram(
     svg = mmd.with_suffix(".svg")
     mmd.write_text(block)
 
-    cmd = get_mmdc_cmd(mmd, svg, cfg_path, mermaid_version=mermaid_version)
+    resolved = renderer if renderer is not None else resolve_renderer("auto")
+    cmd = get_renderer_cmd(
+        mmd, svg, cfg_path, renderer=resolved, mermaid_version=mermaid_version
+    )
     LOGGER.info(shlex.join(cmd))
     success, stderr = await _run_mermaid_cli(cmd, path, idx, timeout)
     if not success:
@@ -653,6 +817,7 @@ async def _run_diagram_task(
     semaphore: asyncio.Semaphore,
     *,
     mermaid_version: str,
+    renderer: ResolvedRenderer,
 ) -> DiagramTaskResult:
     """Run a single diagram task under bounded concurrency."""
     async with semaphore:
@@ -665,6 +830,7 @@ async def _run_diagram_task(
                 task.diagram_index,
                 30.0,
                 mermaid_version=mermaid_version,
+                renderer=renderer,
             )
         except Exception as exc:
             if isinstance(exc, KeyboardInterrupt | SystemExit):
@@ -775,15 +941,34 @@ async def main(
     no_sandbox: bool = False,
     mermaid_version: str = DEFAULT_MERMAID_VERSION,
     max_concurrency: int | None = None,
+    renderer: RendererChoice = "auto",
 ) -> int:
     """Run the CLI entry point.
 
     Diagram checks run concurrently across and within files using a global
     bounded worker pool. Output remains deterministic and bracketed in input
     file order and in-source diagram order.
+
+    The renderer backend is resolved once per invocation. A Puppeteer
+    configuration is only created for the mmdc backend; merman-cli renders
+    headlessly without Chromium.
     """
+    try:
+        resolved_renderer = resolve_renderer(renderer)
+    except NoRendererAvailableError as exc:
+        print(str(exc), file=sys.stderr, flush=True)
+        return 1
+    # Record the resolved backend so operators can see which renderer was
+    # chosen at the decision point, not only inferred from per-diagram command
+    # logs (visible at INFO, i.e. under ``--verbose``).
+    LOGGER.info("Selected renderer backend: %s", resolved_renderer.backend)
+    cfg_ctx: typ.ContextManager[Path | None] = (
+        create_puppeteer_config(force_no_sandbox=no_sandbox)
+        if resolved_renderer.needs_puppeteer_config
+        else nullcontext(None)
+    )
     with (
-        create_puppeteer_config(force_no_sandbox=no_sandbox) as cfg_path,
+        cfg_ctx as cfg_path,
         tempfile.TemporaryDirectory() as temp_root,
     ):
         all_paths = list(collect_markdown_files(paths))
@@ -804,6 +989,7 @@ async def main(
                     cfg_path,
                     semaphore,
                     mermaid_version=mermaid_version,
+                    renderer=resolved_renderer,
                 )
             )
             for task in diagram_tasks
@@ -859,14 +1045,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Log mermaid-cli commands for each diagram",
+        help="Log renderer commands for each diagram",
+    )
+    parser.add_argument(
+        "--renderer",
+        choices=RENDERER_CHOICES,
+        default="auto",
+        help=(
+            "Renderer backend: 'merman' uses merman-cli, 'mmdc' uses "
+            "@mermaid-js/mermaid-cli, and 'auto' prefers merman-cli with an "
+            "mmdc fallback (default: auto)."
+        ),
     )
     parser.add_argument(
         "--no-sandbox",
         action="store_true",
         help=(
             "Force Puppeteer to disable its sandbox (useful in Docker or when "
-            "running as root)"
+            "running as root; mmdc backend only)"
         ),
     )
     parser.add_argument(
@@ -874,7 +1070,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_MERMAID_VERSION,
         help=(
             "Version of @mermaid-js/mermaid-cli to use when launching via npx or bun "
-            "(default: latest)."
+            "(default: latest; mmdc backend only)."
         ),
     )
     parser.add_argument(
@@ -913,6 +1109,7 @@ def cli() -> None:
                 no_sandbox=parsed.no_sandbox,
                 mermaid_version=parsed.mermaid_version,
                 max_concurrency=parsed.max_concurrency,
+                renderer=parsed.renderer,
             )
         )
     )
