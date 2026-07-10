@@ -27,7 +27,7 @@ documents.
 - Keep default maximum process concurrency at or below `max(1, cpu_count - 1)`.
 - Do not read benchmark/e2e markdown fixtures from sibling repositories in
   place; copy them into this repository and test only against copied files.
-- Maintain existing CLI behavior and exit codes unless a behavior change is
+- Maintain existing CLI behaviour and exit codes unless a behaviour change is
   explicitly documented in `docs/nixie-design.md` and tests.
 - Pass repository quality gates relevant to touched files:
   - Python: `make check-fmt`, `make lint`, `make typecheck`, `make test`
@@ -75,7 +75,7 @@ documents.
 - [x] 2026-02-05 23:17 UTC: Updated Python requirement to 3.14 and added
       `pytest-bdd` dependency.
 - [x] 2026-02-05 23:18 UTC: Wrote `docs/nixie-design.md` and updated README and
-      changelog documentation to match runtime behavior.
+      changelog documentation to match runtime behaviour.
 - [x] 2026-02-05 23:22 UTC: Ran quality gates:
       `check-fmt`, `lint`, `typecheck`, `test`, `markdownlint` (via
       `npx markdownlint-cli`), and `nixie`.
@@ -91,7 +91,7 @@ documents.
 
 - `grepai` status command is TUI-oriented in this environment and requires TTY.
 - Current integration tests already assert strict marker ordering, which is
-  useful as a behavior lock while refactoring internals.
+  useful as a behaviour lock while refactoring internals.
 - `main` had drifted from README claims before this change: README documented
   concurrent file checks while code was strictly sequential.
 - The full copied benchmark corpus is very large; running full hyperfine passes
@@ -136,7 +136,7 @@ Second, create a scheduler in `main` that:
 
 Third, add tests:
 
-- Unit tests for concurrency-limit calculation and ordered-emitter behavior.
+- Unit tests for concurrency-limit calculation and ordered-emitter behaviour.
 - Integration tests proving deterministic output despite out-of-order task
   completion and mixed failures.
 - pytest-bdd scenarios validating ordered streaming and stable boundaries.
@@ -185,7 +185,7 @@ preserving deterministic marker order. A bounded worker cap is enforced through
 
 Coverage now includes:
 
-- unit tests for concurrency resolution and timeout payload behavior
+- unit tests for concurrency resolution and timeout payload behaviour
 - integration tests for deterministic ordering under out-of-order completion
 - pytest-bdd scenario coverage for ordered streaming and failure diagnostics
 

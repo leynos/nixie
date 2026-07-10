@@ -201,3 +201,5 @@ cython_debug/
 
 # grepai index
 .grepai/
+.typos-oxendict-base.json
+.typos-oxendict-base.toml
