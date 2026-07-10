@@ -63,7 +63,7 @@ escalation, not workarounds.
   `make typecheck`, `make lint`, `make test`, and `make markdownlint` /
   `make nixie` for Markdown) must pass before each commit.
 - New runtime dependencies are forbidden. New **dev** dependencies are limited
-  to `syrupy` and `hypothesis` (pre-authorised by the change request).
+  to `syrupy` and `hypothesis` (pre-authorized by the change request).
 
 ## Tolerances (exception triggers)
 
@@ -73,7 +73,7 @@ escalation, not workarounds.
   stop and escalate.
 - Interface: if an existing public flag must change meaning (rather than gain
   a sibling), stop and escalate.
-- Dependencies: any new dependency beyond the two pre-authorised dev
+- Dependencies: any new dependency beyond the two pre-authorized dev
   dependencies triggers escalation.
 - Iterations: if a gate still fails after 3 focused attempts at the same
   failure, stop and escalate.
@@ -265,7 +265,7 @@ under merman. After `merman-cli` 0.7.0 was installed on the development
 machine (2026-06-10), the remaining criterion was demonstrated live: a
 real diagram rendered through merman in auto mode (exit 0), a genuinely
 invalid block surfaced merman's real stderr verbatim (exit 1), and the
-same inputs agreed with the forced mmdc backend — see `Artifacts and
+same inputs agreed with the forced mmdc backend — see `Artefacts and
 notes` for transcripts.
 
 Coverage delivered: 52 new or updated tests (179 total, up from 127) across
@@ -726,7 +726,7 @@ milestone granularity. No step touches anything outside the repository,
 `/tmp` logs, and the shared uv/cargo caches. If `uv lock` conflicts with a
 concurrent lock holder, wait for the lock rather than working around it.
 
-## Artifacts and notes
+## Artefacts and notes
 
 Record, as work proceeds: the red-run transcripts for each milestone, the
 reviewed snapshot contents for the error-format tests, and (if a machine

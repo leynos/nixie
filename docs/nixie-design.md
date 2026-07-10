@@ -144,12 +144,12 @@ The design is validated at three layers:
 
 - unit tests
   - concurrency limit clamping
-  - timeout behavior payload
+  - timeout behaviour payload
 - integration tests
   - deterministic marker ordering under out-of-order completion
   - concurrency cap enforcement with controlled render delays
 - BDD tests (`pytest-bdd`)
-  - end-to-end scenario for deterministic output + stderr behavior with mixed
+  - end-to-end scenario for deterministic output + stderr behaviour with mixed
     success/failure and delayed completions
 
 ## Trade-offs
