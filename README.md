@@ -1,5 +1,8 @@
 # nixie
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](
+https://deepwiki.com/leynos/nixie)
+
 `nixie` validates Mermaid diagrams embedded in Markdown files.
 
 ## Features
