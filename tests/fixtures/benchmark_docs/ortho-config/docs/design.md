@@ -240,16 +240,16 @@ shell and Windows scripts copy these files into a temporary working directory
 before invoking `cargo run` so that configuration layering can be demonstrated
 without mutating the caller's checkout.
 
-`MergeComposer` feeds these files, environment variables, and CLI arguments
-into `DeclarativeMerge`. Discovery still honours `HELLO_WORLD_CONFIG_PATH`
-first, then standard user configuration directories (`$XDG_CONFIG_HOME`, each
-entry in `$XDG_CONFIG_DIRS`, and `%APPDATA%` on Windows), the user's home
-directory (`$HOME/.config/hello_world/config.toml` and
-`$HOME/.hello_world.toml`), and finally the working directory. Behavioural
-tests exercise each path and assert that environment overrides win over files
-while CLI wins overall. Additional unit tests confirm that salutation vectors
-append deterministically and that subcommand defaults flow straight from
-`[cmds.greet]` and `[cmds.take-leave]` sections without bespoke glue code.
+`MergeComposer` feeds these files, environment variables, and CLI arguments into
+`DeclarativeMerge`. Discovery still honours `HELLO_WORLD_CONFIG_PATH` first,
+then standard user configuration directories (`$XDG_CONFIG_HOME`, each entry in
+`$XDG_CONFIG_DIRS`, and `%APPDATA%` on Windows), the user's home directory
+(`$HOME/.config/hello_world/config.toml` and `$HOME/.hello_world.toml`), and
+finally the working directory. Behavioural tests exercise each path and assert
+that environment overrides win over files while CLI wins overall. Additional
+unit tests confirm that salutation vectors append deterministically and that
+subcommand defaults flow straight from `[cmds.greet]` and `[cmds.take-leave]`
+sections without bespoke glue code.
 
 ### 4.5. Configuration discovery helper
 
@@ -356,8 +356,8 @@ This is the most complex component. It needs to perform the following using
 `syn` and `quote`:
 
 1. **Parse Attributes:** Define `#[ortho_config(...)]` attributes for both
-   struct-level (e.g., `prefix`, `file_name`) and field-level (e.g.,
-   `cli_long`, `env`, `default`, `merge_strategy`). A small helper named
+   struct-level (e.g., `prefix`, `file_name`) and field-level (e.g., `cli_long`,
+   `env`, `default`, `merge_strategy`). A small helper named
    `parse_ortho_config` walks all attributes once and delegates each nested
    meta item to a callback. Both struct- and field-level parsers call this
    helper, so the iteration logic is not duplicated. The inner type extraction

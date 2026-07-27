@@ -146,12 +146,12 @@ while maintaining incremental computation capabilities.
 
 #### Measurable Objectives
 
-| Metric                       | Target                                   | Measurement Method              |
-| ---------------------------- | ---------------------------------------- | ------------------------------- |
-| Batch Processing Speedup     | 5-10x vs Soufflé on standard benchmarks  | Comparative performance testing |
-| Incremental Update Latency   | \<100ms for typical rule sets            | End-to-end timing measurements  |
-| Memory Efficiency            | 50% reduction vs naive GPU approaches    | Memory profiling and analysis   |
-| Cross-Platform Compatibility | Support for 4+ GPU vendors               | Hardware compatibility testing  |
+| Metric                       | Target                                  | Measurement Method              |
+| ---------------------------- | --------------------------------------- | ------------------------------- |
+| Batch Processing Speedup     | 5-10x vs Soufflé on standard benchmarks | Comparative performance testing |
+| Incremental Update Latency   | \<100ms for typical rule sets           | End-to-end timing measurements  |
+| Memory Efficiency            | 50% reduction vs naive GPU approaches   | Memory profiling and analysis   |
+| Cross-Platform Compatibility | Support for 4+ GPU vendors              | Hardware compatibility testing  |
 
 #### Critical Success Factors
 
@@ -179,12 +179,12 @@ while maintaining incremental computation capabilities.
 
 #### Core Features and Functionalities
 
-| Feature Category         | Included Capabilities                                                       |
-| ------------------------ | --------------------------------------------------------------------------- |
-| Datalog Language Support | DDlog-compatible syntax, stratified negation, recursive rules, aggregation  |
-| GPU Acceleration         | CUDA and SPIR-V backends, parallel join/project/filter operations           |
-| Incremental Processing   | Delta propagation, semi-naïve evaluation, reference counting for deletions  |
-| Event Processing         | Time-stamped facts, temporal queries, streaming ingestion APIs              |
+| Feature Category         | Included Capabilities                                                      |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Datalog Language Support | DDlog-compatible syntax, stratified negation, recursive rules, aggregation |
+| GPU Acceleration         | CUDA and SPIR-V backends, parallel join/project/filter operations          |
+| Incremental Processing   | Delta propagation, semi-naïve evaluation, reference counting for deletions |
+| Event Processing         | Time-stamped facts, temporal queries, streaming ingestion APIs             |
 
 #### Primary User Workflows
 
@@ -471,12 +471,12 @@ flowchart TD
 
 #### Integration Points
 
-| Integration                    | Description                   | Shared Components                     |
-| ------------------------------ | ----------------------------- | ------------------------------------- |
-| **Parser → Compiler**          | AST transformation to GPU IR  | Type system, semantic validation      |
-| **Compiler → Incremental**     | Delta propagation scheduling  | Dependency graphs, execution plans    |
-| **Compiler → Multi-Backend**   | Kernel generation abstraction | GPU facade, portable algorithms       |
-| **Memory → All Engines**       | Resource management           | Buffer allocation, garbage collection |
+| Integration                  | Description                   | Shared Components                     |
+| ---------------------------- | ----------------------------- | ------------------------------------- |
+| **Parser → Compiler**        | AST transformation to GPU IR  | Type system, semantic validation      |
+| **Compiler → Incremental**   | Delta propagation scheduling  | Dependency graphs, execution plans    |
+| **Compiler → Multi-Backend** | Kernel generation abstraction | GPU facade, portable algorithms       |
+| **Memory → All Engines**     | Resource management           | Buffer allocation, garbage collection |
 
 #### Common Services
 
@@ -569,10 +569,10 @@ business needs to technical implementation details.
 
 ### 3.1.2 Gpu Kernel Languages
 
-| Target Platform         | Language/IR     | Toolchain                    | Justification                                                                                                                                        |
-| ----------------------- | --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **NVIDIA GPUs**         | Rust → PTX      | rust-cuda/rustc_codegen_nvvm | rustc_codegen_nvvm generates highly optimized PTX code which can be loaded by the CUDA Driver API to execute on the GPU.                             |
-| **Cross-Platform GPUs** | Rust → SPIR-V   | rust-gpu/rustc_codegen_spirv | Rust GPU compiles Rust code to SPIR-V, the binary format used by Vulkan and other modern GPU APIs, allowing GPU code to be written entirely in Rust. |
+| Target Platform         | Language/IR   | Toolchain                    | Justification                                                                                                                                        |
+| ----------------------- | ------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **NVIDIA GPUs**         | Rust → PTX    | rust-cuda/rustc_codegen_nvvm | rustc_codegen_nvvm generates highly optimized PTX code which can be loaded by the CUDA Driver API to execute on the GPU.                             |
+| **Cross-Platform GPUs** | Rust → SPIR-V | rust-gpu/rustc_codegen_spirv | Rust GPU compiles Rust code to SPIR-V, the binary format used by Vulkan and other modern GPU APIs, allowing GPU code to be written entirely in Rust. |
 
 ### 3.1.3 Frontend Parser
 
@@ -2156,12 +2156,12 @@ memory and persistent storage layers.
 
 #### Core Memory Hierarchy
 
-| Memory Tier        | Technology                                                                                                                                                                                                                                                                                                                                                     | Purpose                | Capacity   | Bandwidth   | Latency    |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------- | ----------- | ---------- |
-| **GPU VRAM**       | Modern GPUs offer memory bandwidths exceeding 1 TB/s, dwarfing CPU‑only systems                                                                                                                                                                                                                                                                                | Primary working set    | 8-80 GB    | 1-8 TB/s    | \<1 μs     |
-| **Host RAM**       | System memory                                                                                                                                                                                                                                                                                                                                                  | Overflow cache         | 64-1024 GB | 50-200 GB/s | 1-10 μs    |
-| **NVMe Storage**   | GPUDirect Storage enables a direct data path between local or remote storage and GPU memory, avoiding extra copies through a bounce buffer in the CPU's memory and enabling a DMA engine near the storage to move data directly into or out of GPU memory. The technology provides 2x-8x higher bandwidth with data transfers directly between storage and GPU | Persistent checkpoints | 1-100 TB   | 3-14 GB/s   | 10-100 μs  |
-| **Object Storage** | S3/GCS/Azure                                                                                                                                                                                                                                                                                                                                                   | Long-term archives     | Unlimited  | 1-10 GB/s   | 10-100 ms  |
+| Memory Tier        | Technology                                                                                                                                                                                                                                                                                                                                                     | Purpose                | Capacity   | Bandwidth   | Latency   |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------- | ----------- | --------- |
+| **GPU VRAM**       | Modern GPUs offer memory bandwidths exceeding 1 TB/s, dwarfing CPU‑only systems                                                                                                                                                                                                                                                                                | Primary working set    | 8-80 GB    | 1-8 TB/s    | \<1 μs    |
+| **Host RAM**       | System memory                                                                                                                                                                                                                                                                                                                                                  | Overflow cache         | 64-1024 GB | 50-200 GB/s | 1-10 μs   |
+| **NVMe Storage**   | GPUDirect Storage enables a direct data path between local or remote storage and GPU memory, avoiding extra copies through a bounce buffer in the CPU's memory and enabling a DMA engine near the storage to move data directly into or out of GPU memory. The technology provides 2x-8x higher bandwidth with data transfers directly between storage and GPU | Persistent checkpoints | 1-100 TB   | 3-14 GB/s   | 10-100 μs |
+| **Object Storage** | S3/GCS/Azure                                                                                                                                                                                                                                                                                                                                                   | Long-term archives     | Unlimited  | 1-10 GB/s   | 10-100 ms |
 
 #### Memory Layout Strategy
 
@@ -2486,12 +2486,12 @@ flowchart TD
 
 #### Stratification and Scheduling
 
-| Stratum | Relations                | Evaluation Strategy   | Parallelization           |
-| ------- | ------------------------ | --------------------- | ------------------------- |
-| **0**   | Base relations (EDB)     | Direct insertion      | Full parallel             |
-| **1**   | First-order derivations  | Semi-naïve iteration  | Rule-level parallel       |
-| **2**   | Second-order derivations | Dependency-ordered    | Sequential within stratum |
-| **3+**  | Higher-order derivations | Topological sort      | Limited parallelism       |
+| Stratum | Relations                | Evaluation Strategy  | Parallelization           |
+| ------- | ------------------------ | -------------------- | ------------------------- |
+| **0**   | Base relations (EDB)     | Direct insertion     | Full parallel             |
+| **1**   | First-order derivations  | Semi-naïve iteration | Rule-level parallel       |
+| **2**   | Second-order derivations | Dependency-ordered   | Sequential within stratum |
+| **3+**  | Higher-order derivations | Topological sort     | Limited parallelism       |
 
 ### 6.2.3 Reference Counting System
 
@@ -3316,12 +3316,12 @@ specialized data center designs.
 
 #### Required Software Stack
 
-| Component          | Version              | Purpose                                                                                                                                                                                                 | Installation Method                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CUDA Toolkit**   | 12.0+                | CUDA® is a parallel computing platform and programming model invented by NVIDIA. It enables dramatic increases in computing performance by harnessing the power of the graphics processing unit (GPU).  | Package manager/installer                                                                                                                                                                                                                                                                                                                                                           |
-| **Rust Toolchain** | 1.85+ (2024 Edition) | Core development environment                                                                                                                                                                            | rustup                                                                                                                                                                                                                                                                                                                                                                              |
-| **NVIDIA Drivers** | 525+                 | GPU hardware interface                                                                                                                                                                                  | To ensure your GPU functions correctly with CUDA, you may need to install the appropriate drivers. Identify Your GPU: Use the command nvidia-smi to check your GPU model and driver version. Download Drivers: Visit the Nvidia Driver Downloads page to find the latest drivers for your GPU. Install Drivers: Follow the installation instructions provided on the download page. |
-| **Docker**         | 20.10+               | Containerized deployment                                                                                                                                                                                | Package manager                                                                                                                                                                                                                                                                                                                                                                     |
+| Component          | Version              | Purpose                                                                                                                                                                                                | Installation Method                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CUDA Toolkit**   | 12.0+                | CUDA® is a parallel computing platform and programming model invented by NVIDIA. It enables dramatic increases in computing performance by harnessing the power of the graphics processing unit (GPU). | Package manager/installer                                                                                                                                                                                                                                                                                                                                                           |
+| **Rust Toolchain** | 1.85+ (2024 Edition) | Core development environment                                                                                                                                                                           | rustup                                                                                                                                                                                                                                                                                                                                                                              |
+| **NVIDIA Drivers** | 525+                 | GPU hardware interface                                                                                                                                                                                 | To ensure your GPU functions correctly with CUDA, you may need to install the appropriate drivers. Identify Your GPU: Use the command nvidia-smi to check your GPU model and driver version. Download Drivers: Visit the Nvidia Driver Downloads page to find the latest drivers for your GPU. Install Drivers: Follow the installation instructions provided on the download page. |
+| **Docker**         | 20.10+               | Containerized deployment                                                                                                                                                                               | Package manager                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## 8.3 Deployment Architecture
 
@@ -3416,12 +3416,12 @@ flowchart LR
 
 #### Network Requirements
 
-| Connection Type  | Bandwidth    | Latency  | Purpose                             |
-| ---------------- | ------------ | -------- | ----------------------------------- |
-| **External API** | 1-10 Gbps    | \<10ms   | Client connections, event ingestion |
-| **Management**   | 100 Mbps     | \<100ms  | Monitoring, administration          |
-| **GPU-CPU**      | PCIe 4.0/5.0 | \<1μs    | Data transfer, kernel coordination  |
-| **Storage**      | NVMe 4.0     | \<100μs  | Checkpoint I/O, data loading        |
+| Connection Type  | Bandwidth    | Latency | Purpose                             |
+| ---------------- | ------------ | ------- | ----------------------------------- |
+| **External API** | 1-10 Gbps    | \<10ms  | Client connections, event ingestion |
+| **Management**   | 100 Mbps     | \<100ms | Monitoring, administration          |
+| **GPU-CPU**      | PCIe 4.0/5.0 | \<1μs   | Data transfer, kernel coordination  |
+| **Storage**      | NVMe 4.0     | \<100μs | Checkpoint I/O, data loading        |
 
 ## 8.4 Build And Distribution
 

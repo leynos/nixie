@@ -328,11 +328,11 @@ lading bump <new_version> [--dry-run]
   listed in the configuration keeps its existing `package.version` value during
   the update pass.
 - Dependency requirements referencing workspace members are rewritten using the
-  workspace graph. For each crate we map dependencies to their
-  `[dependencies]`, `[dev-dependencies]`, or `[build-dependencies]` sections
-  and update the requirement string only when the target crate's version
-  changes. Leading operators such as `^` and `~` are preserved so caret and
-  tilde semantics continue to apply.
+  workspace graph. For each crate we map dependencies to their `[dependencies]`,
+  `[dev-dependencies]`, or `[build-dependencies]` sections and update the
+  requirement string only when the target crate's version changes. Leading
+  operators such as `^` and `~` are preserved so caret and tilde semantics
+  continue to apply.
 - Crates excluded via `bump.exclude` still have their dependency requirements
   refreshed when they point at bumped members. This keeps the workspace graph
   consistent without forcing the excluded crate to change its own version.

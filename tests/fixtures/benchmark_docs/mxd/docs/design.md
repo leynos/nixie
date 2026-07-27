@@ -26,9 +26,9 @@ domain operations can be exercised in isolation from their environment.
   Hotline-specific frames, and dispatches incoming messages to the appropriate
   domain handler via a routing
   table([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L35-L43)
-   )(
+  )(
   [1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L140-L148)).
-   Each Hotline “transaction” type (a message or request identified by an ID)
+  Each Hotline “transaction” type (a message or request identified by an ID)
   is mapped to a handler function. For example, the Login transaction (Hotline
   ID 0x006B) is routed to a `handle_login` handler in the domain core. The
   Wireframe adapter thus plays the role of the **primary port** on the inbound
@@ -164,15 +164,15 @@ classDiagram
   magic bytes and version, then invokes a success or failure callback in which
   the domain’s handshake logic
   runs([1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L54-L63)
-   )(
+  )(
   [1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L70-L79)).
-   After handshake, Wireframe uses a custom **Serializer** to parse each
+  After handshake, Wireframe uses a custom **Serializer** to parse each
   incoming frame’s header and payload into a message struct, then uses a router
   to call the correct
   handler([1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L92-L101)
-   )(
+  )(
   [1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L140-L148)).
-   The handlers are async functions in the domain core, which produce a
+  The handlers are async functions in the domain core, which produce a
   response message that Wireframe then encodes via the serializer and sends.
   This adapter thus shields the domain from networking details like timeouts,
   fragmentation, etc., while ensuring each domain action is triggered by the
@@ -224,7 +224,7 @@ known.
   `db::get_user_by_name(username)` which is implemented with a Diesel query
   against the `users`
   table([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L31-L39)).
-   The domain doesn’t issue SQL directly; it calls methods in the DB adapter
+  The domain doesn’t issue SQL directly; it calls methods in the DB adapter
   that return domain types (like a `User` struct) or results. This layer also
   includes migration management and database connection pooling. By abstracting
   the DB operations in functions, it’s conceivable to swap them out (for
@@ -257,9 +257,9 @@ To manage the complexity of a custom binary protocol (Hotline), MXD employs the
 **Wireframe** library to drive its server-side routing. Wireframe provides an
 Actix-web-style API but for arbitrary binary
 protocols([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L3-L12)
- )(
+)(
 [2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L30-L38)).
- In MXD, we use Wireframe to handle all incoming TCP connections and route
+In MXD, we use Wireframe to handle all incoming TCP connections and route
 decoded messages to handler functions based on their **transaction ID**.
 
 **Protocol-Level Routing**: In a Hotline server, each client request is
@@ -330,17 +330,17 @@ implement a **Serializer** that knows how to read and write Hotline
 transaction type, transaction ID, payload lengths, etc.) and aggregates
 fragments if a message is split across multiple TCP
 segments([1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L100-L108)
- )(
+)(
 [1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L109-L118)).
- This serializer produces a high-level `Envelope` or message struct (carrying
+This serializer produces a high-level `Envelope` or message struct (carrying
 the transaction type and payload bytes). Wireframe then uses the message’s
 transaction type as a key to dispatch to a handler function. We register each
 supported transaction with a handler via `.route()`, using our
 `TransactionType` enum to enumerate the
 IDs([5](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/transaction_type.rs#L41-L50)
- )(
+)(
 [5](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/transaction_type.rs#L61-L70)).
- For example, a `Login (0x006B)` message is routed to the `handle_login`
+For example, a `Login (0x006B)` message is routed to the `handle_login`
 function. Inside that handler (implemented in the domain module `login.rs`),
 the logic will verify credentials and produce a response struct.
 
@@ -349,7 +349,7 @@ returns a type implementing Wireframe’s `Responder` trait (essentially
 containing a reply transaction ID, maybe some data), and the serializer wraps
 it into the Hotline frame format to send
 back([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L129-L137)).
- This means the domain handler can simply return a result (e.g. a `LoginOk`
+This means the domain handler can simply return a result (e.g. a `LoginOk`
 response with server info, or an error), and the adapter handles converting it
 to the `FrameHeader` + payload bytes for the client. All the low-level tasks
 like enforcing max payload size (1 MiB limit, for example) and frame
@@ -368,7 +368,7 @@ reuse of common features:
 - *Middleware*: We can attach middleware in the pipeline (for logging, error
   handling, etc.) similar to web
   frameworks([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L40-L48)).
-   For instance, a logging middleware can tag each incoming request with the
+  For instance, a logging middleware can tag each incoming request with the
   connection ID and user, sending structured logs (which can feed into journald
   as described later).
 
@@ -382,7 +382,7 @@ reuse of common features:
 - *Parallelism*: The server runs on Tokio with a pool of worker tasks (by
   default equal to CPU
   cores)([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L46-L54)).
-   Wireframe will distribute different connections or even different requests
+  Wireframe will distribute different connections or even different requests
   to these workers, allowing concurrent processing of multiple client commands.
   This is essential for chat (multiple messages interleaved) and file transfers.
 
@@ -390,18 +390,18 @@ reuse of common features:
 in `main.rs`) that accepted connections and spawned a task for each, manually
 reading from a `BufReader` and writing with
 `BufWriter`([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L239-L249)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L313-L322)).
- The plan (as per the migration design) is to replace this with the
+The plan (as per the migration design) is to replace this with the
 Wireframe-based server in a new binary
 (`mxd-wireframe-server`)([1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L22-L31)).
- The legacy `handle_client` function reads a transaction from the socket,
+The legacy `handle_client` function reads a transaction from the socket,
 parses it, and calls `handle_request()` to process
 it([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L344-L353)).
- With Wireframe, that logic is refactored: `handle_request()` and the `Command`
+With Wireframe, that logic is refactored: `handle_request()` and the `Command`
 enum remain in the domain as the core command
 dispatcher([6](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/handler.rs#L34-L42)),
- but the reading/writing of frames will be done by Wireframe’s runtime.
+but the reading/writing of frames will be done by Wireframe’s runtime.
 Essentially, each route in Wireframe will call an equivalent of
 `handle_request` for that specific command. For now, both approaches coexist
 (the code uses the old loop), but the design ensures a smooth switchover: once
@@ -504,10 +504,10 @@ by emitting one or more physical frames. Payloads larger than `MAX_FRAME_DATA`
 frame). Fragmentation happens after the full payload has been assembled; the
 codec does not stream or fragment during parameter serialisation.
 
-For parameter-centric payloads, the codec exposes constructor helpers that
-reuse `transaction::encode_params`, ensuring there is a single implementation
-of parameter serialisation. `encode_params` validates the per-field constraints
-of the parameter block (for example, counts and field lengths must fit into
+For parameter-centric payloads, the codec exposes constructor helpers that reuse
+`transaction::encode_params`, ensuring there is a single implementation of
+parameter serialisation. `encode_params` validates the per-field constraints of
+the parameter block (for example, counts and field lengths must fit into
 `u16`), while the codec validates overall payload size limits
 (`MAX_PAYLOAD_SIZE` for the assembled payload and `MAX_FRAME_DATA` per frame)
 before emitting wire frames.
@@ -646,8 +646,8 @@ through the existing `Command` dispatcher.
 
 **Middleware architecture.** The `TransactionMiddleware` struct implements
 wireframe's `Transform<HandlerService<Envelope>>` trait, wrapping the inner
-handler service with transaction processing logic. This approach was chosen
-over `from_fn` middleware because wireframe's `wrap()` method requires
+handler service with transaction processing logic. This approach was chosen over
+`from_fn` middleware because wireframe's `wrap()` method requires
 `Output = HandlerService<E>`, not the `FnService` type that `from_fn` produces.
 
 The middleware holds:
@@ -747,7 +747,7 @@ and configuring the daemon flexible but with minimal boilerplate in code. MXD’
 settings, and OrthoConfig’s derive macro automatically wires up CLI flags, env
 vars, and file parsing for those
 fields([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L124-L132)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L134-L142)).
 
 Key aspects of configuration:
@@ -755,11 +755,11 @@ Key aspects of configuration:
 - **Single Source Struct**: All config options are fields in `AppConfig` (e.g.
   `bind` address, `database` URL/path, Argon2 parameters for password
   hashing)([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L124-L132)
-   )(
+  )(
   [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L134-L142)).
-   This struct is annotated with `#[derive(OrthoConfig)]` and a prefix
+  This struct is annotated with `#[derive(OrthoConfig)]` and a prefix
   `MXD_`([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L69-L76)).
-   The prefix defines the environment variable naming convention and default
+  The prefix defines the environment variable naming convention and default
   config file name.
 
 - **Command-line (CLI)**: Using Clap under the hood, OrthoConfig generates long
@@ -769,20 +769,20 @@ Key aspects of configuration:
   `#[arg(default_value_t = "0.0.0.0:5500".to_string())]` which sets a default
   if not otherwise
   specified([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L126-L134)).
-   The user can override these by passing arguments; e.g.
+  The user can override these by passing arguments; e.g.
   `mxd --bind 192.168.1.1:1234` to listen on a custom address.
 
 - **Environment Variables**: For each field, an env var is automatically
   recognized. The naming is `MXD_<FIELD>` in upper snake case by default. E.g.,
   `MXD_BIND` can be set to define the bind
   address([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)),
-   and `MXD_DATABASE` to set the database
+  and `MXD_DATABASE` to set the database
   path([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)).
-   If the program runs without CLI args for those fields, it will fall back to
+  If the program runs without CLI args for those fields, it will fall back to
   env vars. Our tests confirm that the environment is picked up (and that CLI
   will override
   env)([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)
-   )(
+  )(
   [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L389-L396)).
 
 - **Config File**: OrthoConfig also supports reading from a file (TOML by
@@ -790,9 +790,8 @@ Key aspects of configuration:
   prefix is "MXD", the default config file is `.mxd.toml` in the current
   directory or home directory). This file can contain keys matching the field
   names (e.g. `bind = "1.2.3.4:1111"`). MXD will merge this file into the
-  configuration with lower precedence than env and CLI. In our tests, dropping
-  a `.mxd.toml` with a bind address works and is loaded when no other override
-  is
+  configuration with lower precedence than env and CLI. In our tests, dropping a
+  `.mxd.toml` with a bind address works and is loaded when no other override is
   given([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L398-L405)).
 
 **Precedence Order**: The layers override each other in increasing order of
@@ -801,11 +800,11 @@ values (in code or derived) can be overridden by anything in `.mxd.toml`, which
 in turn can be overridden by environment variables, and finally any CLI option
 explicitly given will trump
 all([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L388-L396)).
- For example, if `.mxd.toml` sets `bind = "1.2.3.4:1111"` and the environment
+For example, if `.mxd.toml` sets `bind = "1.2.3.4:1111"` and the environment
 has `MXD_BIND=127.0.0.1:8000`, running `mxd` with no flags will result in the
 env value taking effect
 (127.0.0.1:8000)([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)).
- If the user runs `mxd --bind 0.0.0.0:9000`, that CLI `--bind` will override
+If the user runs `mxd --bind 0.0.0.0:9000`, that CLI `--bind` will override
 both env and
 file([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L389-L396)).
 
@@ -816,7 +815,7 @@ subcommand like `create-user` is invoked, we call
 `load_and_merge_subcommand_for<CreateUserArgs>(&args)` to combine any config
 file or env settings that apply to that subcommand’s
 options([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L156-L164)).
- This allows, for example, using env vars for subcommand inputs. The
+This allows, for example, using env vars for subcommand inputs. The
 `create-user` subcommand expects a username and password; you could set
 `MXD_USERNAME` and `MXD_PASSWORD` env vars (since `CreateUserArgs` is also
 OrthoConfig-derived with the same prefix) instead of passing them explicitly.
@@ -831,15 +830,15 @@ populated `cfg` struct. Logging the config (via `Debug` derive) would show
 exactly which values were set from where. We have unit tests to verify this
 loading logic, covering env-only, CLI-over-env, and file loading
 cases([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L389-L396)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L397-L405)).
 
 **Example**: By default, MXD listens on `0.0.0.0:5500` and uses an SQLite file
 `mxd.db`
 ([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L128-L136)).
- If an operator wants to run Postgres, they would disable default features at
+If an operator wants to run Postgres, they would disable default features at
 compile time and then run:
 
 ```bash
@@ -863,7 +862,7 @@ and a careful approach to schema and SQL differences. The selection is made at
 build time: exactly one of the features `sqlite` or `postgres` must be enabled
 in Cargo, and the codebase conditionally compiles for the chosen
 backend([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L161-L169)).
- Key implementation points include feature flags, migration management, a
+Key implementation points include feature flags, migration management, a
 unified schema model, and custom extensions for advanced SQL (like recursive
 CTEs).
 
@@ -873,23 +872,23 @@ In `Cargo.toml`, two feature sets are defined – `sqlite` (default) and
 `postgres` – each enabling the appropriate Diesel backend support and related
 dependencies(
 [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L146-L154)
- )(
+)(
 [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L156-L164)).
- For example, the `postgres` feature includes `diesel/postgres`,
+For example, the `postgres` feature includes `diesel/postgres`,
 `diesel_async/postgres`, etc., while `sqlite` brings in `diesel/sqlite`,
 `diesel_async/sqlite`, and also Diesel’s special SQLite extensions (like
 support for the `RETURNING` clause on SQLite
 3.35+)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L152-L160)).
- The MXD code uses `cfg_if!` to enforce that one and only one of these features
+The MXD code uses `cfg_if!` to enforce that one and only one of these features
 is active, otherwise it fails to
 compile([8](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/lib.rs#L6-L14)).
- At compile time, a type alias `DbBackend` is set to `diesel::sqlite::Sqlite`
-or `diesel::pg::Pg`
+At compile time, a type alias `DbBackend` is set to `diesel::sqlite::Sqlite` or
+`diesel::pg::Pg`
 accordingly([8](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/lib.rs#L8-L13)),
- and similarly the connection pool types are aliased (`DbConnection` = SQLite
+and similarly the connection pool types are aliased (`DbConnection` = SQLite
 connection wrapper or
 AsyncPgConnection)([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L19-L28)).
- This means throughout the code, we can use Diesel generically (e.g. calls like
+This means throughout the code, we can use Diesel generically (e.g. calls like
 `.execute(conn)` or Diesel’s DSL types) without committing to a specific
 backend; the concrete types are decided by the feature flag.
 
@@ -898,7 +897,7 @@ From the developer perspective:
 - To build for Postgres, you run
   `cargo build --no-default-features --features postgres`
   ([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L3-L11)).
-   The `--no-default-features` is necessary because `sqlite` is on by default.
+  The `--no-default-features` is necessary because `sqlite` is on by default.
 
 - To build for SQLite, `cargo build --features sqlite` works (or simply
   `cargo build` since SQLite is
@@ -907,7 +906,7 @@ From the developer perspective:
 - The code ensures a compile-time error if neither or both features are
   enabled(
   [8](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/lib.rs#L6-L14)),
-   preventing ambiguity.
+  preventing ambiguity.
 
 This setup allows us to ship a single codebase and even a single binary
 (compiled separately for each backend) that supports two very different
@@ -923,20 +922,20 @@ systems. We maintain parallel migration directories: `migrations/sqlite/` and
 `migrations/postgres/`, each containing the same sequence of migration versions
 but with SQL dialect tailored to the
 engine([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L88-L97)).
- For example, migration “20250605142700_create_users” will have an
+For example, migration “20250605142700_create_users” will have an
 `up.postgres.sql` and an `up.sqlite.sql` file with appropriate SQL for
 each([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L90-L99)
- )(
+)(
 [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L101-L109)).
- The Diesel migration setup uses `embed_migrations!("migrations/<backend>")`
+The Diesel migration setup uses `embed_migrations!("migrations/<backend>")`
 conditional on the feature flag to compile in the correct
 set([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L178-L186)).
- At runtime, we call a unified `apply_migrations()` which invokes Diesel’s
+At runtime, we call a unified `apply_migrations()` which invokes Diesel’s
 migration runner for the compiled-in
 migrations([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L60-L69)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L81-L89)).
- This ensures the database gets the right schema for whichever backend the
+This ensures the database gets the right schema for whichever backend the
 binary was built for.
 
 We keep the **logical schema** identical between SQLite and PG, while allowing
@@ -945,13 +944,13 @@ implementation differences. For instance:
 - **Auto-increment primary keys**: In Postgres we use
   `GENERATED BY DEFAULT AS IDENTITY` (the modern `SERIAL`
   replacement)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L43-L51)
-   )(
+  )(
   [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L99-L107)).
-   In SQLite, we use
+  In SQLite, we use
   `INTEGER PRIMARY KEY AUTOINCREMENT`([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L53-L61)
-   )(
+  )(
   [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L111-L119)).
-   Both achieve an auto-incrementing integer `id` column, but the SQL syntax
+  Both achieve an auto-incrementing integer `id` column, but the SQL syntax
   differs.
 
 - **Data types**: We choose types that map well to both. E.g. we use `TEXT` for
@@ -961,7 +960,7 @@ implementation differences. For instance:
   `BOOLEAN` is fine in Postgres and in SQLite it ends up as 0/1 integer
   (Diesel’s bool mapping covers
   it)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L65-L68));
-   `INTEGER` for integer types, etc. Some types don’t line up – e.g. `BYTEA` vs
+  `INTEGER` for integer types, etc. Some types don’t line up – e.g. `BYTEA` vs
   `BLOB` for binary data – but we avoid unsupported types or handle them
   conditionally. The doc notes that JSONB or timezone-aware timestamps aren’t
   portable, so we either avoid them or supply separate SQL. For example, we
@@ -973,7 +972,7 @@ implementation differences. For instance:
   engines (e.g. `DEFAULT now()` vs `DEFAULT CURRENT_TIMESTAMP` are set in
   respective
   files)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L80-L88)).
-   Complex constraints or index expressions may need to be left out of SQLite
+  Complex constraints or index expressions may need to be left out of SQLite
   or done via triggers if necessary (the docs mention things like expression
   indexes not supported in older
   SQLite)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L75-L79)).
@@ -983,38 +982,38 @@ compile the same ORM code for both. For example, our Diesel `table!` for
 `users` declares `username -> Text, active -> Bool, created_at -> Timestamp`
 etc., which Diesel maps to appropriate SQL types on each
 backend([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L129-L138)).
- Thus the code accessing `users::table` or constructing a `NewUser` struct is
+Thus the code accessing `users::table` or constructing a `NewUser` struct is
 identical regardless of backend – only the compiled Diesel queries differ at
 runtime. In Cargo features, we ensure that Diesel’s
 `returning_clauses_for_sqlite_3_35` feature is enabled for SQLite builds so
 that Diesel’s `.returning()` methods work on SQLite (which gained support for
 RETURNING in version
 3.35)([10](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/Cargo.toml#L52-L60)).
- In code, we often leverage this: e.g. inserting a new row and getting its `id`
+In code, we often leverage this: e.g. inserting a new row and getting its `id`
 back can be done with `.returning(...)` on both PG and SQLite (with that
 feature)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L380-L388)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L389-L398)).
- Where not available, we fall back to alternate methods (for example, in
+Where not available, we fall back to alternate methods (for example, in
 SQLite, after an insert we can `SELECT last_insert_rowid()` as shown in our
 `create_bundle`
 function)([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L382-L390)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L391-L399)).
 
 **Embedded Migrations**: The migration files are embedded into the binary to
 simplify deployment. At startup or user command, MXD can run
 `run_pending_migrations()` through Diesel’s
 API([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L64-L73)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L82-L90)).
- We also expose a CLI subcommand or function to apply migrations manually
+We also expose a CLI subcommand or function to apply migrations manually
 (`mxd create-user` will apply migrations before inserting the user, for
 example([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L114-L122)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L116-L124))).
- This ensures that whether you’re using SQLite or PG, the schema will be
+This ensures that whether you’re using SQLite or PG, the schema will be
 up-to-date. The migration version numbers (the timestamps in filenames) are
 kept identical between the two trees, so that Diesel’s migration tracking
 (which just uses a numeric identifier) stays
@@ -1034,9 +1033,9 @@ relationships). Below is a brief overview of each:
   `id`, `username`, `password`, and in later migrations additional flags (e.g.
   an `active` boolean, created_at
   timestamp)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L101-L108)
-   )(
+  )(
   [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L113-L120)).
-   Passwords are stored hashed (using Argon2id). The schema doesn’t store the
+  Passwords are stored hashed (using Argon2id). The schema doesn’t store the
   Argon2 parameters per user – instead, global Argon2 parameters are in config.
   The `users` table is referenced by other tables (for example, chat messages
   have a `user_id` foreign key, file permissions reference `users`, etc.).
@@ -1045,21 +1044,21 @@ relationships). Below is a brief overview of each:
   set of tables:
 
 - `chat_rooms`: Represents a chat room or conversation. Fields include an
-  `id`, `creator_id` (user who created the room), a `subject` (topic), a
-  boolean `is_private`, and a `created_at`
+  `id`, `creator_id` (user who created the room), a `subject` (topic), a boolean
+  `is_private`, and a `created_at`
   timestamp([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L17-L25)
-   )(
+  )(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L59-L67)).
-   If `is_private=false`, the room is public (anyone can join, e.g. a main
+  If `is_private=false`, the room is public (anyone can join, e.g. a main
   lobby). If true, it’s invite-only (for direct chats or private group chats).
 
 - `chat_participants`: A join table mapping users to chat rooms they are in. It
   has `chat_room_id` and `user_id` as a composite PK and records a `joined_at`
   time(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L25-L33)
-   )(
+  )(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L68-L73)).
-   This table allows listing who is in a room and is crucial for broadcasting
+  This table allows listing who is in a room and is crucial for broadcasting
   messages to the right subset of connected clients.
 
 - `chat_messages`: Stores chat history (if we choose to persist it). Each
@@ -1067,18 +1066,18 @@ relationships). Below is a brief overview of each:
   sender, a timestamp `posted_at`, an `options` integer (for styling flags like
   emoticons or text color as per Hotline protocol), and the message
   `text`([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L31-L38)
-   )(
+  )(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L74-L82)).
-   By saving messages, we can support features like late joiners getting recent
+  By saving messages, we can support features like late joiners getting recent
   history or server archival of chats.
 
 - `chat_invites`: When a user invites another to a private chat, we record an
   invite here. Fields: `id`, `chat_room_id` (the room to join),
   `invited_user_id`, `inviter_user_id`, and a
   timestamp([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L40-L48)
-   )(
+  )(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L84-L92)).
-   This helps implement invite flows (so that an invited user can later fetch
+  This helps implement invite flows (so that an invited user can later fetch
   pending invites, or the server can enforce one invite per user per room,
   etc.).
 
@@ -1088,12 +1087,12 @@ server will create a new `chat_rooms` entry with `is_private=true` and a
 subject (maybe empty or default), add the inviter to `chat_participants`, and
 create an entry in `chat_invites` for each invited
 user([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L101-L109)).
- If the invite is accepted (transaction 113/114 for accept/decline), we would
+If the invite is accepted (transaction 113/114 for accept/decline), we would
 move the invited user into `chat_participants` (and possibly remove the invite
 entry). Transactions like “Join Chat” (115) correspond to inserting a row in
 `chat_participants`
 ([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L102-L110)),
- and “Leave Chat” (116) to removing that row. Public chat (the main lobby)
+and “Leave Chat” (116) to removing that row. Public chat (the main lobby)
 might be represented by a well-known `chat_room` (e.g., id 1 for “Lobby” which
 is not private and is created at server startup). All logged-in users might
 automatically join that room, or at least can join it without invite, providing
@@ -1110,7 +1109,7 @@ The schema also supports chat **subjects** – users can set a chat topic which
 updates `chat_rooms.subject`. Hotline protocol has a “Set Chat Subject (120)”
 and it triggers a broadcast (119) to
 others([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L110-L114)).
- We store the subject so new joiners or persistent logs can know what the topic
+We store the subject so new joiners or persistent logs can know what the topic
 was.
 
 *Note*: Currently, these chat tables are designed and migrated but not yet
@@ -1124,28 +1123,28 @@ and chat features) as outlined in the roadmap.
 - `news_bundles`: A *bundle* is a container of news categories, and bundles can
   nest (a bundle may have a parent
   bundle)([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L29-L37)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L97-L105)).
-   This reflects how Hotline allows grouping of forums. Fields: `id`,
+  This reflects how Hotline allows grouping of forums. Fields: `id`,
   `parent_bundle_id` (self-referencing FK), `name` (title of the bundle), a
   GUID (Hotline often tracks a GUID for bundles/categories), and
   `created_at`([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L29-L37)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L97-L105)).
-   The nesting allows a tree of bundles.
+  The nesting allows a tree of bundles.
 
 - `news_categories`: These are the actual forums where articles (posts) live.
   Each category belongs to a bundle (or to no bundle, i.e., top-level if
   `bundle_id` is
   NULL)([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L37-L45)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L107-L115)).
-   Fields: `id`, `bundle_id`, `name`, `guid`, and two integers `add_sn` and
+  Fields: `id`, `bundle_id`, `name`, `guid`, and two integers `add_sn` and
   `delete_sn` (these might track the last serial numbers of added/deleted
   articles for replication or client sync, according to Hotline protocol), plus
   timestamp(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L37-L45)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L107-L115)).
 
 - `news_articles`: Each row is a post. The schema is designed to support
@@ -1164,7 +1163,7 @@ and chat features) as outlined in the roadmap.
 - `first_child_article_id` (FK to the first reply, if this article has
   replies)(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L47-L55)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L119-L127)).
 
 - Also, `title`, `poster` (username or alias of who posted), `posted_at`
@@ -1173,7 +1172,7 @@ and chat features) as outlined in the roadmap.
   or similar), and `data` (the content of the post, which could be text or an
   encoded
   file)([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L48-L56)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L127-L135)).
 
 These fields allow representing a threaded message board akin to classic
@@ -1182,15 +1181,15 @@ Hotline or BBS forums. We can traverse a thread by following
 manual linked list of threads. This design was chosen to mirror Hotline’s
 protocol which provides prev/next links in news
 listings([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L64-L69)
- )(
+)(
 [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L150-L157)).
- For example, when the server sends a news article to a client, it includes
+For example, when the server sends a news article to a client, it includes
 fields for next/prev article IDs and parent/child, so the client can navigate
 threads; our DB stores these so that we can populate those fields
 easily([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L367-L376)
- )(
+)(
 [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L373-L380)).
- The trade-off is more work on insert (we need to update pointers when
+The trade-off is more work on insert (we need to update pointers when
 adding/removing posts), but read operations for sequential browsing become
 simple.
 
@@ -1199,25 +1198,25 @@ Additionally, we have **permissions** for news:
 - `permissions` and `user_permissions` tables define what actions each user can
   do(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L17-L25)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L81-L89)
-   ),(
+  ),(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L24-L28)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L90-L98)).
-   Hotline had a fixed set of privilege codes (like code 20 for “News: Read
+  Hotline had a fixed set of privilege codes (like code 20 for “News: Read
   Article”, code 21 for “News: Post Article”, etc., up to 38 distinct flags for
   various
   abilities)([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L154-L161)).
-   Instead of storing a bitmask on the user, we normalized it: a `permissions`
+  Instead of storing a bitmask on the user, we normalized it: a `permissions`
   table enumerates all possible privileges (with a code and name), and
   `user_permissions` is a many-to-many linking a user to each permission they
   have. There is a `scope` field in `permissions` (general vs folder vs bundle)
   to denote if a permission is global or tied to news
   specifically([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L18-L26)
-   )(
+  )(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L82-L90)).
-   This approach makes it easy to query which users have, say, “News Admin”
+  This approach makes it easy to query which users have, say, “News Admin”
   rights, or to extend with new permissions.
 
 The **news domain logic** uses these tables to implement operations:
@@ -1227,19 +1226,19 @@ The **news domain logic** uses these tables to implement operations:
   hierarchy. In the code, `list_names_at_path(conn, path)` will return all
   sub-bundles and categories under a given
   path([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L315-L323)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L324-L333)).
-   If `path` is None, it returns top-level bundle and category names
+  If `path` is None, it returns top-level bundle and category names
   (concatenated)(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L324-L333)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L338-L346)).
-   If `path` is a bundle name or nested bundle path, it finds that bundle and
+  If `path` is a bundle name or nested bundle path, it finds that bundle and
   lists its sub-bundles and
   categories([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L320-L328)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L338-L346)).
-   This is how a client browsing the forum structure gets the list of sections.
+  This is how a client browsing the forum structure gets the list of sections.
   Under the hood, to resolve a text path like `"Announcements/Server News"` to
   an ID, we use a path-walking query.
 
@@ -1248,17 +1247,17 @@ The **news domain logic** uses these tables to implement operations:
   `get_article(conn, path, article_id)` which first finds the `category_id` for
   the given path (via `category_id_from_path`) and then fetches the
   article([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L409-L417)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L414-L422)).
-   If found, it then prepares the output parameters: title, poster, date,
+  If found, it then prepares the output parameters: title, poster, date,
   flags, etc., including pointers to neighboring
   articles([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L367-L376)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L373-L380)).
-   Those pointers (prev, next, parent, firstChild) are all stored in the DB
+  Those pointers (prev, next, parent, firstChild) are all stored in the DB
   row, making it straightforward to include them in the
   response([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L367-L376)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L373-L380)).
 
 - Posting an article (transaction 410 “PostNewsArticle”) involves inserting a
@@ -1273,9 +1272,9 @@ The **news domain logic** uses these tables to implement operations:
   Diesel transaction and likely update `first_child_article_id` of the parent
   if it was
   empty([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L213-L221)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L401-L410)),
-   and ensure the new article’s `prev_article_id` is set appropriately (not
+  and ensure the new article’s `prev_article_id` is set appropriately (not
   shown above, but planned). The DB schema with recursive CTEs also allows
   another approach: we could generate thread ordering on the fly via queries if
   we didn’t store prev/next, but storing them simplifies the protocol
@@ -1286,16 +1285,16 @@ threaded articles involve recursive tree structures. We leverage SQL recursive
 Common Table Expressions (CTEs) to handle certain queries elegantly:
 
 - To resolve a bundle/category path string (like `"Games/Trading"`), we use
-  SQLite’s JSON1 extension and a recursive CTE. We split the path by `/` and
-  use `json_each` to iterate segments, joining each segment name to a bundle
+  SQLite’s JSON1 extension and a recursive CTE. We split the path by `/` and use
+  `json_each` to iterate segments, joining each segment name to a bundle
   parent->child relationship until we reach the final bundle or category. Our
   function `build_path_cte_with_conn(conn, step, body)` uses the Diesel CTE
   extension to chain a recursive CTE (the `step`) with a final selection
-  (`body`)(
+  (`body` )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L444-L453)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L455-L459)).
-   The Diesel crate itself doesn’t yet have first-class CTE query builders, so
+  The Diesel crate itself doesn’t yet have first-class CTE query builders, so
   the project now depends on the published **`diesel-cte-ext`** crate (module
   name `diesel_cte_ext`) to supply the helpers. Earlier revisions carried an
   in-tree fork; on 11 November 2025 the dependency switched to the crates.io
@@ -1304,21 +1303,21 @@ Common Table Expressions (CTEs) to handle certain queries elegantly:
   attach to Diesel’s `sql_query` results, and even a trait to extend Diesel
   connections with `.with_recursive()`
   methods([14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L3-L6)
-   )(
+  )(
   [14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L24-L32)).
-   Using this, `category_id_from_path` constructs a CTE that recursively finds
+  Using this, `category_id_from_path` constructs a CTE that recursively finds
   the nested bundle and then the category, returning the category’s ID if the
   path is
   valid([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L440-L448)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L449-L457)).
-   This single query replaces what could be multiple queries or complex logic
+  This single query replaces what could be multiple queries or complex logic
   in Rust, and it runs efficiently inside the database. We verify on startup
   that SQLite has support for **recursive CTEs** (the code runs a quick
   `WITH RECURSIVE c(x)...` query on SQLite to ensure the build includes that
   feature)(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L134-L143)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L146-L154)).
 
 - For threaded articles, one possible use of recursive CTE is retrieving an
@@ -1343,18 +1342,18 @@ potentially tree traversal), the implementation now depends on the external
 This Diesel extension provides helpers for building and executing CTEs in a
 backend-agnostic
 way([14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L3-L6)).
- It defines a struct `WithCte` and trait impls so that a CTE query can
+It defines a struct `WithCte` and trait impls so that a CTE query can
 integrate with Diesel’s query builder as if it were a normal
 query([14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L10-L18)
- )(
+)(
 [14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L20-L28)).
- The connection types are also extended via a trait (`RecursiveCTEExt`) so code
+The connection types are also extended via a trait (`RecursiveCTEExt`) so code
 can call, for example, `conn.with_recursive(cte_name, sql_query1, sql_query2)`
 to chain two `sql_query` fragments for the recursive part and the final
 select([14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L24-L32)
- )(
+)(
 [14](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/cte-extension-design.md#L44-L50)).
- Functions like `build_path_cte_with_conn` (used in the path lookup) glue raw
+Functions like `build_path_cte_with_conn` (used in the path lookup) glue raw
 SQL fragments into one query. The outcome is that the Rust code remains
 database-neutral – it avoids embedding raw Postgres-specific queries in one
 place and SQLite in another; the extension runs semantically equivalent CTEs on
@@ -1364,7 +1363,7 @@ JSON1 making it possible there). Using Diesel’s async support, we can
 `.get_result(conn)` on the result of `build_path_cte_with_conn` and it will
 execute the whole CTE and give us the ID we
 need([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L446-L454)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L455-L459)).
 
 #### 11 November 2025 – Source `diesel-cte-ext` upstream
@@ -1409,12 +1408,12 @@ CREATE TABLE users (
 Both create the same columns, but use the appropriate auto-increment and
 default value syntax for each
 DB([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L99-L107)
- )(
+)(
 [7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L111-L120)).
- Diesel’s generated `schema.rs` for this table uses generic types (`Integer`,
-`Text`, `Bool`, `Timestamp`
-)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L131-L140)),
- so the Rust code can call `users::table.filter(users::username.eq(name))` and
+Diesel’s generated `schema.rs` for this table uses generic types (`Integer`,
+`Text`, `Bool`,
+`Timestamp` )([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L131-L140)),
+so the Rust code can call `users::table.filter(users::username.eq(name))` and
 it will work with either backend at runtime. The migrations for each backend
 carry any non-portable details (like `now()` vs `CURRENT_TIMESTAMP`). This
 pattern repeats for other migrations (news, files, chat, etc.). We ensure
@@ -1483,7 +1482,7 @@ Key points in this service file:
   `sd_notify("WATCHDOG=1")` (perhaps every 20 seconds via a Tokio interval) to
   reset the
   timer([1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L40-L43)).
-   This provides a safety net against deadlocks or hangs (especially important
+  This provides a safety net against deadlocks or hangs (especially important
   for a server that should run unattended).
 
 - `User` and `Group` run the service with restricted permissions (assuming an
@@ -1571,7 +1570,7 @@ as the client IP or username for certain events). Our logging strategy:
 - Each log entry in code uses structured fields. For example, in `login.rs` we
   log `info!(%peer, %username, "authenticated")` on successful
   login([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L50-L58)).
-   When hooked to journald, this could appear with fields `peer=<IP:port>` and
+  When hooked to journald, this could appear with fields `peer=<IP:port>` and
   `username=<name>` attached. In journald, these would show up as key-value
   metadata (possibly under fields like `MESSAGE` and `PRIORITY` for the main
   message and severity, and additional fields for our custom data). This makes
@@ -1582,7 +1581,7 @@ as the client IP or username for certain events). Our logging strategy:
 - We plan to log notable events at appropriate levels: successful logins as
   info, failed logins as warning (including the username
   attempted)([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L50-L58)),
-   unexpected errors as error (with error codes or messages). The use of
+  unexpected errors as error (with error codes or messages). The use of
   structured logging also helps correlate events: we can include a session ID
   or connection ID in each log after handshake, so that all logs from one
   client connection carry an identifier (this could be implemented via a
@@ -1624,9 +1623,9 @@ signals:
 - On shutdown (SIGTERM), our `shutdown_signal()` async helper will break the
   accept loop and close
   gracefully([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L239-L248)
-   )(
+  )(
   [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L260-L268)).
-   We notify systemd we’re stopping (so it doesn’t think we crashed). The code
+  We notify systemd we’re stopping (so it doesn’t think we crashed). The code
   ensures all connection tasks are informed of shutdown via a broadcast channel
   (`shutdown_tx`) and waits for them to finish or
   timeout([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L264-L272)).
@@ -1655,7 +1654,7 @@ haven’t added one explicitly, we outline the plan:
 - The `MESSAGE` field of the journal will contain the main log message (usually
   the static string, like "authenticated" in the login
   example([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L50-L58))).
-   We ensure to include that, as journald expects a MESSAGE.
+  We ensure to include that, as journald expects a MESSAGE.
 
 - Optionally include `CODE_FILE`, `CODE_LINE`, etc., using the meta provided by
   tracing (there’s an extension to get file/line from tracing’s metadata).
@@ -1679,7 +1678,7 @@ model, database schema mapping, protocol integration, and main behavior flows.
 In the code, this is the `Session` struct, which currently holds at least the
 `user_id` of the logged-in
 user([6](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/handler.rs#L20-L24))
- and can be extended with other session flags (like permissions, idle timer,
+and can be extended with other session flags (like permissions, idle timer,
 etc.). A new session is created when a client connects; before login it has no
 user_id (the user is not authenticated). After a successful LOGIN command, we
 attach the user’s ID to the session and consider it authenticated. The session
@@ -1691,22 +1690,21 @@ as features expand.
 It contains username (unique), password hash, and possibly other attributes
 (the current schema includes an `active` flag and creation
 timestamp)([7](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/supporting-both-sqlite3-and-postgresql-in-diesel.md#L101-L108)).
- Passwords are hashed using **Argon2id** with configurable cost
+Passwords are hashed using **Argon2id** with configurable cost
 factors([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L8-L16)).
- Those cost parameters (memory, iterations, parallelism) are part of the config
-(`AppConfig`) so they can be tuned. They default to moderate values (e.g.
-Argon2 `m_cost`, `t_cost` as provided by `Params::DEFAULT_*` in argon2 crate)
-but can be raised for more
+Those cost parameters (memory, iterations, parallelism) are part of the config
+(`AppConfig`) so they can be tuned. They default to moderate values (e.g. Argon2
+`m_cost`, `t_cost` as provided by `Params::DEFAULT_*` in argon2 crate) but can
+be raised for more
 security([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L134-L142)).
 
 **Protocol Mapping**: The Hotline protocol’s login sequence involves the client
 sending a `LOGIN` transaction (Hotline ID 107) with parameters for username and
-password. MXD parses this into a
-`Command::Login { username, password, header }`
+password. MXD parses this into a `Command::Login { username, password, header }`
 variant([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L92-L101)
- )(
+)(
 [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L102-L110)).
- The `header` contains the transaction metadata (ID, etc.) which we preserve to
+The `header` contains the transaction metadata (ID, etc.) which we preserve to
 build the reply. The login handler (`handle_login`) will:
 
 - Look up the user by name in the DB using
@@ -1717,16 +1715,16 @@ build the reply. The login handler (`handle_login`) will:
   using Argon2. We use a constant-time comparison (`verify_password`) to avoid
   timing
   attacks([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L31-L39)
-   )(
+  )(
   [3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L33-L37)).
 
 - If authentication succeeds, we update the session:
   `session.user_id = Some(u.id)` meaning this connection is now associated with
   that
   user([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L32-L39)
-   )(
+  )(
   [3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L34-L42)).
-   The login handler also initialises `session.privileges` to
+  The login handler also initialises `session.privileges` to
   `Privileges::default_user()`, granting the user standard capabilities
   (download files, read/send chat, read/post news articles, etc.). These
   privileges gate subsequent operations; handlers call
@@ -1740,21 +1738,21 @@ build the reply. The login handler (`handle_login`) will:
   set `error = 0` and include a parameter `FieldId::Version` with the server’s
   protocol
   version([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L34-L42)
-   )(
+  )(
   [3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L36-L44)).
-   On failure, we set `error = 1` (meaning bad username or password) and no
+  On failure, we set `error = 1` (meaning bad username or password) and no
   payload. This logic is shown in `handle_login`: the tuple `(error, payload)`
   is `(0, params)` if auth ok, or `(1, empty)`
   otherwise([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L32-L39)
-   )(
+  )(
   [3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L40-L48)).
 
 - Log the attempt: a successful login emits an info log with the username and
   peer
   address([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L50-L58)),
-   a failed one emits a
+  a failed one emits a
   warning([3](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/login.rs#L50-L58)).
-   This helps auditing login attempts in the logs.
+  This helps auditing login attempts in the logs.
 
 The reply is then sent to the client, who will proceed only if error=0. If
 error=1, the client usually disconnects or can try again (our server keeps the
@@ -1774,7 +1772,7 @@ planned:
   Login Notify), 301 (User Change), 302 (User Logout Notify), etc. Our
   `TransactionType::GetUserNameList` (300) and related types hint at
   this([5](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/transaction_type.rs#L44-L51)).
-   For now, `GetUserNameList` (transaction 300) handling is stubbed (it returns
+  For now, `GetUserNameList` (transaction 300) handling is stubbed (it returns
   Unknown if called), but we have plans to implement it such that it returns
   the list of currently online usernames. The `Session` struct will be extended
   with things like `nickname` (some servers allow an alias different from
@@ -1811,7 +1809,7 @@ planned:
   `if session.user_id is None { return error }` to ensure only logged-in users
   can list
   files([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L178-L186)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L184-L191))).
 
 In the current implementation, password creation (hashing) is done either via
@@ -1819,9 +1817,9 @@ the `create-user` CLI or could be via a registration protocol (not in classic
 Hotline, which had no self-serve registration). The CLI `create-user` uses the
 same hashing routine (`hash_password` with Argon2) and inserts into
 DB([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L104-L112)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L114-L122)).
- This ensures consistency – the server would reject login if the password
+This ensures consistency – the server would reject login if the password
 wasn’t hashed with the expected parameters.
 
 Future enhancements for sessions:
@@ -1857,9 +1855,9 @@ broadcast messages to all in the room.
 **Database Schema**: As described earlier, the key tables are `chat_rooms`,
 `chat_participants`, `chat_messages`, `chat_invites`
 ([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L11-L19)
- )(
+)(
 [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L40-L48)).
- These provide persistence for chat state:
+These provide persistence for chat state:
 
 - `chat_rooms`: Each has an `id` and optionally we could use the `id` 0 or 1
   for the main lobby. A `subject` field stores the room topic (for UI display
@@ -1869,7 +1867,7 @@ broadcast messages to all in the room.
 - `chat_participants`: Links users to rooms, essentially the membership
   list(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L25-L33)).
-   We will often query this to get who is in a room to send them messages.
+  We will often query this to get who is in a room to send them messages.
 
 - `chat_messages`: Stores messages. It might not be strictly required to
   persist them (Hotline server could choose not to store history on disk), but
@@ -1908,20 +1906,20 @@ Our server design aligns to these:
   to `chat_participants` for the main room and send them the current user list
   (or send everyone a notify about this new user). In Phase 2 of
   development([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L135-L143)
-   )(
+  )(
   [16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L137-L145)),
-   we plan to implement broadcasting user join/leave events (transactions
+  we plan to implement broadcasting user join/leave events (transactions
   301/302) to all logged-in users. The `USER_NAME_LIST_ID` constant (300) is
   used when a client requests the list of users, which we’ll respond to by
   enumerating all sessions in the main chat or all online
   users([5](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/transaction_type.rs#L5-L13)
-   )(
+  )(
   [5](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/transaction_type.rs#L44-L51)).
 
 - For private chats: When user A invites B (transaction 112), the server will
   create a new `chat_rooms` entry with `creator_id=A` and
   `is_private=true`([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L48-L55)),
-   and add A to participants. Then it sends an invite notification to B. In
+  and add A to participants. Then it sends an invite notification to B. In
   protocol, B receives an Invite (maybe as an out-of-band or a specific
   transaction). We map that to perhaps sending B a message type “Invite” with
   the room ID and inviter info. We also store an entry in `chat_invites` so if
@@ -1946,7 +1944,7 @@ Our server design aligns to these:
   server updates `chat_rooms.subject` in the DB and broadcasts a Notify (119)
   with the new subject to all in the
   room([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L110-L114)).
-   This keeps everyone in sync and persists the topic for newcomers.
+  This keeps everyone in sync and persists the topic for newcomers.
 
 **Behavior Flows**:
 
@@ -1999,7 +1997,7 @@ Our server design aligns to these:
   The schema has `ON DELETE CASCADE` on participants and invites referencing
   rooms, so deleting a room auto-cleans participants and
   invites([11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L24-L32)
-   )(
+  )(
   [11](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/chat-schema.md#L48-L55)).
 
 - **Direct vs Group**: The design allows group chats with more than 2
@@ -2027,8 +2025,8 @@ this. Our plan:
   closely tied to chat.
 
 **Idle/Away**: Hotline also had “idle” and “away” statuses (with transactions
-303 to update user flags). We foresee adding fields to Session like `is_away`
-or `idle_since`. Possibly integrate with chat by broadcasting a status change
+303 to update user flags). We foresee adding fields to Session like `is_away` or
+`idle_since`. Possibly integrate with chat by broadcasting a status change
 when someone toggles away.
 
 In summary, the chat subsystem enables real-time communication:
@@ -2045,16 +2043,16 @@ In summary, the chat subsystem enables real-time communication:
   connections since Wireframe’s routing is request/response oriented. However,
   Wireframe provides a `PushQueue` concept for unsolicited
   messages([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L143-L151)
-   )(
+  )(
   [2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L152-L160)).
-   We can obtain a handle for each connection to push outgoing frames to it
+  We can obtain a handle for each connection to push outgoing frames to it
   asynchronously. For example, when a new chat message arrives, the server can
   push a frame to all other connections’ low-priority queue (since chat is not
   as urgent as say file data). The design calls for possibly separating high vs
   low priority outbound queues (for example, file transfer data might use high
   priority, chat messages low, to avoid starving control
   messages)([2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L152-L160)
-   )(
+  )(
   [2](https://github.com/leynos/wireframe/blob/fa6c62925443e6caed54866a95d3396eb8fa78a2/README.md#L168-L175)).
 
 ### News Reading and Threaded Discussions
@@ -2073,14 +2071,14 @@ others can post or moderate).
 - `news_articles` holds the actual posts, with linking fields for threading
   (parent, first_child, next,
   prev)([12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L66-L69)).
-   Essentially it’s a threaded tree where each root post is a thread, and
+  Essentially it’s a threaded tree where each root post is a thread, and
   replies link off that.
 
 - Permissions: `permissions` (with codes for things like “News: Read”, “News:
   Write”, “News: Moderate”) and `user_permissions` linking users to those
   permissions(
   [12](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/news-schema.md#L154-L161)).
-   The server will use these to decide if a user can read or post in a certain
+  The server will use these to decide if a user can read or post in a certain
   category. Possibly the `scope` field (general vs bundle vs folder) means some
   permissions apply to specific bundles or categories, but our current design
   doesn’t have a direct link of permission to a category. We may interpret
@@ -2097,11 +2095,11 @@ Key Hotline transactions for news include:
   bundle names and category names) that are one level below the given path. In
   our commands, `GetNewsCategoryNameList` corresponds to
   this([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L113-L121)).
-   The code uses `list_names_at_path(path)` to fetch the
+  The code uses `list_names_at_path(path)` to fetch the
   names([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L201-L209)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L291-L299)).
-   The reply payload is a set of entries labeled as `FieldId::NewsCategory` for
+  The reply payload is a set of entries labeled as `FieldId::NewsCategory` for
   bundle names and possibly also categories (the client differentiates by
   context or separate calls).
 
@@ -2109,29 +2107,29 @@ Key Hotline transactions for news include:
   given category (path). Our `GetNewsArticleNameList` command triggers
   `handle_article_titles(path)`
   ([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L204-L212)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L316-L324)).
-   That uses `list_article_titles(conn, path)` to get all titles of root posts
+  That uses `list_article_titles(conn, path)` to get all titles of root posts
   in that category (i.e.,
   threads)([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L465-L473)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L474-L481)).
-   We filter `news_articles` where `parent_article_id IS NULL` (root posts) and
+  We filter `news_articles` where `parent_article_id IS NULL` (root posts) and
   category matches, then return titles sorted by date or ID.
 
 - `NewsArticleData (400)`: client requests the content of a specific article
   (by ID) and its thread context. Our `GetNewsArticleData` command calls
   `handle_article_data(path, article_id)`
   ([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L206-L214)),
-   which uses
+  which uses
   `get_article(path, id)`([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L409-L417))
-   to fetch the article row including all its fields and then prepares a
+  to fetch the article row including all its fields and then prepares a
   payload with fields: title, poster, date, flags, data (the text), and the
   various thread linkage IDs (prev, next, parent,
   firstChild)([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L367-L376)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L373-L381)).
-   Those linkage fields (prev, next, etc.) were stored in the DB when the
+  Those linkage fields (prev, next, etc.) were stored in the DB when the
   article was inserted, so we just convert them to bytes and include if
   present. This gives the client everything needed to display the post and
   navigation (e.g., “Next Article” button).
@@ -2142,9 +2140,9 @@ Key Hotline transactions for news include:
   etc.). Our `PostNewsArticle` command handler is
   `handle_post_article(path, title, flags, flavor, data)`
   ([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L214-L221)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L401-L410)).
-   This will:
+  This will:
 
 - Determine which category to post in via the path (get category_id).
 
@@ -2175,9 +2173,9 @@ Key Hotline transactions for news include:
 - After insert, Diesel’s returning can give us the `id` of the new
   post(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L414-L422)).
-   We return that as a parameter `NewsArticleId` to the
+  We return that as a parameter `NewsArticleId` to the
   client([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L416-L423)),
-   so the client knows the new post’s ID (Hotline protocol expects the server
+  so the client knows the new post’s ID (Hotline protocol expects the server
   to respond with the ID of the created post).
 
 - If it were a reply, we’d also need to update the `news_articles` links: set
@@ -2201,39 +2199,39 @@ Key Hotline transactions for news include:
   bundles/categories (370 with no path). The server returns all top-level
   bundle names and
   categories([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L324-L333)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L338-L346)).
-   The client populates the UI (say it shows “General” category,
+  The client populates the UI (say it shows “General” category,
   “Announcements” bundle, etc.). If a bundle is present, the client might
   request inside it (370 with path = that bundle) to get sub-categories. Our
   implementation of `list_names_at_path` handles both None (root) and bundle
   name cases by either filtering on `parent_bundle_id` being null or matching
   the resolved
   bundle([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L320-L328)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L336-L344)).
-   We do a case-insensitive or exact match depending on how we store names
+  We do a case-insensitive or exact match depending on how we store names
   (likely case-sensitive unique). The use of `bundle_id_from_path` resolves a
   bundle chain to an
   ID([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L319-L327)).
-   This uses the JSON + CTE trick to walk the path
+  This uses the JSON + CTE trick to walk the path
   segments([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L440-L448)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L449-L457)).
-   We produce one combined list of bundle names and category names and send
+  We produce one combined list of bundle names and category names and send
   back. The client will typically display bundles and categories in one list
   (Hotline client shows folders for bundles and file icons for categories).
 
 - *Reading threads*: The client picks a category and asks for articles (371).
   We respond with titles of all root articles
   (threads)([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L470-L478)).
-   The client might display them in a list. Then the user selects a thread (or
+  The client might display them in a list. Then the user selects a thread (or
   first article) and client asks for it (400 with that ID). We send the full
   article
   data([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L367-L376)
-   )(
+  )(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L373-L381)).
-   If the article has a `first_child_id`, the client knows there are replies;
+  If the article has a `first_child_id`, the client knows there are replies;
   it may then request the first child (400 with that ID), and then subsequent
   `next_article_id` until none. Or the server might proactively send a batch
   (but Hotline likely uses client-driven pulling of each post). We might
@@ -2253,7 +2251,7 @@ Key Hotline transactions for news include:
 - If allowed, we insert the row. In SQLite/PG, our function returns the new
   ID(
   [13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L416-L423)).
-   We craft a reply with error=0 and a parameter `NewsArticleId = <new_id>` so
+  We craft a reply with error=0 and a parameter `NewsArticleId = <new_id>` so
   the client can, for example, immediately fetch it or display it.
 
 - We also might broadcast a notification to other users in that category:
@@ -2281,9 +2279,9 @@ Key Hotline transactions for news include:
 ID, which we covered via `category_id_from_path` and the CTE that iterates
 through bundle
 hierarchy([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L425-L434)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L440-L448)).
- This allows commands to specify a path string like `"Announcements/Updates"`
+This allows commands to specify a path string like `"Announcements/Updates"`
 to post or list in nested categories. The JSON approach (preparing a JSON array
 of path segments and using `json_each` in a recursive query) is a clever
 portable solution that works on both SQLite (with JSON1) and PG (with native
@@ -2299,9 +2297,9 @@ server should enforce:
   implementation of `list_names_at_path` does not do such filtering yet; it
   returns all
   names([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L330-L338)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L339-L346)).
-   To implement, we could join with a permission mapping (if we had a table
+  To implement, we could join with a permission mapping (if we had a table
   mapping category to required perm). Or simpler: define that some categories
   are hidden if user doesn’t have a specific permission code in
   `user_permissions`. E.g., category “Staff” might require permission code 30
@@ -2336,9 +2334,9 @@ entirely – critical for large files over slow connections.
 **Storage Abstraction**: Instead of tying to local filesystem, MXD uses an
 **object storage abstraction** via the Rust `object_store`
 crate([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L46-L54)
- )(
+)(
 [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L70-L78)).
- This means that file content is stored in a backend-agnostic way (could be
+This means that file content is stored in a backend-agnostic way (could be
 local disk, Amazon S3, Azure Blob, etc.) – essentially as opaque byte streams
 identified by keys. The server does not rely on OS filesystem semantics (like
 hierarchical directories), because object stores treat everything as a flat key
@@ -2352,9 +2350,9 @@ be an “s3://bucket/folder/file” or some unique GUID.
 **Database Schema**: The current implemented schema (from migrations) is a
 simplified version: a `files` table and a `file_acl`
 table([18](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/migrations/sqlite/00000000000004_create_files/up.sql#L1-L9)
- )(
+)(
 [18](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/migrations/sqlite/00000000000004_create_files/up.sql#L8-L15)).
- In our initial implementation:
+In our initial implementation:
 
 - `files` table fields: `id`, `name` (filename or folder name, unique globally
   in this simple schema), `object_key`, `size`. This suggests at this stage,
@@ -2364,7 +2362,7 @@ table([18](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d
 - `file_acl` fields: `file_id`, `user_id`, primary key on
   both(
   [18](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/migrations/sqlite/00000000000004_create_files/up.sql#L8-L15)).
-   This grants a user access to a file. The initial approach seems to be a very
+  This grants a user access to a file. The initial approach seems to be a very
   basic ACL where every file explicitly lists which users can see it. This is
   not scalable for a general share (where you’d want group-based or
   public-by-default), but it might have been a starting point or a temporary
@@ -2376,9 +2374,9 @@ how Hotline works:
 - A single `FileNode` table to represent both files and folders (and aliases as
   a special
   type)([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L83-L91)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L115-L123)).
-   It would have columns like:
+  It would have columns like:
 
 - `id`,
 
@@ -2405,32 +2403,32 @@ how Hotline works:
 - timestamps and `created_by` to record who created
   it(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L115-L123)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L124-L132)).
 
 - A `Permission` table for ACLs linking principals (user or group) to resources
   (file or
   folder)([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L95-L99)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L126-L135)).
-   The design suggests possibly reusing a common permissions table for files
+  The design suggests possibly reusing a common permissions table for files
   similar to how news had one. The mermaid snippet shows `Permission` with
   `resource_type` (like 'file'), `resource_id` (link to FileNode.id),
   `principal_type` ('user' or 'group'), `principal_id`, and `privileges`
   (bitmask)(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L115-L123)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L128-L136)).
-   This is a flexible ACL that can grant different permission bits (like read,
+  This is a flexible ACL that can grant different permission bits (like read,
   write, delete) to either individual users or groups on specific files or
   folders.
 
 - Additionally, `User` and `Group` and `UserGroup` tables to manage user
   groups(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L91-L99)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L93-L101)).
-   This way you can assign an entire group access to a folder by one entry in
+  This way you can assign an entire group access to a folder by one entry in
   `Permission`, instead of listing every user.
 
 Our current implementation hasn’t introduced groups or the unified Permission
@@ -2476,7 +2474,7 @@ model:
 - Also, `global_access` bitmask in User (in design, user had a global_access
   field(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L101-L109)))
-   could indicate overall privileges (like admin flag or ratio privileges,
+  could indicate overall privileges (like admin flag or ratio privileges,
   etc.). We might interpret some high-level bits like “may upload anywhere
   despite folder perms”.
 
@@ -2503,7 +2501,7 @@ This is a crucial feature:
   maybe 2^16-1 bytes per fragment, as per protocol fragment field). If the file
   is huge, our server can stream it through the Wireframe codec’s streaming
   API([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L56-L64))
-   (the roadmap mentions implementing a streaming API for large
+  (the roadmap mentions implementing a streaming API for large
   payloads([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L56-L64))).
 
 - If offset is given, e.g. offset=500KB, we seek and start sending from 500KB
@@ -2529,7 +2527,7 @@ This is a crucial feature:
   server responds to an initial upload request with a “resume offset” telling
   the client from where to continue). According to the design
   notes([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L14-L22)),
-   Hotline’s server, upon receiving an upload request, if the file exists
+  Hotline’s server, upon receiving an upload request, if the file exists
   partially, returns a resume position.
 
 - Implementation approach: when a new upload starts, we create a FileNode entry
@@ -2561,7 +2559,7 @@ This is a crucial feature:
   entry (marked incomplete) and the partial file; on resume, we use file length
   as
   offset”*([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L14-L22)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L20-L24)).
 
 - We need to be careful to authenticate that it’s the same file being resumed
@@ -2576,7 +2574,7 @@ This is a crucial feature:
 - The design doc hints that resumable upload is complex but achievable, perhaps
   chunking the file and treating each chunk independently for easier
   resumption([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L20-L24)).
-   We might not implement full general chunking initially, but rely on simpler
+  We might not implement full general chunking initially, but rely on simpler
   offset continue.
 
 **Aliasing**: Creating an alias (transaction 209 “MakeFileAlias”) in domain
@@ -2612,9 +2610,9 @@ means:
   `is_dropbox=true` for this. The server logic then, when listing that folder
   for a normal user, returns empty (even if files
   exist)([17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L14-L17)
-   )(
+  )(
   [17](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/file-sharing-design.md#L22-L29)).
-   But it allows writing (upload).
+  But it allows writing (upload).
 
 - Implementation: Check `if folder.is_dropbox and user not admin` then return
   no entries on list. Possibly still allow user to see their own uploads?
@@ -2633,16 +2631,16 @@ means:
 File transfers can be large (multiple megabytes). The `wireframe` library
 supports streaming large payloads via the framing
 codec([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L56-L64)
- )(
+)(
 [16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L58-L61)).
- The plan:
+The plan:
 
 - Our custom `HotlineFrameSerializer` will detect when a message is marked as a
   data fragment (the header has `data_size` smaller than `total_size`). For
   incoming (upload) it will accumulate fragments until complete then deliver to
   handler(
   [1](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/migration-plan-moving-mxd-protocol-implementation-to-wireframe.md#L107-L116)).
-   For outgoing (download) we can also send in fragments not to overwhelm
+  For outgoing (download) we can also send in fragments not to overwhelm
   memory. Ideally, we integrate with `tokio_util::codec::Framed` which
   `wireframe` uses under the hood. Possibly we can obtain an `AsyncRead` for
   the file and chunk it into frames of max allowed size, sending each with the
@@ -2651,7 +2649,7 @@ codec([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d
 - The design mentions property tests for multi-fragment requests to ensure
   correct
   reassembly([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L52-L60)),
-   meaning we will be confident in splitting and combining fragments.
+  meaning we will be confident in splitting and combining fragments.
 
 **Key Operations**:
 
@@ -2667,17 +2665,17 @@ codec([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d
 - In our code, `Command::GetFileNameList` carries a `payload` of type `Vec<u8>`
   which might contain a folder identifier (if
   any)([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L44-L52)).
-   But currently, we don’t parse any parameters for file list; we just carry
+  But currently, we don’t parse any parameters for file list; we just carry
   the payload raw and pass it
   on([13](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/commands.rs#L112-L116)).
-   Possibly, if payload is empty, we list root. If not empty, it might contain
+  Possibly, if payload is empty, we list root. If not empty, it might contain
   the folder ID or path. We need to decode it. For now, we used
   `list_files_for_user(user_id)` which as implemented just returns all files
   that user has ACL
   to([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L598-L606)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L602-L610)).
-   That’s a placeholder, effectively listing every file user can access
+  That’s a placeholder, effectively listing every file user can access
   (ignoring directories).
 
 - In full implementation, we would have a `current_directory` in session (e.g.,
@@ -2908,34 +2906,34 @@ In tests (when compiled with `--features postgres`), we use a fixture called
 `postgres_db` that will launch a Postgres instance in a temporary directory,
 create a fresh database, run migrations, and provide a connection
 URL([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L86-L94)
- )(
+)(
 [15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L88-L95)).
- This is managed by our `test-util` helper:
+This is managed by our `test-util` helper:
 
 - We spin up the PG server on a random free port. Our fixture code checks if
   `POSTGRES_TEST_URL` env var is set; if so, it will use that as an existing
   database (perhaps to speed up or allow testing on a manually provided
   server)([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L87-L95)).
-   If not, it calls `start_embedded_postgres()` to boot the embedded
+  If not, it calls `start_embedded_postgres()` to boot the embedded
   one([19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L76-L84)
-   )(
+  )(
   [19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L146-L155)).
 
 - `start_embedded_postgres()` in our test util ensures a single global Postgres
   binary download/installation (with a lock file to avoid races between
   tests)([19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L114-L123)
-   )(
+  )(
   [19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L130-L139)),
-   then starts the server and creates a database with a unique name (using a
+  then starts the server and creates a database with a unique name (using a
   UUID)(
   [19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L159-L168)
-   )(
+  )(
   [19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L170-L178)).
-   It returns an object containing the `DatabaseUrl` (with the new DB
+  It returns an object containing the `DatabaseUrl` (with the new DB
   name)([19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L172-L180)).
-   We run our Diesel migrations on that database to set up schema for
+  We run our Diesel migrations on that database to set up schema for
   tests([19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L146-L155)
-   )(
+  )(
   [19](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/test-util/src/postgres.rs#L150-L158)).
 
 - Each test that needs a database can simply have a parameter of type
@@ -2943,20 +2941,20 @@ URL([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7e
   `postgres_db()` provides a fresh isolated DB. We drop and recreate the public
   schema before each test to ensure a clean
   slate([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L89-L95))
-   (the fixture does `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` on the
+  (the fixture does `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` on the
   connection).
 
 - We verify engine-specific features with tests like `test_audit_postgres()`
   which starts an embedded PG, connects, and calls `audit_postgres_features()`
   to ensure the server is version
   14+([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L159-L167)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L661-L670)).
-   Similarly for SQLite, `audit_sqlite_features()` is tested on an in-memory
+  Similarly for SQLite, `audit_sqlite_features()` is tested on an in-memory
   DB([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L134-L143)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L654-L662)),
-   so we don’t inadvertently use unsupported SQL.
+  so we don’t inadvertently use unsupported SQL.
 
 Using embedded Postgres in CI means our test suite can run fully automated,
 covering both backends. The overhead of launching PG is mitigated by reusing it
@@ -3018,13 +3016,13 @@ We have written tests for various flows:
   `test_create_bundle_and_category` (which was a basic smoke test to ensure
   migrations and inserts
   work)([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L635-L643)
-   )(
+  )(
   [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L644-L652)).
 
 The BDD style (with descriptive Given/When/Then) is documented in our internal
 guide(
 [20](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/rust-testing-with-rstest-fixtures.md#L2-L10)),
- emphasizing readability of test cases. It helps ensure that features meet
+emphasizing readability of test cases. It helps ensure that features meet
 expected user stories. We use `rstest` fixtures heavily to avoid repeating
 setup code (like starting a server or creating sample data). For instance, we
 have a fixture for a logged-in session, a fixture for an embedded PG with
@@ -3069,7 +3067,7 @@ ordering, field encoding, XOR encoding (Hotline had an XOR obfuscation for text
 sometimes), etc. Our roadmap explicitly includes compatibility toggles like XOR
 decoding for clients that need
 it([16](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/roadmap.md#L93-L101)).
- In the validator tests, we likely verify that:
+In the validator tests, we likely verify that:
 
 - A SynHX client can login to MXD (meaning our handshake and login responses
   are acceptable).
@@ -3090,7 +3088,7 @@ Because these tests involve actual I/O and an external binary, they are a bit
 more fragile and likely marked to run in certain environments (we need hx 0.2.4
 installed in PATH as
 noted([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L98-L105))).
- They might not run in a typical `cargo test` unless the environment is
+They might not run in a typical `cargo test` unless the environment is
 prepared, but we have instructions and perhaps a CI job that sets up hx for
 these integration tests.
 
@@ -3112,12 +3110,12 @@ client is concerned.
 or misbehavior in critical parsing code. The fuzz harness is located under
 `fuzz/`
 directory([15](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/README.md#L2-L5)).
- It targets the `parse_transaction` function (which decodes raw bytes into a
+It targets the `parse_transaction` function (which decodes raw bytes into a
 `Transaction`
 struct)([21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L6-L14)
- )(
+)(
 [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L8-L11)).
- By fuzzing the frame parser, we ensure that arbitrary or malformed inputs from
+By fuzzing the frame parser, we ensure that arbitrary or malformed inputs from
 clients won’t crash the server or produce memory safety errors. We compiled the
 harness with AddressSanitizer in a Docker container to catch even memory issues
 in unsafe code (though Rust code is mostly safe, the Diesel C bindings or other
@@ -3129,9 +3127,9 @@ The fuzz process:
   program (`gen_corpus.rs`) which emits some example transactions (like a
   well-formed login frame, a file list frame,
   etc.)([21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L8-L16)
-   )(
+  )(
   [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L9-L12)).
-   These seeds help AFL to have starting points that reach deeper into parsing
+  These seeds help AFL to have starting points that reach deeper into parsing
   logic.
 
 - AFL++ then mutates these and feeds into `parse_transaction`. If
@@ -3139,7 +3137,7 @@ The fuzz process:
   cause a panic on certain errors in the harness to treat them as crashes, see
   `The harness panics on parsing errors so crashes will be detected`
   ([21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L28-L32))),
-   AFL will flag that input. We consider a parse error as a "crash" for fuzzing
+  AFL will flag that input. We consider a parse error as a "crash" for fuzzing
   purposes to try to exercise all error paths – essentially, we might want to
   see if any input causes an *unexpected* error or panic (though
   parse_transaction returns Result, we might only panic on truly inconsistent
@@ -3148,9 +3146,9 @@ The fuzz process:
 - The fuzzing runs in CI as a nightly job for several
   hours(
   [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L54-L61)
-   )(
+  )(
   [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L56-L64)).
-   If any new crash is found, the input is saved to `artifacts/main/crashes`
+  If any new crash is found, the input is saved to `artifacts/main/crashes`
   and can be analyzed.
 
 - Over time, this gives us confidence that parsing (and by extension the
@@ -3186,13 +3184,13 @@ the `proptest` crate to generate structured inputs for certain components:
 At minimum, we have unit tests like `test_create_bundle_and_category` to ensure
 basic CRUD
 works([9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L635-L643)
- )(
+)(
 [9](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/db.rs#L644-L652)),
- and tests for config
+and tests for config
 precedence([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)
- )(
+)(
 [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L389-L396)),
- etc.
+etc.
 
 **Manual and Integration Testing**:
 
@@ -3200,7 +3198,7 @@ precedence([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b
   `AppConfig::load_from_iter` with sample args and env to verify the merging
   logic (as shown by those figment Jail
   tests)([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384)
-   )(
+  )(
   [4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L389-L396)).
 
 - We test error cases, e.g., if both `sqlite` and `postgres` features were on
@@ -3211,7 +3209,7 @@ precedence([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b
 - Using the `temp-env` crate in tests to set env vars (which we did with
   figment’s
   Jail)([4](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/src/main.rs#L376-L384))
-   ensures we don’t pollute real environment.
+  ensures we don’t pollute real environment.
 
 In CI, we run `cargo test` for both SQLite and Postgres configurations (two
 separate jobs). We also run clippy (with pedantic warnings), maybe fmt, etc.,
@@ -3245,18 +3243,18 @@ its feature set.
 
 Our fuzz harness example in docs shows how to build and run AFL
 manually([21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L12-L20)
- )(
+)(
 [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L24-L32)).
- We also provide a Dockerfile to run the fuzzer in an isolated environment with
+We also provide a Dockerfile to run the fuzzer in an isolated environment with
 necessary
 instrumentation([21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L34-L42)
- )(
+)(
 [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L44-L52)).
- The nightly CI uses this, building the image and running it for a set
+The nightly CI uses this, building the image and running it for a set
 time([21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L54-L62)
- )(
+)(
 [21](https://github.com/leynos/mxd/blob/88d1cfb3097b2d96f2b7c9d1382f6b374d7eb90c/docs/fuzzing.md#L64-L72)).
- The CI then uploads any found crashes so developers can examine them. This
+The CI then uploads any found crashes so developers can examine them. This
 process is automated but aligns with our roadmap where fuzzing is an ongoing
 process (not a one-time thing) to catch regressions or deeper issues.
 

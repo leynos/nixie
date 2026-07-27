@@ -57,9 +57,9 @@ encapsulate all map-loading functionality. It will be responsible for:
   addition to `png`). Lille opts out of dependency defaults, so this opt-in is
   required to satisfy the “renders base tile layers” completion criteria.
 - `LilleMapPlugin` now registers the `Collidable`, `SlopeProperties`,
-  `PlayerSpawn`, and `SpawnPoint` custom property types, with
-  `bevy_ecs_tiled`'s `user_properties` feature enabled so typed Tiled metadata
-  hydrates into ECS components without adding non-DBSP inference.
+  `PlayerSpawn`, and `SpawnPoint` custom property types, with `bevy_ecs_tiled`'s
+  `user_properties` feature enabled so typed Tiled metadata hydrates into ECS
+  components without adding non-DBSP inference.
 - Automated tests that rely on the asset pipeline use headless `DefaultPlugins`
   with `WinitPlugin` disabled, because the Rust test harness runs tests on
   worker threads and `WinitPlugin` requires main-thread initialisation.
@@ -82,7 +82,7 @@ encapsulate all map-loading functionality. It will be responsible for:
   the map itself, each layer, and each object or special tile – will be
   represented as a Bevy entity in the
   world([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=worlds%20doc.mapeditor.org%20%20for%20multi,map%20is%20loaded%20and%20ready)).
-   The plugin will manage or augment this hierarchy as needed (for example,
+  The plugin will manage or augment this hierarchy as needed (for example,
   naming entities or attaching additional components).
 
 - **Custom Property Handling:** Using `bevy_ecs_tiled`’s **user properties**
@@ -91,15 +91,15 @@ encapsulate all map-loading functionality. It will be responsible for:
   registered, the plugin will ensure the corresponding component is added to
   that entity with the values from
   Tiled([2](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/guides/properties.md#L56-L64)
-   )(
+  )(
   [2](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/guides/properties.md#L66-L75)).
 
 - **Post-processing & Events:** Hooking into `bevy_ecs_tiled`’s map loading
   events to run custom logic once a map or its elements are loaded. Notably,
-  after the map is fully spawned, we will attach Lille-specific components
-  (like `Block` colliders for walls) and spawn any gameplay entities (e.g.
-  creating an in-game player entity at a spawn point defined in the map). The
-  plugin will add Bevy systems that listen for `TiledEvent<MapCreated>`,
+  after the map is fully spawned, we will attach Lille-specific components (like
+  `Block` colliders for walls) and spawn any gameplay entities (e.g. creating
+  an in-game player entity at a spawn point defined in the map). The plugin
+  will add Bevy systems that listen for `TiledEvent<MapCreated>`,
   `TiledEvent<ObjectCreated>`, etc., to perform this processing at the
   appropriate time.
 
@@ -110,9 +110,9 @@ encapsulate all map-loading functionality. It will be responsible for:
   system will pick them up and push them into the `block_in` and
   `block_slope_in` streams each
   tick([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L37-L44)
-   )(
+  )(
   [4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L120-L128)).
-   The plugin’s role is to correctly set up those components on the right
+  The plugin’s role is to correctly set up those components on the right
   entities.
 
 By fulfilling these responsibilities, the `LilleMapPlugin` will provide an
@@ -164,14 +164,14 @@ hood, `bevy_ecs_tiled` registers an asset loader for the `TiledMapAsset` type.)
   individual tiles or use a batched tilemap renderer. By default,
   `bevy_ecs_tiled` uses the `bevy_ecs_tilemap` crate for efficient
   rendering([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=tilemaps%20created%20using%20the%20Tiled,map%20editor)
-   )(
+  )(
   [1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=using%20either%20external%20or%20embedded,are%20automatically%20propagated)).
-   This means tiles are rendered via internal chunks, but importantly, any tile
+  This means tiles are rendered via internal chunks, but importantly, any tile
   that has custom properties defined will be assigned its own entity. In
   general, every Tiled *item* (map, layer, tile with properties, object, etc.)
   will have a corresponding entity in the
   ECS([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=worlds%20doc.mapeditor.org%20%20for%20multi,map%20is%20loaded%20and%20ready)).
-   Tiles without custom properties may *not* spawn individual entities (they
+  Tiles without custom properties may *not* spawn individual entities (they
   exist only in the rendering tilemap grid), whereas tiles or tile objects with
   custom data *will* be spawned as entities (the crate emits a `TileCreated`
   event for
@@ -205,7 +205,7 @@ relationships([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=worlds%20
   components, the plugin will automatically add that component to the
   corresponding
   entity([2](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/guides/properties.md#L24-L32)
-   )(
+  )(
   [2](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/guides/properties.md#L56-L64)).
 
 - For example, if we define a Rust component
@@ -226,16 +226,16 @@ relationships([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=worlds%20
   are spawned (including custom components insertion), `bevy_ecs_tiled` fires a
   **`MapCreated` event** to signal that the map is fully
   loaded([5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L44-L52)).
-   It also fires more granular events for each layer and object: e.g.,
+  It also fires more granular events for each layer and object: e.g.,
   `LayerCreated` for each layer entity, `TileCreated` for each tile entity with
   custom data, `ObjectCreated` for each object
   entity([5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L50-L58)).
-   These events are delivered after the entities exist and all initial
+  These events are delivered after the entities exist and all initial
   components are in
   place([5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L60-L68)
-   )(
+  )(
   [5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L116-L120)).
-   Our plugin will listen for these events to perform game-specific setup.
+  Our plugin will listen for these events to perform game-specific setup.
 
 - **Post-Processing via Events:** With the map loaded into ECS, we run custom
   systems to integrate it into gameplay and physics:
@@ -260,7 +260,7 @@ relationships([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=worlds%20
   to events, we ensure the components are added *after* the base entities are
   spawned (the events are guaranteed to run after component
   insertion([5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L116-L120))).
-   We could also perform this in a system that runs every frame by querying for
+  We could also perform this in a system that runs every frame by querying for
   entities, but using events is more deterministic and aligns with the map
   loading process.
 
@@ -316,7 +316,7 @@ checks) will now factor in the map’s tiles. For example, the physics circuit
 will take the set of `Block(x,y,z)` records pushed in and compute the highest
 block at each `(x,y)` to determine floor
 heights([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L75-L83)),
- enabling entities to stand on or collide with the level geometry.
+enabling entities to stand on or collide with the level geometry.
 
 ## 4. ECS Structure of the Map and Components
 
@@ -339,7 +339,7 @@ general entity hierarchy and relevant components:
 - Potentially a `TilemapAnchor` or similar component to control alignment (the
   Tiled plugin provides a way to anchor maps, e.g., center vs
   top-left)([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=You%20can%20customize%20how%20the,the%20map%20entity%2C%20such%20as)).
-   By default, an isometric map might be centered or bottom-aligned; we can
+  By default, an isometric map might be centered or bottom-aligned; we can
   adjust via this component if needed.
 
 - **Layer Entities (Children of Map)** – For each layer in Tiled (tile layer or
@@ -374,7 +374,7 @@ general entity hierarchy and relevant components:
   entities are children (or associated with) the layer and carry a `TilePos`
   component (grid
   coordinates)([6](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/examples/properties_basic.rs#L114-L123)),
-   a `GlobalTransform`, and possibly a `TileTexture` index, etc. For any such
+  a `GlobalTransform`, and possibly a `TileTexture` index, etc. For any such
   tile entity, the plugin also attaches any custom components from properties
   (like `Collidable` or `Slope` as we define). We will leverage this: by
   marking certain tiles in Tiled with a property, we ensure they become ECS
@@ -415,7 +415,7 @@ general entity hierarchy and relevant components:
   terrain for physics. This is a Lille ECS component defined as
   `Block { id: i64, x: i32, y: i32, z: i32 }`
   ([7](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/src/components.rs#L44-L52)).
-   It identifies a cell of solid ground or obstacle in the world. We will
+  It identifies a cell of solid ground or obstacle in the world. We will
   compute and assign these values based on the map:
 
 - `x, y, z`: the grid coordinates of the block. For a 2D map, `x` and `y`
@@ -431,7 +431,7 @@ general entity hierarchy and relevant components:
 - `id`: a unique identifier for this block. This is used by the physics circuit
   as a key, especially to join with
   slopes([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L79-L83)).
-   Each distinct block should have a distinct `id`. We will generate this ID
+  Each distinct block should have a distinct `id`. We will generate this ID
   when we attach the component (for example, using a global counter or hashing
   the coordinates). The `id` must remain stable for a given block; since the
   map doesn’t change at runtime (static level geometry), these IDs can simply
@@ -443,7 +443,7 @@ general entity hierarchy and relevant components:
   sloped surface. `BlockSlope` is defined as
   `BlockSlope { block_id: i64, grad_x: f64, grad_y: f64 }`
   ([7](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/src/components.rs#L68-L73)).
-   It represents the slope (gradient) of a block, for sloped terrain. The
+  It represents the slope (gradient) of a block, for sloped terrain. The
   `block_id` links to the `Block.id` so the physics circuit can join them (the
   slope modifies the block’s floor
   height)([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L79-L83)).
@@ -520,9 +520,9 @@ In Lille’s physics design, static world geometry is represented by the `Block`
 and `BlockSlope` components, and the DBSP circuit expects all such geometry to
 be fed into its input streams each
 tick([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L37-L44)
- )(
+)(
 [3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L75-L83)).
- Therefore, a primary job of the map plugin is to identify which map tiles or
+Therefore, a primary job of the map plugin is to identify which map tiles or
 objects should become `Block`s and attach those components.
 
 **Collision Marking in Tiled:** We assume that level designers will mark
@@ -617,7 +617,7 @@ A few notes on the above:
 - We use `TilePos` (provided by `bevy_ecs_tiled` on tile entities) to get the
   tile’s grid
   coordinates([6](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/examples/properties_basic.rs#L114-L123)).
-   This gives us integer `x,y`. For object entities (which wouldn’t have
+  This gives us integer `x,y`. For object entities (which wouldn’t have
   `TilePos`), if any collidable objects exist (say an object layer with
   collidable shapes), we’d need to calculate grid coords from their world
   position. That’s more complex (we’d convert world (x,y) back to grid indices
@@ -630,34 +630,34 @@ A few notes on the above:
 
 - `generate_unique_block_id` can be a simple static function that increments a
   counter or combines coordinates. For deterministic results across runs,
-  hashing `(x,y,z)` (which are small ints) into a 64-bit number could work
-  (e.g. `id = (x & 0xFFFF) << 16 | (y & 0xFFFF)` for 2D, plus z). However, even
-  a global counter is acceptable since the order of iteration is stable given
-  the map loads the same every time. We just need uniqueness and consistency
-  for slopes.
+  hashing `(x,y,z)` (which are small ints) into a 64-bit number could work (e.g.
+  `id = (x & 0xFFFF) << 16 | (y & 0xFFFF)` for 2D, plus z). However, even a
+  global counter is acceptable since the order of iteration is stable given the
+  map loads the same every time. We just need uniqueness and consistency for
+  slopes.
 
 Now every collidable tile entity is marked with a `Block`. These components
 will be picked up on the next tick by Lille’s DBSP input system, which queries
 all `Block` components and pushes them into the `block_in()` input
 handle([4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L120-L128)).
- As a result, the physics circuit will receive a batch of Block records like
+As a result, the physics circuit will receive a batch of Block records like
 `(id, x, y, z)` with weight `+1` each tick. The circuit uses this to build the
 `Block` input set representing static
 obstacles([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L75-L83)).
- Since these rarely change, the data will be the same each tick (the circuit
+Since these rarely change, the data will be the same each tick (the circuit
 may optimize out recalculations once it’s stable).
 
 **Floor Height and Collision in DBSP:** To connect how these Blocks are used:
 the physics circuit groups Block inputs by (x,y) and finds the highest `z` per
 cell (essential for multi-level or uneven
 terrain)([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L75-L83)).
- In our case with z=0 everywhere, the highest z per (x,y) is 0 unless we had
+In our case with z=0 everywhere, the highest z per (x,y) is 0 unless we had
 variations. Then it joins with slopes to compute an exact floor
 height([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L79-L83)).
- Finally, each moving entity’s position is compared to the floor height to
+Finally, each moving entity’s position is compared to the floor height to
 determine if it’s standing on something or
 falling([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L88-L97)).
- By providing the Blocks from the map, we ensure the DBSP knows ground exists
+By providing the Blocks from the map, we ensure the DBSP knows ground exists
 at those locations (so entities won’t fall through the floor).
 
 ### 5.2 Sloped Tiles: Adding `BlockSlope`
@@ -698,8 +698,8 @@ a level designer can simply select a slope tile in the tileset and add a
 `SlopeProperties` custom property, filling in the appropriate gradients. Once
 that’s done, whenever that tile is placed on the map, `bevy_ecs_tiled` will
 automatically attach a `SlopeProperties` component to the tile’s entity
-(because it’s a custom property on the tile definition). It will also generate
-a `TileCreated` event for that tile entity on
+(because it’s a custom property on the tile definition). It will also generate a
+`TileCreated` event for that tile entity on
 load([5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L50-L56)).
 
 **Attaching BlockSlope:** In the post-processing system (following the above
@@ -729,13 +729,13 @@ fn add_slopes(
 
 This assumes that `add_collision_blocks` ran first, so the entity now has a
 Block component with an `id`. We retrieve that id and use it for the
-BlockSlope’s `block_id`. The `grad_x`/`grad_y` from Tiled (f32) are converted
-to `OrderedFloat<f64>` to match the component’s type. After this, that entity
+BlockSlope’s `block_id`. The `grad_x`/`grad_y` from Tiled (f32) are converted to
+`OrderedFloat<f64>` to match the component’s type. After this, that entity
 (tile) fully represents a sloped block in Lille’s world: DBSP will receive both
 a Block and BlockSlope record for it. The circuit will join them by id and
 compute an adjusted floor
 height([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L79-L84)).
- Entities moving over this tile will smoothly move up or down as appropriate,
+Entities moving over this tile will smoothly move up or down as appropriate,
 rather than treating it as a step.
 
 By using custom properties and reflecting them into components
@@ -763,12 +763,12 @@ tick. As a recap:
 - The system `cache_state_for_dbsp_system` in `dbsp_sync/input.rs` queries all
   `Block` (and optional `BlockSlope`) components in the
   ECS([4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L50-L58)
-   )(
+  )(
   [4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L116-L125)).
-   For each, it calls `circuit.block_in().push(block, 1)` (and similarly for
+  For each, it calls `circuit.block_in().push(block, 1)` (and similarly for
   slope)(
   [4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L120-L128)).
-   Pushing with a weight of `1` indicates adding that record to the input
+  Pushing with a weight of `1` indicates adding that record to the input
   multiset for this tick.
 
 - The DBSP circuit, on `circuit.step()`, sees these as incremental additions.
@@ -778,25 +778,25 @@ tick. As a recap:
   differential engine can ignore duplicates or we could optimize by only
   pushing once; but for now the system does push each
   time([4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L120-L128)),
-   which is acceptable).
+  which is acceptable).
 
 - The physics rules (floor detection, collision) operate on the `Block` and
   `BlockSlope` streams. For example, *Highest Block Identification* groups
   blocks by (x,y) and finds max
   z([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L75-L83)).
-   With a single-level map, this will just pick up z=0 for those coordinates.
+  With a single-level map, this will just pick up z=0 for those coordinates.
   Then `FloorHeightAt` joins with slopes to adjust the
   height([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L79-L84)).
-   If an entity’s position is at (x=10.3, y=5.1) above our example sloped tile,
+  If an entity’s position is at (x=10.3, y=5.1) above our example sloped tile,
   the circuit will compute a floor z perhaps 0.5 at that point (depending on
   grad_x/y), and determine the entity is **Standing** on the slope if its
   `position.z` is near
   that([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L88-L97)).
-   Conversely, if an entity walks off any Block into a coordinate with none,
+  Conversely, if an entity walks off any Block into a coordinate with none,
   the absence of a Block in that cell yields no floor support and the entity
   becomes **Unsupported**
   (falls)([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L96-L101)).
-   All of this happens automatically now that the Blocks from the map are
+  All of this happens automatically now that the Blocks from the map are
   present in the input data.
 
 - In summary, by adding these components, we have *forwarded the map’s
@@ -875,7 +875,7 @@ the new entity’s `DdlogId` component (since dynamic entities require a stable
 ID for DBSP mapping). In Lille, `DdlogId` is used to map ECS entities to DBSP
 entity
 IDs([7](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/src/components.rs#L7-L15)).
- We would ensure our spawned player gets one (the system that spawns dynamic
+We would ensure our spawned player gets one (the system that spawns dynamic
 entities likely already handles this or we integrate with it).
 
 This way, the player appears at the coordinates specified by the level
@@ -886,10 +886,10 @@ ground immediately.
 **NPC/Enemy Spawns:** Similarly, designers could place multiple enemy spawn
 points. Perhaps they use an object type "EnemySpawn" with a property for enemy
 type. For example, a custom enum `EnemyType { Goblin, Troll, ... }`. In Tiled,
-they set each spawn’s EnemyType property. The plugin sees each as an entity
-with `EnemyType` component (thanks to reflection). We can then have a system
-that after map load iterates over all entities with `EnemyType` and spawns an
-NPC for each, then maybe despawns or marks the spawn point object so it’s not
+they set each spawn’s EnemyType property. The plugin sees each as an entity with
+`EnemyType` component (thanks to reflection). We can then have a system that
+after map load iterates over all entities with `EnemyType` and spawns an NPC
+for each, then maybe despawns or marks the spawn point object so it’s not
 processed again. Alternatively, those spawn points could remain as inert
 markers, and game logic could spawn enemies at them as needed (e.g. wave
 spawning). The design allows either – the important part is the data (position
@@ -962,9 +962,9 @@ entity inside our plugin using a resource/config for which map to load.)
 We might also want to specify the path for exporting types to Tiled (by default
 it writes `tiled_types_export.json` on first
 run([2](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/guides/properties.md#L26-L34)
- )(
+)(
 [2](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/guides/properties.md#L100-L108))).
- We can customize the `TiledPluginConfig` if needed (e.g., to filter which
+We can customize the `TiledPluginConfig` if needed (e.g., to filter which
 types to export – but here we want all our game-specific ones, so default is
 fine). If we wanted, we could do:
 
@@ -1110,7 +1110,7 @@ the right time. It's important that by the time we query for `Collidable` or
 plugin. The docs state that the events fire after all components (including
 custom properties) are
 inserted([5](https://github.com/adrien-bon/bevy_ecs_tiled/blob/8e962b56dac0365bf945304c8d84ff09bf0297eb/book/src/design/map_events.md#L60-L68)),
- so our timing is correct. We just need to register `on_map_loaded` system to
+so our timing is correct. We just need to register `on_map_loaded` system to
 run in a stage where it can read the event. Likely adding it to `Update` is
 fine since events are updated at frame boundaries. We might tag it with
 `.after(bevy_ecs_tiled::TiledPlugin)` if necessary, or simply rely on default
@@ -1221,16 +1221,16 @@ takes over.
 ## 7. Notes on Limitations and Future Extensions
 
 **Single-Level Focus:** As required, this design explicitly handles
-single-level maps. We assume all tiles exist on essentially the same plane,
-with `z=0` for ground. The support for `Block.z` and multiple layers in the
-data is in place (and the DBSP logic already can handle multiple vertical
-levels), but our current use of it is limited to one level. There is no
-streaming of multiple map chunks; the entire map is loaded at once and exists
-fully in memory/ecs. If a future feature requires very large worlds, we might
-consider loading/unloading chunks or multiple maps (Tiled does support “world”
-files linking
+single-level maps. We assume all tiles exist on essentially the same plane, with
+`z=0` for ground. The support for `Block.z` and multiple layers in the data is
+in place (and the DBSP logic already can handle multiple vertical levels), but
+our current use of it is limited to one level. There is no streaming of
+multiple map chunks; the entire map is loaded at once and exists fully in
+memory/ecs. If a future feature requires very large worlds, we might consider
+loading/unloading chunks or multiple maps (Tiled does support “world” files
+linking
 maps([1](https://github.com/adrien-bon/bevy_ecs_tiled#:~:text=using%20either%20external%20or%20embedded,Transform)),
- and `bevy_ecs_tiled` can load a `TiledWorld` with multiple maps). In that
+and `bevy_ecs_tiled` can load a `TiledWorld` with multiple maps). In that
 scenario, we’d extend the plugin to manage world boundaries, stream blocks
 in/out, and possibly assign `Block` IDs such that they remain unique globally.
 **For now, none of that is needed** – a single `.tmx` constitutes the whole
@@ -1245,7 +1245,7 @@ them again unless the map changes. This would require a persistent input (so
 the circuit retains the static data). Currently, the input system doesn’t
 differentiate static vs dynamic and just streams all each
 frame([4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L120-L128)).
- We note this as a possible optimization (perhaps mark static blocks with a
+We note this as a possible optimization (perhaps mark static blocks with a
 separate handling). Since our use-case involves static environment, an
 optimization could be to feed `block_in` once and then stop, or push additions
 with weight+1 once and not repeat. The design leaves this detail open, as
@@ -1275,7 +1275,7 @@ update the corresponding `Block` in ECS and thus push a retraction (`-1`) to
 the DBSP input. The DBSP API allows removals by pushing a record with weight
 `-1`
 ([4](https://github.com/leynos/lille/blob/53d933fd0e70e88701245432682616258493b3b1/src/dbsp_sync/input.rs#L82-L90)).
- Currently, the engine’s input sync tracks removals of entities via `removed`
+Currently, the engine’s input sync tracks removals of entities via `removed`
 queries for `DdlogId`, etc., but for Blocks we don’t assign `DdlogId`
 typically. We could manage a similar mechanism or simply treat map
 modifications as events that rebuild that part of the circuit. For now, static
@@ -1287,12 +1287,12 @@ and verifying that in-game, entities react as expected (stand on ground, walk
 up slopes, fall off edges). Since the DBSP physics already has BDD tests for
 these
 scenarios([8](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-and-world-engine-roadmap.md#L116-L125))
- using programmatic world setup, now those tests could be augmented or repeated
+using programmatic world setup, now those tests could be augmented or repeated
 with the world coming from a Tiled map to ensure equivalence. Because our
 integration is data-oriented, if the data matches the format the physics
 expects, it should “just work” with the existing tests for physics
 rules([3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L73-L81)
- )(
+)(
 [3](https://github.com/leynos/lille/blob/8af31fc80ee2784e8ac40d96e49e33cb4b77e9f0/docs/lille-physics-engine-design.md#L75-L83)).
 
 Finally, by adhering to Lille’s documentation style and guidelines, this

@@ -1,8 +1,8 @@
 # Valkey Module Design
 
 This document describes the architecture and design decisions for the Valkey
-OpenTofu module, which provides Redis-compatible key-value storage for the
-Nile Valley ephemeral preview infrastructure.
+OpenTofu module, which provides Redis-compatible key-value storage for the Nile
+Valley ephemeral preview infrastructure.
 
 ## Overview
 

@@ -32,8 +32,8 @@ eliminates the need for a separate test runner, reducing continuous integration
 barrier to adoption for teams already invested in the Rust testing
 ecosystem.[^3]
 
-The design is heavily modelled on `pytest-bdd`, a successful plugin for
-Python's `pytest` framework.[^4]
+The design is heavily modelled on `pytest-bdd`, a successful plugin for Python's
+`pytest` framework.[^4]
 
 `pytest-bdd`'s success stems from its ability to leverage the full power of its
 host framework—including fixtures, parameterisation, and a vast plugin
@@ -373,8 +373,8 @@ classDiagram
   `fn(&str) -> Result<T, E>` where `E: Error + Send + Sync + 'static`. The
   generated code matches `DataTableError::MissingColumn` and
   `DataTableError::MissingCell` to drive optional and default behaviour while
-  propagating all other failures unchanged. The `truthy` attribute is limited
-  to `bool` fields to maintain clear semantics.
+  propagating all other failures unchanged. The `truthy` attribute is limited to
+  `bool` fields to maintain clear semantics.
 
   Trybuild fixtures lock down these invariants. Dedicated compile-fail cases
   assert that `#[datatable(optional)]` only applies to `Option<T>` fields,
@@ -588,14 +588,13 @@ macro has a distinct role in the compile-time orchestration of the BDD tests.
   combined with `#[from]`, and a missing table triggers a runtime error.
 
 - Doc strings: A multi-line text block immediately following a step is
-  exposed to the step function through an optional `docstring` parameter of
-  type `String`. The runner passes the raw block to the wrapper as
-  `Option<&str>`, and the wrapper clones it into an owned `String` before
-  calling the step function. As with data tables, the parameter must use this
-  exact name and concrete type for detection. The wrapper fails at runtime if
-  the docstring is absent. A data table must precede any docstring parameter,
-  and feature files may delimit the block using either triple double-quotes or
-  triple backticks.
+  exposed to the step function through an optional `docstring` parameter of type
+  `String`. The runner passes the raw block to the wrapper as `Option<&str>`,
+  and the wrapper clones it into an owned `String` before calling the step
+  function. As with data tables, the parameter must use this exact name and
+  concrete type for detection. The wrapper fails at runtime if the docstring is
+  absent. A data table must precede any docstring parameter, and feature files
+  may delimit the block using either triple double-quotes or triple backticks.
 
 Macro attribute expansion relies on `rstest-bdd-macros::MacroPattern` to
 compile and cache regular expressions during macro execution. The helper
@@ -655,8 +654,8 @@ with the project's core goals:
    completely bypass
 
    `rstest` and `cargo test`, violating the primary design goal of seamless
-   integration. It would effectively be a reimplementation of `cucumber-rs`,
-   not `rstest-bdd`.
+   integration. It would effectively be a reimplementation of `cucumber-rs`, not
+   `rstest-bdd`.
 2. `build.rs` **Code Generation:** A build script (`build.rs`) could be used to
    parse all `.rs` files in the `tests` directory before the main compilation.
    It could find all the step-definition attributes and generate a single,
@@ -1113,9 +1112,9 @@ fn test_sample_scenario(my_fixture: MyFixture) { /\* final assertion \*/ }
 3. It traverses the AST to find the `Scenario` with the name "Sample Scenario".
 4. During compilation, the macro validates that each Gherkin step has a
    matching definition recorded by the step macros and emits `compile_error!`
-   when one is missing. At runtime, the generated test still performs lookup
-   via `inventory::iter::<Step>()` to resolve the concrete function and to
-   perform placeholder matching and argument extraction.
+   when one is missing. At runtime, the generated test still performs lookup via
+   `inventory::iter::<Step>()` to resolve the concrete function and to perform
+   placeholder matching and argument extraction.
 5. Using the `quote!` macro [^16], it generates a completely new Rust function.
    This generated function replaces the original
 
@@ -1390,14 +1389,15 @@ The solution moves these helpers to a dedicated runtime module:
 - **`ExecutionError`**: Enum capturing all execution failure modes:
   - `Skip { message }`: Control flow signal for skipping scenarios
   - `StepNotFound { index, keyword, text, ... }`: Unregistered step pattern
-  - `MissingFixtures(Arc<MissingFixturesDetails>)`: Required fixtures unavailable
+  - `MissingFixtures(Arc<MissingFixturesDetails>)`: Required fixtures
+    unavailable
   - `HandlerFailed { index, keyword, text, error, ... }`: Step handler
     returned an error
 - **`validate_required_fixtures`**: Fixture availability checking that returns
   `Result<(), ExecutionError>`. When fixtures are unavailable, returns
-  `Err(ExecutionError::MissingFixtures(Arc<MissingFixturesDetails>))` instead of
-  panicking. Callers (primarily `execute_step`) propagate this Result through
-  the structured error flow
+  `Err(ExecutionError::MissingFixtures(Arc<MissingFixturesDetails>))` instead
+  of panicking. Callers (primarily `execute_step`) propagate this Result
+  through the structured error flow
 
 #### 2.6.2 RuntimeMode and TestAttributeHint
 
@@ -1524,8 +1524,8 @@ incrementally.
   `rstest-bdd-macros` (the proc-macro implementation).
 
 - Implement the `inventory`-based step registry. Define the `Step` struct and
-  the `#[given]`, `#[when]`, and `#[then]` macros to populate the registry
-  using `inventory::submit!`.
+  the `#[given]`, `#[when]`, and `#[then]` macros to populate the registry using
+  `inventory::submit!`.
 
 - Implement a basic `#[scenario]` macro. This includes compile-time Gherkin
   file parsing and a lookup map built at runtime from the step registry.
@@ -1606,7 +1606,7 @@ incrementally.
   innermost scope at runtime, so helper functions can call it transparently.
   When no scope is active the macro panics with
   `rstest_bdd::skip! may only be used inside a step or hook generated by rstest-bdd`,
-   which surfaces misuse without breaking helper-based flows. The guard records
+  which surfaces misuse without breaking helper-based flows. The guard records
   the originating file, function, and thread id; `skip!` verifies that the
   calling thread matches the one that entered the guard and panics with a
   descriptive message if another thread attempts to short-circuit execution.
@@ -1652,8 +1652,8 @@ skip details in diagnostic tooling and IDE integrations.
 - 2025-12-10: Diagnostic tooling now records scenario line numbers and tag
   sets alongside skip reasons, and tracks bypassed step definitions when
   execution halts early. `cargo bdd skipped` and `cargo bdd steps --skipped`
-  surface this data (with JSON fields `feature`, `scenario`, `line`, `tags`,
-  and `reason`) to support IDE integrations and CLI consumers.
+  surface this data (with JSON fields `feature`, `scenario`, `line`, `tags`, and
+  `reason`) to support IDE integrations and CLI consumers.
 - 2025-12-12: Bypassed-step recording is gated at codegen time with
   `cfg(feature = "diagnostics")` to keep non-diagnostic builds linkable. The
   runtime reuses the scenario tag vector for reporting to avoid repeated
@@ -1779,16 +1779,16 @@ between their BDD acceptance tests and their other unit/integration tests.
 
 The following table summarizes the key differences:
 
-| Feature          | rstest-bdd (Proposed)                                                                                                                             | cucumber                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Test Runner      | Standard cargo test (via rstest expansion)                                                                                                        | Custom runner invoked from a main function (World::run(…)) [^19]                  |
-| State Management | rstest fixtures; dependency injection model [^1]                                                                                                  | Mandatory World struct; a central state object per scenario [^11]                 |
-| Step Discovery   | Automatic via compile-time registration (inventory) and runtime matching                                                                          | Explicit collection in the test runner setup (World::cucumber().steps(…)) [^20]   |
-| Parameterisation | Gherkin Scenario Outline maps to rstest's #[case] parameterisation [^21]                                                                          | Handled internally by the cucumber runner                                         |
-| Async Support    | Tokio current-thread mode (planned); multi-thread and other runtimes as future work (see §2.5 and [ADR-001](adr-001-async-fixtures-and-test.md))  | Built-in; requires specifying an async runtime [^11]                              |
-| Ecosystem        | Seamless integration with rstest and cargo features                                                                                               | Self-contained framework; can use any Rust library within steps                   |
-| Ergonomics       | pytest-bdd-like; explicit #[scenario] binding links test code to features [^6]                                                                    | cucumber-jvm/js-like; feature-driven, with a central test runner                  |
-| Core Philosophy  | BDD as an extension of the existing rstest framework                                                                                              | A native Rust implementation of the Cucumber framework standard                   |
+| Feature          | rstest-bdd (Proposed)                                                                                                                            | cucumber                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Test Runner      | Standard cargo test (via rstest expansion)                                                                                                       | Custom runner invoked from a main function (World::run(…)) [^19]                |
+| State Management | rstest fixtures; dependency injection model [^1]                                                                                                 | Mandatory World struct; a central state object per scenario [^11]               |
+| Step Discovery   | Automatic via compile-time registration (inventory) and runtime matching                                                                         | Explicit collection in the test runner setup (World::cucumber().steps(…)) [^20] |
+| Parameterisation | Gherkin Scenario Outline maps to rstest's #[case] parameterisation [^21]                                                                         | Handled internally by the cucumber runner                                       |
+| Async Support    | Tokio current-thread mode (planned); multi-thread and other runtimes as future work (see §2.5 and [ADR-001](adr-001-async-fixtures-and-test.md)) | Built-in; requires specifying an async runtime [^11]                            |
+| Ecosystem        | Seamless integration with rstest and cargo features                                                                                              | Self-contained framework; can use any Rust library within steps                 |
+| Ergonomics       | pytest-bdd-like; explicit #[scenario] binding links test code to features [^6]                                                                   | cucumber-jvm/js-like; feature-driven, with a central test runner                |
+| Core Philosophy  | BDD as an extension of the existing rstest framework                                                                                             | A native Rust implementation of the Cucumber framework standard                 |
 
 ### 3.5 Potential extensions
 
@@ -2411,8 +2411,8 @@ These macros keep test code succinct while still surfacing detailed diagnostics.
   `I18nAssets`, so the Fluent loader can discover translations. Missing keys or
   unsupported locales fall back to English.
 - **Refactor diagnostic messages:** Keep proc‑macro diagnostics stable and in
-  English for deterministic builds. Localize user‑facing runtime messages in
-  the `rstest-bdd` crate using `FluentLanguageLoader` and `i18n-embed`'s locale
+  English for deterministic builds. Localize user‑facing runtime messages in the
+  `rstest-bdd` crate using `FluentLanguageLoader` and `i18n-embed`'s locale
   requesters. Avoid compile‑time locale switches in macros.
 
 #### Implemented localization harness

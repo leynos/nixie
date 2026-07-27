@@ -9,9 +9,9 @@
   default `auto` prefers `merman-cli` (searching `~/.cargo/bin` then `PATH`)
   and falls back to the existing `mmdc`/`bun`/`npx` discovery chain.
 - Changed the default validation authority: with `merman-cli` installed,
-  diagrams are validated by merman's Mermaid-11.15.0-compatible
-  implementation rather than `@mermaid-js/mermaid-cli`. Use
-  `--renderer mmdc` to restore the previous behaviour.
+  diagrams are validated by merman's Mermaid-11.15.0-compatible implementation
+  rather than `@mermaid-js/mermaid-cli`. Use `--renderer mmdc` to restore the
+  previous behaviour.
 - A Puppeteer configuration is now only generated for the mmdc backend.
   `--no-sandbox` and `--mermaid-version` remain accepted but are inert under
   the merman backend.
@@ -29,9 +29,10 @@
    `mermaid-cli` commands. The `render_block(verbose=...)` parameter is
    deprecated and has no effect; configure the `nixie.cli` logger directly
    instead.
-- Directory traversal honours `.gitignore` patterns in the working directory only.
-  When run without arguments, nixie scans the current directory for Markdown files
-  using those ignore rules (nested `.gitignore` files are ignored).
+- Directory traversal honours `.gitignore` patterns in the working directory
+  only. When run without arguments, nixie scans the current directory for
+  Markdown files using those ignore rules (nested `.gitignore` files are
+  ignored).
 - `nixie` searches common install locations for `mmdc` before falling back to
   `bun` or `npx`.
 - `--mermaid-version` controls the `@mermaid-js/mermaid-cli` version used when

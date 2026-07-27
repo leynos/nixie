@@ -105,12 +105,12 @@ documents.
   Rationale: enables both within-file and across-file concurrency while keeping
   output deterministic.
 - Decision: keep deterministic order based on original traversal order rather
-  than completion order.
-  Rationale: compatibility with existing output expectations and tests.
+  than completion order. Rationale: compatibility with existing output
+  expectations and tests.
 - Decision: add `--max-concurrency` so benchmarks can compare serial and
-  bounded-concurrent execution without code changes.
-  Rationale: enables performance regression testing and user control while
-  preserving a safe default cap.
+  bounded-concurrent execution without code changes. Rationale: enables
+  performance regression testing and user control while preserving a safe
+  default cap.
 - Decision: update markdown quality-gate target scope to tracked project docs
   while excluding copied benchmark fixtures and `.rules` reference material.
   Rationale: copied fixtures are external corpora used for benchmarking, not
@@ -129,8 +129,8 @@ Second, create a scheduler in `main` that:
 3. Submits one async task per diagram guarded by a global semaphore with
    `max(1, cpu_count - 1)`.
 4. Consumes completions with `asyncio.as_completed`, storing outcomes in a
-   pending map and emitting only the next expected ordinal to keep deterministic
-   stream order.
+   pending map and emitting only the next expected ordinal to keep
+   deterministic stream order.
 5. Handles files with zero diagrams by emitting boundaries in deterministic
    order and preserving exit semantics.
 

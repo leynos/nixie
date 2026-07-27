@@ -278,8 +278,8 @@ HealthDelta
 ```
 
 The sequence identifier remains optional because only marshalling layers that
-deduplicate external submissions need to supply it; in-circuit producers rely
-on `(entity, at_tick)` alone. Treat these alias definitions as the canonical
+deduplicate external submissions need to supply it; in-circuit producers rely on
+`(entity, at_tick)` alone. Treat these alias definitions as the canonical
 reference for health integration so roadmap entries and tests reuse the same
 types while keeping the DBSP circuit authoritative over derived behaviour.
 
@@ -486,8 +486,8 @@ declarative dataflow model.
   update positions.
 
 - **State-driven Decisions**: More complex logic can be built by composing
-  operators. For example, to make an agent flee when its health is low, we
-  would `join` entities with their `Health` component, `filter` for those where
+  operators. For example, to make an agent flee when its health is low, we would
+  `join` entities with their `Health` component, `filter` for those where
   `health < threshold`, and then `join` the result with the fleeing-behaviour
   sub-graph.
 

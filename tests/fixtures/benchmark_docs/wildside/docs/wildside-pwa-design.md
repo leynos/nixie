@@ -369,8 +369,7 @@ Update strategy should prefer correctness over “instant updates”:
 - Default to waiting for the next navigation before activating a new service
   worker.
 - Only use `skipWaiting()`/`clients.claim()` when there is a tested,
-  user-visible
-  update UX.
+  user-visible update UX.
 
 Background sync is an optional enhancement (not a hard dependency):
 

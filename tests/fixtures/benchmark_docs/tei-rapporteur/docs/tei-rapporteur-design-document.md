@@ -269,11 +269,11 @@ an intermediate crate or feature for conversion glue:
   for a `tei-bridge` layer.
 
 The overall architecture ensures a **clear API boundary** between Rust and
-Python. Rust code is written as if it’s a standalone library (no mention of
-GIL, `PyObject`, or Python-specific patterns in its public API). Python code
-sees a natural interface (functions and dataclasses) and does not worry about
-Rust internals. The contract at the boundary is simply serialized data. This
-design avoids the “snakes in the Rust code” problem – Rust developers are not
+Python. Rust code is written as if it’s a standalone library (no mention of GIL,
+`PyObject`, or Python-specific patterns in its public API). Python code sees a
+natural interface (functions and dataclasses) and does not worry about Rust
+internals. The contract at the boundary is simply serialized data. This design
+avoids the “snakes in the Rust code” problem – Rust developers are not
 confronted with a tangle of embedded Python types. They can contribute to
 `tei-core` without knowing anything about PyO3 or Python, which is important
 for long-term maintainability.
@@ -908,9 +908,9 @@ key functions include:
   (as `bytes`) and deserialize it (using `tei-serde`) into a `TeiDocument`.
   This is a very efficient path if the Python side already has a
   `msgspec.Struct` and encodes it to bytes. The binding now uses
-  `tei_serde::msgpack::from_slice` and converts any decode failure into a
-  Python `ValueError`, ensuring callers never need to reason about Rust-only
-  error types.
+  `tei_serde::msgpack::from_slice` and converts any decode failure into a Python
+  `ValueError`, ensuring callers never need to reason about Rust-only error
+  types.
 
   The following sequence diagram captures the end-to-end control flow for
   `from_msgpack`, including the propagation of successful documents and the
@@ -1268,8 +1268,8 @@ pull-parser:
 - **Manual Iterator**: Implement a struct (say `TeiStreamParser`) that contains
   an instance of `quick_xml::Reader` and some state, and implement the
   `Iterator` trait for it. The `next()` method would read from the XML until it
-  completes one unit (e.g., one `<u>` element and its content) and then return
-  a `TeiElement` enum or a specific struct. Internally, this requires managing
+  completes one unit (e.g., one `<u>` element and its content) and then return a
+  `TeiElement` enum or a specific struct. Internally, this requires managing
   the nesting and ensuring that when the iterator yields an element, it doesn’t
   consume beyond it. Quick-xml’s low-level API gives events like
   “StartElement", “Text", “EndElement". That can be leveraged: for example, on
@@ -1881,11 +1881,11 @@ In this scenario:
 The `msgspec.Struct` projections now ship with the crate as the
 `tei_rapporteur.structs` submodule. `Episode`, `TeiHeader`, `FileDesc`,
 `ProfileDesc`, `EncodingDesc`, `RevisionDesc`, `TeiText`, `TeiBody`,
-`Paragraph`, `Utterance`, `Hi`, and `Pause` mirror the serde field names used
-by `tei-core` (for example, `teiHeader`, `fileDesc`, `@xml:id`, `$value`, and
-the externally tagged `p`/`u` body blocks). The Python source lives alongside
-the crate and is embedded into the extension at load time, avoiding a rename of
-the existing `tei_rapporteur` module while still registering a real submodule.
+`Paragraph`, `Utterance`, `Hi`, and `Pause` mirror the serde field names used by
+`tei-core` (for example, `teiHeader`, `fileDesc`, `@xml:id`, `$value`, and the
+externally tagged `p`/`u` body blocks). The Python source lives alongside the
+crate and is embedded into the extension at load time, avoiding a rename of the
+existing `tei_rapporteur` module while still registering a real submodule.
 MessagePack emitted by `to_msgpack` decodes directly into these classes via
 `msgspec.msgpack.decode(payload, type=Episode)`, and encoding the structs feeds
 the bytes straight back into `from_msgpack`.

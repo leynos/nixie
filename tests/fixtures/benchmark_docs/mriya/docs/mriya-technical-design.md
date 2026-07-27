@@ -91,12 +91,12 @@ of the MVP include:
   `rsync -az --delete --filter=":- .gitignore" <SRC> <DEST>` will **copy all
   non-ignored files and omit anything listed in
   .gitignore**([1](https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c#:~:text=%60rsync%20,DEST%3E)).
-   This approach ensures that build artifacts like `target/` or `node_modules/`
+  This approach ensures that build artifacts like `target/` or `node_modules/`
   (which are usually gitignored) are not needlessly uploaded. The `git2`
   library’s ignore functionality (e.g. `Repository::is_path_ignored`) can be
   used to double-check patterns for complex
   cases([2](https://docs.rs/git2/latest/git2/struct.Repository.html#:~:text=,Result%3Cbool%2C%20Error)),
-   but the rsync filter is expected to handle most ignore rules.
+  but the rsync filter is expected to handle most ignore rules.
 
 - **SSH Command Execution:** Once files are synced, Mriya invokes the test
   command on the remote VM via an SSH call. In v0, we use the system `ssh` CLI
@@ -168,9 +168,8 @@ provisioning) that will guide subsequent optimizations.
 ### Volume attachment decision (December 2025)
 
 - Implement volume attachment as an optional configuration
-  (`SCW_DEFAULT_VOLUME_ID`
-  or `default_volume_id` in `mriya.toml`) that attaches a pre-existing Block
-  Storage volume to the instance before power-on.
+  (`SCW_DEFAULT_VOLUME_ID` or `default_volume_id` in `mriya.toml`) that
+  attaches a pre-existing Block Storage volume to the instance before power-on.
 - Use a direct HTTP PATCH call to the Scaleway API for volume attachment since
   the `scaleway-rs` crate v0.1.9 does not expose volume management in its
   instance builder. The request updates the server's volumes map, preserving
@@ -401,7 +400,7 @@ differences:
 - **Instance Creation Options:** The parameters to create a VM vary. For
   Scaleway, we specify a commercial type (instance size) and an image ID or
   label([4](https://www.scaleway.com/en/developers/api/instances/#:~:text=Scaleway%20Project%20ID%20,Instance%20types%20and%20their%20IDs)).
-   For Hetzner, a server type and an image (like an Ubuntu version) must be
+  For Hetzner, a server type and an image (like an Ubuntu version) must be
   provided. DigitalOcean needs a droplet size, region, and an image slug (e.g.
   "ubuntu-20-04-x64"). AWS’s EC2 requires an AMI ID, instance type,
   subnet/security group, and an SSH key name. Our `CreateOpts` can abstract
@@ -416,7 +415,7 @@ differences:
   account, or one can add an **AUTHORIZED_KEY** tag on the instance with the
   public
   key([5](https://www.scaleway.com/en/docs/instances/reference-content/add-instance-specific-ssh-keys-using-tags/#:~:text=Using%20tags%20to%20add%20Instance,tags%20for%20each%20SSH%20key)).
-   DigitalOcean requires specifying the *ID of an SSH key* that’s been added to
+  DigitalOcean requires specifying the *ID of an SSH key* that’s been added to
   your DO account when creating the droplet. AWS requires a key pair name (the
   key must be pre-created or uploaded in that region). We plan for the profile
   config to include an identifier or name for the SSH key to use per provider,
@@ -541,7 +540,7 @@ creating an instance. We will enhance the ScalewayBackend `create_vm` to accept
 an optional volume ID (configured in `mriya.toml`). If provided, the instance
 creation request will include this volume in the `volumes`
 object([4](https://www.scaleway.com/en/developers/api/instances/#:~:text=,is%20possible%20to%20attach%20existing)).
- For example, a volume could be attached and mounted at `/home` (if the VM
+For example, a volume could be attached and mounted at `/home` (if the VM
 image has a default user home there, e.g., on an Ubuntu image the default user
 might be `root` with home `/root`, but we can adjust by perhaps using a
 cloud-init script to mount and symlink it, or by creating a regular user that
@@ -575,7 +574,7 @@ everything from scratch on each ephemeral VM is slow, whereas caching can save
 significant time. Mozilla encountered this with build machines and found that
 reusing compiled outputs or a shared cache drastically improved
 performance([6](https://blog.mozilla.org/ted/2016/11/21/sccache-mozillas-distributed-compiler-cache-now-written-in-rust/#:~:text=if%20we%20could%20deploy%20a,was)).
- In our case, a persistent volume acts as that cache store. We expect **faster
+In our case, a persistent volume acts as that cache store. We expect **faster
 builds/tests on subsequent runs** since tools like Cargo, pip, npm, etc., will
 find their caches intact on the attached volume.
 
@@ -628,7 +627,7 @@ config or a separate file reference. This allows the user to provide a
 cloud-init script (either cloud-config YAML or shell script) that the VM will
 execute on first
 boot([7](https://cloudinit.readthedocs.io/en/latest/explanation/format.html#:~:text=User,configuration%20which%20modifies%20an%20instance))([7](https://cloudinit.readthedocs.io/en/latest/explanation/format.html#:~:text=,first%20boot)).
- Through cloud-init, the user can tailor the environment automatically. For
+Through cloud-init, the user can tailor the environment automatically. For
 example, the `user_data` could be a **YAML cloud-config** that installs system
 packages and sets up a user:
 
@@ -647,7 +646,7 @@ This would ensure certain base packages are installed and maybe pre-run an
 extremely flexible; it can handle tasks like *installing apt packages, adding
 users, configuring environment variables, and importing SSH
 keys*([7](https://cloudinit.readthedocs.io/en/latest/explanation/format.html#:~:text=,first%20boot)).
- We will especially use it to ensure our SSH key is authorized on the instance
+We will especially use it to ensure our SSH key is authorized on the instance
 if not using the provider’s built-in key mechanism. For example, the user-data
 might contain an `ssh_authorized_keys:` section with the key from config, or
 simply rely on the provider’s key injection.
@@ -675,7 +674,7 @@ service, we could start it via user-data. Also, some users might want to run as
 a non-root user for security; cloud-init can create that user and set up the
 authorized
 key([7](https://cloudinit.readthedocs.io/en/latest/explanation/format.html#:~:text=,setup)).
- By exposing this in config, we give advanced control without complicating the
+By exposing this in config, we give advanced control without complicating the
 Mriya code path.
 
 **Learning Goals:**
@@ -967,7 +966,7 @@ around the SSH connection:
 **Using `russh`:** We will use the `russh` crate (an async Rust SSH client
 library) to open an SSH session to the new
 VM([8](https://github.com/Eugeny/russh#:~:text=Examples%3A%20simple%20client%2C%20interactive%20PTY,%E2%9C%A8%20%3D%20added%20in%20Russh)).
- After `wait_for_ssh` indicates the port is open, we’ll attempt to authenticate
+After `wait_for_ssh` indicates the port is open, we’ll attempt to authenticate
 using the user’s private key. Initially, we can load the key from a file (path
 given in config, e.g. `~/.ssh/id_rsa`) and use it for authentication. We must
 handle possible passphrase – likely we’ll assume the key is unencrypted or the
@@ -1251,13 +1250,13 @@ can be cached:
   way that doesn’t delete existing `target` on the remote. In fact, using
   `--filter=":- .gitignore"` means rsync will ignore transferring any target
   directory([1](https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c#:~:text=)).
-   If we also avoid `--delete` for ignored files, the remote’s `target` (if it
+  If we also avoid `--delete` for ignored files, the remote’s `target` (if it
   exists from a previous run on a persistent volume) will remain untouched and
   **available for incremental build**. The Stack Overflow solution suggests
   adding `--delete-after` with the filter to remove files not present locally
   except those
   ignored([1](https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c#:~:text=match%20at%20L320%20%60rsync%20,man%20page))([1](https://stackoverflow.com/questions/13713101/rsync-exclude-according-to-gitignore-hgignore-svnignore-like-filter-c#:~:text=%60rsync%20,DEST%3E)).
-   We will adopt a strategy to *not* delete ignored paths on remote, thereby
+  We will adopt a strategy to *not* delete ignored paths on remote, thereby
   treating them as cache. For safety, we might clear it manually via a command
   if needed, but generally this means compiled objects remain on volume.
 
@@ -1273,7 +1272,7 @@ can be cached:
   speed up builds. Sccache can function as a compiler wrapper caching build
   outputs either on disk or in a distributed
   cache([9](https://android.googleid.googlesource.com/toolchain/sccache/+/c9f3273a064d474148fd33437a45b322cd75c308/README.md#:~:text=sccache%20,of%20several%20cloud%20storage%20backends)).
-   One idea is to run a small sccache server or use an S3 bucket as a backend.
+  One idea is to run a small sccache server or use an S3 bucket as a backend.
   But an easier win is to use sccache in local disk mode but point it to the
   persistent volume. For example, set `SCCACHE_DIR=/mriya/sccache`. Then even
   if the `target` is gone, sccache might serve cached object files on next run
@@ -1281,11 +1280,11 @@ can be cached:
   since we *are* preserving `target` between runs with the volume approach,
   sccache might be less critical. The main benefit of sccache would be if you
   want to share cache across different machine instances or developers. We note
-  that **sccache is designed for sharing caches across ephemeral
-  machines**([6](https://blog.mozilla.org/ted/2016/11/21/sccache-mozillas-distributed-compiler-cache-now-written-in-rust/#:~:text=if%20we%20could%20deploy%20a,was))
-   – which is exactly our scenario – but because we have a volume per project,
-  we already achieve a similar effect (the volume is effectively the “shared
-  disk” between ephemeral VMs for that project).
+  that **sccache is designed for sharing caches across ephemeral machines**
+  (see Mozilla's shared-cache source in the Sources section) – which is exactly
+  our scenario – but because we have a volume per project, we already achieve a
+  similar effect (the volume is effectively the “shared disk” between ephemeral
+  VMs for that project).
 
 - Nevertheless, we may integrate sccache support for cases where using a volume
   is not feasible or for multi-VM distributed caching (like sharing with CI
@@ -1299,7 +1298,7 @@ can be cached:
   S3 bucket) would allow cache hits even on a brand new volume (if, say, the
   volume was lost or you’re scaling up multiple ephemeral runners in
   parallel)([10](https://github.com/mozilla/sccache/issues/455#:~:text=run%20rust%20cache%20server%20on,Mozilla)).
-   For now, we assume a single-runner usage, so the volume is sufficient.
+  For now, we assume a single-runner usage, so the volume is sufficient.
 
 **Parallelizing Operations:** Performance isn’t only about caching; we consider
 if we can parallelize some setup steps:
@@ -1385,7 +1384,7 @@ pair. We give flexibility:
   one-time key per run and pass the pubkey in the VM’s user-data (cloud-init
   can put it into
   `~/.ssh/authorized_keys`([7](https://cloudinit.readthedocs.io/en/latest/explanation/format.html#:~:text=,setup))).
-   We mention this as an idea since it means even if someone got hold of the
+  We mention this as an idea since it means even if someone got hold of the
   ephemeral VM, the key dies with it (and not used elsewhere). However,
   implementing this means we have to manage multiple keys and still need to
   keep the private part temporarily. This might be a future security

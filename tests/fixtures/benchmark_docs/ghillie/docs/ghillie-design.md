@@ -530,12 +530,12 @@ root of the hierarchy.
 
 #### Table 2: Core Schema Specifications
 
-| **Table Name** | **Primary Key**  | **Foreign Keys** | **Storage Strategy** | **Rationale**                                                                                                              |
-| -------------- | ---------------- | ---------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `repositories` | `repo_id` (UUID) | `team_id`        | Relational           | Strict referential integrity is required to ensure reports are linked to valid owners.33                                   |
-| `commits`      | `commit_sha`     | `repo_id`        | Relational           | High-volume transactional data; relational structure optimizes time-series queries (e.g., “commits in last 7 days”).29     |
-| `violations`   | `violation_id`   | `repo_id`        | Relational + JSONB   | Hybrid approach allows querying by severity (Relational) while storing diverse evidence payloads (JSONB).10                |
-| `raw_events`   | `event_id`       | None             | Append-Only Log      | The Bronze layer storage. No foreign keys to allow high-speed ingestion without locking.1                                  |
+| **Table Name** | **Primary Key**  | **Foreign Keys** | **Storage Strategy** | **Rationale**                                                                                                          |
+| -------------- | ---------------- | ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `repositories` | `repo_id` (UUID) | `team_id`        | Relational           | Strict referential integrity is required to ensure reports are linked to valid owners.33                               |
+| `commits`      | `commit_sha`     | `repo_id`        | Relational           | High-volume transactional data; relational structure optimizes time-series queries (e.g., “commits in last 7 days”).29 |
+| `violations`   | `violation_id`   | `repo_id`        | Relational + JSONB   | Hybrid approach allows querying by severity (Relational) while storing diverse evidence payloads (JSONB).10            |
+| `raw_events`   | `event_id`       | None             | Append-Only Log      | The Bronze layer storage. No foreign keys to allow high-speed ingestion without locking.1                              |
 
 ### 6.2 Metric Definitions and Calculation
 
@@ -546,7 +546,7 @@ text summaries.
   to the `main` branch or specific `release` tags within the reporting window.11
 - **Lead Time for Changes:** Measured as the duration between the first commit
   timestamp on a feature branch and the timestamp of the merge event into
-  `main`.34
+  `main` .34
 - **Compliance Score:** A weighted aggregate metric derived from the active
   violations in the `compliance_violations` table. The formula typically
   penalizes Critical violations heavily (e.g., -10 points) and Low violations

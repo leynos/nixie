@@ -4018,8 +4018,8 @@ that create the Phase 1 tables needed for local persistence and caching:
   and TTL expiry)
 
 The additional entities in the ER diagram (for example `users`, `ai_sessions`,
-and `cache_metadata`) are intentionally deferred until later roadmap slices.
-The `pr_metadata_cache` table is a pragmatic exception: it enables cache-first
+and `cache_metadata`) are intentionally deferred until later roadmap slices. The
+`pr_metadata_cache` table is a pragmatic exception: it enables cache-first
 pull request intake without requiring repository discovery or the full PR data
 model to be populated in SQLite.
 
@@ -4752,12 +4752,12 @@ sequenceDiagram
 
 **Stream Event Types**:
 
-| Event Type       | JSON Schema                                   | Processing Action           | UI Update               |
-| ---------------- | --------------------------------------------- | --------------------------- | ----------------------- |
-| `thread.started` | `{"type":"thread.started","thread_id":"…"}`   | Initialize session tracking | Show progress indicator |
-| `turn.started`   | `{"type":"turn.started"}`                     | Begin processing turn       | Update status message   |
-| `item.completed` | `{"type":"item.completed","item":{…}}`        | Process completed item      | Update progress bar     |
-| `agent_message`  | `{"type":"agent_message","text":"…"}`         | Display agent response      | Show final message      |
+| Event Type       | JSON Schema                                 | Processing Action           | UI Update               |
+| ---------------- | ------------------------------------------- | --------------------------- | ----------------------- |
+| `thread.started` | `{"type":"thread.started","thread_id":"…"}` | Initialize session tracking | Show progress indicator |
+| `turn.started`   | `{"type":"turn.started"}`                   | Begin processing turn       | Update status message   |
+| `item.completed` | `{"type":"item.completed","item":{…}}`      | Process completed item      | Update progress bar     |
+| `agent_message`  | `{"type":"agent_message","text":"…"}`       | Display agent response      | Show final message      |
 
 #### 6.7.2.3 Batch Processing Flows
 
@@ -4980,12 +4980,12 @@ flowchart TD
 
 **OpenAI Codex CLI Service Contract**:
 
-| Contract Element | Specification                                                                                                                                                           | SLA                    | Monitoring                |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------- |
-| Availability     | Included with ChatGPT Plus, Pro, Business, Edu, and Enterprise plans                                                                                                    | Plan-dependent         | Process health monitoring |
-| Response Time    | Variable based on task complexity                                                                                                                                       | No specific SLA        | Execution time tracking   |
-| Resource Usage   | Local compute resources                                                                                                                                                 | User machine dependent | Resource monitoring       |
-| Data Privacy     | All file reads, writes, and command executions happen locally. Only your prompt, high‑level context, and optional diff summaries are sent to the model for generation   | Privacy by design      | Data flow auditing        |
+| Contract Element | Specification                                                                                                                                                         | SLA                    | Monitoring                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------- |
+| Availability     | Included with ChatGPT Plus, Pro, Business, Edu, and Enterprise plans                                                                                                  | Plan-dependent         | Process health monitoring |
+| Response Time    | Variable based on task complexity                                                                                                                                     | No specific SLA        | Execution time tracking   |
+| Resource Usage   | Local compute resources                                                                                                                                               | User machine dependent | Resource monitoring       |
+| Data Privacy     | All file reads, writes, and command executions happen locally. Only your prompt, high‑level context, and optional diff summaries are sent to the model for generation | Privacy by design      | Data flow auditing        |
 
 ### 6.7.4 Integration Flow Diagrams
 
@@ -7340,9 +7340,9 @@ is a backlog item rather than a launch dependency.
 GitHub Actions runs the following:
 
 - Triggers: push/PR to `main`; tags matching `v*` publish a release.
-- Job `quality`: `cargo fmt --check`, `cargo clippy --all-targets
-  --all-features -D warnings`, `cargo test
-  --all-features` (or nextest where available), and `cargo audit`.
+- Job `quality`: `cargo fmt --check`,
+  `cargo clippy --all-targets --all-features -D warnings`,
+  `cargo test --all-features` (or nextest where available), and `cargo audit`.
 - Job `build`: matrix over the targets above producing release binaries and
   checksums.
 - Job `release`: on tags, attach artefacts to the GitHub Release and publish
@@ -7373,11 +7373,11 @@ resort.
 
 **Semantic Versioning Strategy**:
 
-| Version Component | Increment Trigger                  | Example         | Impact                   |
-| ----------------- | ---------------------------------- | --------------- | ------------------------ |
-| Major (X.0.0)     | Breaking changes to CLI interface  | 1.0.0 → 2.0.0   | Requires user adaptation |
-| Minor (0.X.0)     | New features, non-breaking changes | 1.1.0 → 1.2.0   | Backward compatible      |
-| Patch (0.0.X)     | Bug fixes, security updates        | 1.1.1 → 1.1.2   | Drop-in replacement      |
+| Version Component | Increment Trigger                  | Example       | Impact                   |
+| ----------------- | ---------------------------------- | ------------- | ------------------------ |
+| Major (X.0.0)     | Breaking changes to CLI interface  | 1.0.0 → 2.0.0 | Requires user adaptation |
+| Minor (0.X.0)     | New features, non-breaking changes | 1.1.0 → 1.2.0 | Backward compatible      |
+| Patch (0.0.X)     | Bug fixes, security updates        | 1.1.1 → 1.1.2 | Drop-in replacement      |
 
 **Release Automation Workflow**:
 

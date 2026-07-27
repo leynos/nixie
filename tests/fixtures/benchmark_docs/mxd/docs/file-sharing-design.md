@@ -47,8 +47,8 @@ for robustness and scalability.
 **database** for metadata & permissions and an **object storage** service for
 file content. The server logic (written in Rust) mediates between client
 requests, the DB, and the object store: for example, a download request
-triggers a DB lookup and an object store read stream. By leveraging the Rust
-**`object_store`** crate, we can easily swap underlying storage (local
+triggers a DB lookup and an object store read stream. By leveraging the Rust **
+`object_store`** crate, we can easily swap underlying storage (local
 filesystem, S3, Azure, etc.) without code changes. All storage access is
 asynchronous and stream-oriented for efficiency. The **ACL and user
 management** are part of the broader application schema and are reused here –
@@ -163,10 +163,10 @@ In this model:
   apply as default.
 - **User, Group, UserGroup** are part of the existing system to manage accounts
   and group membership. They are included here to illustrate that permissions
-  can be granted to groups as well as users. The `Permission.principal_type`
-  and `principal_id` together refer to either a user or a group. For example,
-  you could give a “Guests” group download rights to a particular folder, or
-  assign an individual user upload rights.
+  can be granted to groups as well as users. The `Permission.principal_type` and
+  `principal_id` together refer to either a user or a group. For example, you
+  could give a “Guests” group download rights to a particular folder, or assign
+  an individual user upload rights.
 
 Below is an example SQL DDL that implements this schema:
 
@@ -507,21 +507,20 @@ interrupted. The steps:
    flagged read-only for the user, deny.
 
 3. **Create DB Record:** Insert a new FileNode for the file. We mark its
-   `parent_id`, name, type='file', and set `size=0` initially. We can also
-   store `created_by` = user’s ID and a timestamp. We generate a new
-   `object_key` for it. At this point, depending on strategy, we might not
-   commit the DB transaction until the file content is fully received (to avoid
-   a record for a file that fails to upload). However, not having a DB entry
-   means we have nowhere to attach a partial state. A compromise is to insert
-   it with a status flag “incomplete” (not shown in schema for brevity) and
-   update status when done. For simplicity, assume we will add the entry after
-   a successful upload, or remove it on failure. We must also decide how to
-   handle the scenario of resuming an interrupted upload – the DB entry could
-   remain and we append to it later, or we might require the client to
-   reinitiate and treat it as new (except where resume is explicitly
-   supported). The Hotline protocol does have a resume for uploads, implied by
-   *File transfer options* and *File resume data* fields, so we strive to
-   support it.
+   `parent_id`, name, type='file', and set `size=0` initially. We can also store
+   `created_by` = user’s ID and a timestamp. We generate a new `object_key`
+   for it. At this point, depending on strategy, we might not commit the DB
+   transaction until the file content is fully received (to avoid a record for
+   a file that fails to upload). However, not having a DB entry means we have
+   nowhere to attach a partial state. A compromise is to insert it with a
+   status flag “incomplete” (not shown in schema for brevity) and update status
+   when done. For simplicity, assume we will add the entry after a successful
+   upload, or remove it on failure. We must also decide how to handle the
+   scenario of resuming an interrupted upload – the DB entry could remain and
+   we append to it later, or we might require the client to reinitiate and
+   treat it as new (except where resume is explicitly supported). The Hotline
+   protocol does have a resume for uploads, implied by *File transfer options*
+   and *File resume data* fields, so we strive to support it.
 
 4. **Receive Data:** The client, after sending the upload request, will open a
    data connection (port+1) and send an HTXF header and then the “flattened

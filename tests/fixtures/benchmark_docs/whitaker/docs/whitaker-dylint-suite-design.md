@@ -236,15 +236,15 @@ Utilities shared by lints:
 
 ## 3) Seven core lints (specs + sketches)
 
-| Crate                         | Kind            | Summary                                                                                                                 | Level |
-| ----------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- | ----- |
-| `function_attrs_follow_docs`  | style           | Outer doc comments on functions must precede other outer attributes.                                                    | warn  |
-| `no_expect_outside_tests`     | restriction     | Ban `.expect(…)` on `Option`/`Result` outside test/doctest contexts (per effective visibility of the enclosing item).   | deny  |
-| `public_fn_must_have_docs`    | pedantic        | Publicly exported functions require at least one outer doc comment.                                                     | warn  |
-| `module_must_have_inner_docs` | pedantic        | Every module must start with a `//!` inner doc comment.                                                                 | warn  |
-| `conditional_max_n_branches`  | style           | Flag conditionals with more than the configured number of predicate branches; encourage decomposition.                  | warn  |
-| `test_must_not_have_example`  | style           | Test functions (e.g. `#[test]`, `#[tokio::test]`) must not ship example blocks or `# Examples` headings in docs.        | warn  |
-| `module_max_lines`            | maintainability | Flag modules whose span exceeds 400 lines; encourage decomposition or submodules.                                       | warn  |
+| Crate                         | Kind            | Summary                                                                                                               | Level |
+| ----------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------- | ----- |
+| `function_attrs_follow_docs`  | style           | Outer doc comments on functions must precede other outer attributes.                                                  | warn  |
+| `no_expect_outside_tests`     | restriction     | Ban `.expect(…)` on `Option`/`Result` outside test/doctest contexts (per effective visibility of the enclosing item). | deny  |
+| `public_fn_must_have_docs`    | pedantic        | Publicly exported functions require at least one outer doc comment.                                                   | warn  |
+| `module_must_have_inner_docs` | pedantic        | Every module must start with a `//!` inner doc comment.                                                               | warn  |
+| `conditional_max_n_branches`  | style           | Flag conditionals with more than the configured number of predicate branches; encourage decomposition.                | warn  |
+| `test_must_not_have_example`  | style           | Test functions (e.g. `#[test]`, `#[tokio::test]`) must not ship example blocks or `# Examples` headings in docs.      | warn  |
+| `module_max_lines`            | maintainability | Flag modules whose span exceeds 400 lines; encourage decomposition or submodules.                                     | warn  |
 
 ### Per-lint crate scaffolding
 
@@ -434,8 +434,8 @@ snippet classifier, covering happy paths, missing docs, inner attributes that
 precede documentation, outer-doc-only modules, `cfg_attr`-injected docs,
 whitespace-tolerant `#![ doc = "" ]` syntax, and false-positive rejection for
 attributes such as `#![allow(undocumented_unsafe_blocks)]` or
-`#![documentation = "…"]`. UI fixtures capture inline modules, file modules
-(via `#[path = "…"]`), and macro-generated modules to prove that macro output
+`#![documentation = "…"]`. UI fixtures capture inline modules, file modules (via
+`#[path = "…"]`), and macro-generated modules to prove that macro output
 remains exempt. A Welsh (`cy`) UI smoke test asserts that diagnostics localize
 correctly under `DYLINT_LOCALE=cy`.
 
@@ -452,8 +452,8 @@ match guard conditions. Inline expressions such as
 contribute to the Complex Method smell. Encourage encapsulation via a
 well-named helper or a local variable.
 
-**Rationale.** Teams often accrete guard clauses by bolting additional
-`&&`/`||`/`!` terms into a conditional. The logic becomes entangled with
+**Rationale.** Teams often accrete guard clauses by bolting additional `&&`/
+`||` /`!` terms into a conditional. The logic becomes entangled with
 control-flow, harming readability and reuse. Extracting the predicate makes the
 rule explicit, improves testability, and reduces accidental duplication.
 
@@ -482,8 +482,8 @@ the internal nodes of the predicate tree.
 
 **Positions checked.**
 
-- `if <cond> { … }` where `<cond>` is not an `ExprKind::Let` (i.e. exclude `if
-  let`).
+- `if <cond> { … }` where `<cond>` is not an `ExprKind::Let` (i.e. exclude
+  `if let`).
 - `while <cond> { … }` with the same exclusion for `while let`.
 - `match` guards represented in HIR as `Guard::If(<cond>)`.
 
@@ -568,8 +568,8 @@ struct Config {
 }
 ```
 
-Read via `dylint_linting::config_or_default` and honour crate-level overrides
-in `dylint.toml`.
+Read via `dylint_linting::config_or_default` and honour crate-level overrides in
+`dylint.toml`.
 
 **False positives / limitations.**
 
@@ -830,8 +830,8 @@ libraries = [
   fallbacks are permitted inside `main`; the default keeps panics forbidden.
 - Panic detection prefers `clippy_utils::macros::is_panic` when the optional
   `clippy` feature is enabled and falls back to matching well-known panic paths
-  (e.g. `core::panicking::panic_fmt` and `std::rt::panic_fmt`) plus
-  `unwrap`/`expect` on `Option`/`Result` receivers.
+  (e.g. `core::panicking::panic_fmt` and `std::rt::panic_fmt`) plus `unwrap`/
+  `expect` on `Option`/`Result` receivers.
 - Behavioural coverage relies on `rstest-bdd` scenarios that assert lint
   decisions across production, test, doctest, and `main` contexts; UI tests
   document both the enforced and allowed configurations.

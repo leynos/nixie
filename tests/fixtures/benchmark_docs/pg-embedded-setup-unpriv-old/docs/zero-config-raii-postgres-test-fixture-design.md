@@ -175,8 +175,8 @@ setup for tests (see docs/next-steps.md). This function will:
   callers can export `HOME`, `XDG_CACHE_HOME`, `XDG_RUNTIME_DIR`, `PGPASSFILE`,
   and `TZ` without reimplementing path logic. When a time zone database is
   discovered, the helper also emits `TZDIR`, honouring user-provided overrides
-  and falling back to common Linux locations whilst surfacing a clear error
-  when `tzdata` is missing.
+  and falling back to common Linux locations whilst surfacing a clear error when
+  `tzdata` is missing.
 - Behavioural tests implemented with `rstest-bdd` verify the happy path and the
   time zone error case. The scenarios assert that the returned settings target
   the sandboxed directories supplied via the environment and that the exported
@@ -290,9 +290,9 @@ essentially one line in the test setup.
   chain choices and to signpost downstream crates that they can rely on the
   0.3.2 APIs when authoring scenarios.
 - Added a Dutch `rstest-bdd` scenario (`tests/localized_diagnostics.rs`) that
-  switches diagnostics to French via `select_localizations`. The test is part
-  of `make test`, giving CI a deterministic signal that localization bundles
-  ship correctly on every target platform.
+  switches diagnostics to French via `select_localizations`. The test is part of
+  `make test`, giving CI a deterministic signal that localization bundles ship
+  correctly on every target platform.
 
 ### Implementation update (2025-12-02)
 
@@ -664,8 +664,8 @@ add a couple of helper functions:
   puzzling failures and make the developer experience smoother.
 
 - **Environment setup (TZDIR, etc.):** The library can also set up any required
-  environment variables automatically. For example, if we need to set `TZDIR`
-  or `TZ` environment for the embedded Postgres to find time zone info, or
+  environment variables automatically. For example, if we need to set `TZDIR` or
+  `TZ` environment for the embedded Postgres to find time zone info, or
   `PGPASSFILE` for the generated password file, the `bootstrap_for_tests()`
   should handle that internally (see docs/next-steps.md). This encapsulates all
   those nitty-gritty details so tests don’t need to worry about them.

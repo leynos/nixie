@@ -56,16 +56,16 @@ invocation** before any diagram work is scheduled (see
 [ADR 0001](adr/0001-prefer-merman-cli-over-mmdc.md)):
 
 - `merman` — [merman-cli](https://github.com/Latias94/merman), a headless
-  Rust Mermaid implementation invoked as `merman-cli -i in.mmd -o out.svg`.
-  No Puppeteer configuration is generated for this backend.
+  Rust Mermaid implementation invoked as `merman-cli -i in.mmd -o out.svg`. No
+  Puppeteer configuration is generated for this backend.
 - `mmdc` — the Node-based `@mermaid-js/mermaid-cli`, discovered through the
   historical `mmdc`/`bun`/`npx` chain and given a generated Puppeteer
   configuration.
 
 The `--renderer` flag selects `auto` (default; prefer merman, fall back to
 mmdc), `merman` (required), or `mmdc` (forced). The resolved backend is
-threaded to every diagram task as a frozen `ResolvedRenderer` value, so
-workers never re-run discovery.
+threaded to every diagram task as a frozen `ResolvedRenderer` value, so workers
+never re-run discovery.
 
 ### Concurrency Limit
 
@@ -112,8 +112,8 @@ remains stable.
 
 ## Performance Strategy
 
-Nixie now optimizes throughput by parallelizing independent diagram checks while
-retaining deterministic UX.
+Nixie now optimizes throughput by parallelizing independent diagram checks
+while retaining deterministic UX.
 
 The benchmark corpus is copied into this repository under:
 

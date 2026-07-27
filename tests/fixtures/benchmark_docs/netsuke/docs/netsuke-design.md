@@ -51,14 +51,14 @@ before execution, a critical requirement for compatibility with Ninja.
 
 3. Stage 3: Template Expansion
 
-   Netsuke walks the parsed `Value`, evaluating Jinja macros, variables, and
-   the `foreach` and `when` keys. Each mapping containing these keys is
-   expanded with an iteration context providing `item` and optional `index`.
-   Variable lookups respect the precedence `globals` < `target.vars` <
-   per-iteration locals, and this context is preserved for later rendering. At
-   this stage Jinja must not modify the YAML structure directly; control
-   constructs live only within these explicit keys. Structural Jinja blocks
-   (`{% ... %}`) are not permitted to reshape mappings or sequences.
+   Netsuke walks the parsed `Value`, evaluating Jinja macros, variables, and the
+   `foreach` and `when` keys. Each mapping containing these keys is expanded
+   with an iteration context providing `item` and optional `index`. Variable
+   lookups respect the precedence `globals` < `target.vars` < per-iteration
+   locals, and this context is preserved for later rendering. At this stage
+   Jinja must not modify the YAML structure directly; control constructs live
+   only within these explicit keys. Structural Jinja blocks (`{% ... %}`) are
+   not permitted to reshape mappings or sequences.
 
 4. Stage 4: Deserialisation & Final Rendering
 
@@ -611,8 +611,8 @@ The AST structures are implemented in `src/ast.rs` and derive `Deserialize`.
 Unknown fields are rejected to surface user errors early. `StringOrList`
 provides a default `Empty` variant, so optional lists are trivial to represent.
 The manifest version is parsed using the `semver` crate to validate that it
-follows semantic versioning rules. Global and target variable maps now share
-the `ManifestMap` alias:
+follows semantic versioning rules. Global and target variable maps now share the
+`ManifestMap` alias:
 
 ```rust
 type ManifestMap = serde_json::Map<String, serde_json::Value>;
@@ -838,20 +838,20 @@ network operations.
 
 #### File-system tests
 
-| Test                                                  | True when the operand…                                           |
-| ----------------------------------------------------- | ---------------------------------------------------------------- |
-| `dir` / `file` / `symlink`                            | …is that object type                                             |
-| `pipe` / `block_device` / `char_device` *(Unix-only)* | …is that object type                                             |
-| `device` (legacy, Unix-only)                          | …is a block or character device                                  |
-| `present`                                             | …exists (any type)                                               |
-| `owned`                                               | …is owned by the current UID                                     |
-| `readable` / `writable` / `executable`                | …has the corresponding permission bit for current user           |
-| `empty`                                               | …has size 0 bytes                                                |
-| `older_than(value)`                                   | …has `mtime` < given value (seconds, `timedelta`, or file)       |
-| `newer_than(value)`                                   | …has `mtime` > given value                                       |
-| `contains(substr)`                                    | …file’s text contains **substr**                                 |
-| `matches(regex)`                                      | …file’s text matches **regex**                                   |
-| `type(kind)`                                          | …is of the file-type string supplied (`"file"`, `"dir"`, etc.)   |
+| Test                                                  | True when the operand…                                         |
+| ----------------------------------------------------- | -------------------------------------------------------------- |
+| `dir` / `file` / `symlink`                            | …is that object type                                           |
+| `pipe` / `block_device` / `char_device` *(Unix-only)* | …is that object type                                           |
+| `device` (legacy, Unix-only)                          | …is a block or character device                                |
+| `present`                                             | …exists (any type)                                             |
+| `owned`                                               | …is owned by the current UID                                   |
+| `readable` / `writable` / `executable`                | …has the corresponding permission bit for current user         |
+| `empty`                                               | …has size 0 bytes                                              |
+| `older_than(value)`                                   | …has `mtime` < given value (seconds, `timedelta`, or file)     |
+| `newer_than(value)`                                   | …has `mtime` > given value                                     |
+| `contains(substr)`                                    | …file’s text contains **substr**                               |
+| `matches(regex)`                                      | …file’s text matches **regex**                                 |
+| `type(kind)`                                          | …is of the file-type string supplied (`"file"`, `"dir"`, etc.) |
 
 The `dir`, `file`, and `symlink` tests use `cap_std`'s UTF-8-capable
 [`Dir::symlink_metadata`][cap-symlink] with `camino` paths to inspect the
@@ -869,29 +869,29 @@ https://docs.rs/cap-std/latest/cap_std/fs_utf8/struct.Dir.html#method.symlink_me
 
 #### Path & file filters
 
-| Filter                                     | Purpose                                                              |
-| ------------------------------------------ | -------------------------------------------------------------------- |
-| `basename`                                 | Return last path component                                           |
-| `dirname`                                  | Return parent directory                                              |
-| `with_suffix(suffix, n=1, sep='.')`        | Replace last `n` dotted suffix components (`foo.tar.gz → foo.zip`)   |
-| `relative_to(root)`                        | Make path relative to **root**                                       |
-| `realpath`                                 | Resolve symlinks to canonical path                                   |
-| `commonpath(other)`                        | Longest common prefix with **other**                                 |
-| `expanduser`                               | Expand leading `~`                                                   |
-| `size`                                     | File size in bytes                                                   |
-| `contents(encoding='utf-8')`               | File content as text                                                 |
-| `linecount`                                | Number of text lines                                                 |
-| `head(n=10)` / `tail(n=10)`                | First / last *n* lines                                               |
-| `mtime` / `ctime`                          | Return timestamp (`datetime`)                                        |
-| `age(unit='s')`                            | Seconds (or `m`, `h`, `d`) since `mtime`                             |
-| `date(fmt='%Y-%m-%d')`                     | Format `mtime`/`ctime`                                               |
-| `owner` / `group`                          | User / group name                                                    |
-| `stat`                                     | Full `os.stat()` result as dict                                      |
-| `hash(alg='sha256')`                       | Hex digest of file (`md5`, `sha1`, …)                                |
-| `digest(n=8, alg='sha256')`                | Truncated digest (e.g. build ID)                                     |
-| `base64` / `hex`                           | Encode bytes or string                                               |
-| `slugify`                                  | Make filename-safe slug                                              |
-| `snake_case` / `camel_case` / `kebab-case` | Rename helpers                                                       |
+| Filter                                     | Purpose                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| `basename`                                 | Return last path component                                         |
+| `dirname`                                  | Return parent directory                                            |
+| `with_suffix(suffix, n=1, sep='.')`        | Replace last `n` dotted suffix components (`foo.tar.gz → foo.zip`) |
+| `relative_to(root)`                        | Make path relative to **root**                                     |
+| `realpath`                                 | Resolve symlinks to canonical path                                 |
+| `commonpath(other)`                        | Longest common prefix with **other**                               |
+| `expanduser`                               | Expand leading `~`                                                 |
+| `size`                                     | File size in bytes                                                 |
+| `contents(encoding='utf-8')`               | File content as text                                               |
+| `linecount`                                | Number of text lines                                               |
+| `head(n=10)` / `tail(n=10)`                | First / last *n* lines                                             |
+| `mtime` / `ctime`                          | Return timestamp (`datetime`)                                      |
+| `age(unit='s')`                            | Seconds (or `m`, `h`, `d`) since `mtime`                           |
+| `date(fmt='%Y-%m-%d')`                     | Format `mtime`/`ctime`                                             |
+| `owner` / `group`                          | User / group name                                                  |
+| `stat`                                     | Full `os.stat()` result as dict                                    |
+| `hash(alg='sha256')`                       | Hex digest of file (`md5`, `sha1`, …)                              |
+| `digest(n=8, alg='sha256')`                | Truncated digest (e.g. build ID)                                   |
+| `base64` / `hex`                           | Encode bytes or string                                             |
+| `slugify`                                  | Make filename-safe slug                                            |
+| `snake_case` / `camel_case` / `kebab-case` | Rename helpers                                                     |
 
 All built-in filters use `snake_case`. The `camel_case` helper is provided in
 place of `camelCase` so naming remains consistent with `snake_case` and
@@ -987,8 +987,8 @@ with identical environments.
 
 Workspace fallback traversals are bounded to a depth of six, skip heavy
 directories such as `.git`, `target`, `node_modules`, `dist`, and `build`, and
-honour the `NETSUKE_WHICH_WORKSPACE` environment variable (set to
-`0`/`false`/`off` to disable) to avoid surprising latency on large trees.
+honour the `NETSUKE_WHICH_WORKSPACE` environment variable (set to `0`/`false`/
+`off` to disable) to avoid surprising latency on large trees.
 
 Sequence of the resolver when falling back to the workspace:
 
@@ -1182,13 +1182,13 @@ sequenceDiagram
 
 #### Generic collection filters
 
-| Filter                            | Purpose                                      |
-| --------------------------------- | -------------------------------------------- |
-| `uniq`                            | De-duplicate list (preserve order)           |
-| `flatten`                         | Deep flatten of arbitrarily nested lists     |
-| `group_by(attr)`                  | Dict keyed on `attr` of list items           |
-| `zip(other)`                      | Pairwise tuples of two lists                 |
-| `version_compare(other, op='>=')` | SemVer comparison (`'<'`, `'<=', '==', …`)   |
+| Filter                            | Purpose                                    |
+| --------------------------------- | ------------------------------------------ |
+| `uniq`                            | De-duplicate list (preserve order)         |
+| `flatten`                         | Deep flatten of arbitrarily nested lists   |
+| `group_by(attr)`                  | Dict keyed on `attr` of list items         |
+| `zip(other)`                      | Pairwise tuples of two lists               |
+| `version_compare(other, op='>=')` | SemVer comparison (`'<'`, `'<=', '==', …`) |
 
 Implementation notes for collection filters:
 
@@ -1252,8 +1252,8 @@ Implementation details:
   1 MiB) via `StdlibConfig::with_command_max_output_bytes`. Exceeding the limit
   raises an error that quotes the configured budget so manifests can adjust.
   Templates can request streaming by passing `{'mode': 'tempfile'}` as the
-  second filter argument. Streaming writes stdout to a temporary file guarded
-  by `StdlibConfig::with_command_max_stream_bytes`, which defaults to 64 MiB to
+  second filter argument. Streaming writes stdout to a temporary file guarded by
+  `StdlibConfig::with_command_max_stream_bytes`, which defaults to 64 MiB to
   prevent runaway disk usage while still tolerating deliberate large outputs.
 - The command helpers manage pipe budgets using a `PipeSpec`/`PipeLimit`
   tracker. Each pipe spawns a dedicated reader thread that records how many
@@ -1596,8 +1596,8 @@ default my_app
 
 The IR structures defined in `src/ir.rs` are minimal containers that mirror
 Ninja's conceptual model while remaining backend-agnostic. `BuildGraph`
-collects all `Action`s and `BuildEdge`s in hash maps keyed by stable strings
-and `Utf8PathBuf`s so the graph can be deterministically traversed for snapshot
+collects all `Action`s and `BuildEdge`s in hash maps keyed by stable strings and
+`Utf8PathBuf`s so the graph can be deterministically traversed for snapshot
 tests. Actions hold the parsed `Recipe` and optional execution metadata.
 `BuildEdge` connects inputs to outputs using an action identifier and carries
 the `phony` and `always` flags verbatim from the manifest. No Ninja specific
@@ -1654,9 +1654,9 @@ The command construction will follow this pattern:
    streamed to the user's console, potentially with additional formatting or
    status updates from Netsuke itself.
 
-In the initial implementation a small helper wraps `Command::new` to forward
-the `-j` and `-C` flags and any explicit build targets. Standard output and
-error are piped and written back to Netsuke's own streams so users see Ninja's
+In the initial implementation a small helper wraps `Command::new` to forward the
+`-j` and `-C` flags and any explicit build targets. Standard output and error
+are piped and written back to Netsuke's own streams so users see Ninja's
 messages in order. A non-zero exit status or failure to spawn the process is
 reported as an `io::Error` for the CLI to surface.
 

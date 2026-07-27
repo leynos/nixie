@@ -36,6 +36,7 @@ typecheck: build ## Run type checking
 
 fmt: ## Format code
 	$(RUFF) format
+	mdformat-all
 
 check-fmt: ## Verify formatting
 	$(RUFF) format --check

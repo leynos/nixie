@@ -89,8 +89,8 @@ employs a client-server model.
   any write fails, no files in the workspace are mutated.
 
 - Every mutating command (e.g., `rename-symbol`, `format-code`) supports a
-  `--dry-run` flag. When used, the command will output the `CodeEdit` objects
-  to `stdout` without modifying the filesystem, enabling bespoke audit and
+  `--dry-run` flag. When used, the command will output the `CodeEdit` objects to
+  `stdout` without modifying the filesystem, enabling bespoke audit and
   verification pipelines.
 
 ### 1.3 Workspace & Multi-Project Support
@@ -104,8 +104,8 @@ employs a client-server model.
   different registered project.
 
 - Each project can have a local `.weaver/project.yml` file specifying its
-  unique configuration: required language servers, environment variables,
-  custom `test` and `build` commands, and paths to memory bundles.
+  unique configuration: required language servers, environment variables, custom
+  `test` and `build` commands, and paths to memory bundles.
 
 - `weaver reload-workspace`: Instructs the daemon to force a re-index of the
   active project. This is crucial after significant changes to dependency files
@@ -144,11 +144,11 @@ objects conforming to the schemas defined in Appendix A.
 
 ### 2.1 Observe
 
-| Command          | Synopsis                                                                        |
-| ---------------- | ------------------------------------------------------------------------------- |
-| project-status   | Health of daemon & language servers; RAM/CPU usage; protocol version.           |
-| list-diagnostics | `[--severity S] [<files…>]` Stream Diagnostics for whole workspace or subset.   |
-| onboard-project  | First-run analysis, populates memories & returns OnboardingReport.              |
+| Command          | Synopsis                                                                      |
+| ---------------- | ----------------------------------------------------------------------------- |
+| project-status   | Health of daemon & language servers; RAM/CPU usage; protocol version.         |
+| list-diagnostics | `[--severity S] [<files…>]` Stream Diagnostics for whole workspace or subset. |
+| onboard-project  | First-run analysis, populates memories & returns OnboardingReport.            |
 
 The `project-status` handler inspects runtime health using `resource.getrusage`
 and checks that the `serena` package imports successfully. Memory usage
@@ -165,8 +165,8 @@ the `rss_mb` field. The response reports the daemon process ID, resident memory
 | get-definition     | `<file> <line> <char>` Locate definitive declaration.                                     |
 | list-references    | `[--include-definition] <file> <line> <char>` All uses of symbol at cursor.               |
 | summarise-symbol   | `<file> <line> <char>` Aggregate hover, docstring, type info.                             |
-| get-call-graph     | `--direction <in|out> <file> <line> <char>` Show call graph with the chosen direction.    |
-| get-type-hierarchy | `--direction <super|sub> <file> <line> <char>` Show type hierarchy for the symbol.        |
+| get-call-graph     | `--direction <in or out> <file> <line> <char>` Show call graph with the chosen direction. |
+| get-type-hierarchy | `--direction <super or sub> <file> <line> <char>` Show type hierarchy for the symbol.     |
 | list-memories      | Stream previously stored memory snippets.                                                 |
 
 The `get-definition` handler invokes Serena's `GetDefinitionTool`. The daemon
@@ -176,23 +176,23 @@ the LSP definition request while remaining JSONL-friendly and non-blocking.
 
 ### 2.3 Decide
 
-| Command             | Synopsis                                                                                |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| analyse-impact      | `--edit <json>` Dry-run a single CodeEdit; returns ImpactReport.                        |
-| get-code-actions    | `<file> <line> <char>` Available quick-fixes/refactors.                                 |
-| test                | `[--changed-files | --all]` Wrapper for project test command; same output contract.     |
-| build               | Wrapper for project build command; same output contract.                                |
-| with-transient-edit | `--file <f> --stdin <cmd …>` Overlay speculative content, run another weaver command.   |
+| Command             | Synopsis                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| analyse-impact      | `--edit <json>` Dry-run a single CodeEdit; returns ImpactReport.                      |
+| get-code-actions    | `<file> <line> <char>` Available quick-fixes/refactors.                               |
+| test                | `[--changed-files or --all]` Wrapper for project test command; same output contract.  |
+| build               | Wrapper for project build command; same output contract.                              |
+| with-transient-edit | `--file <f> --stdin <cmd …>` Overlay speculative content, run another weaver command. |
 
 ### 2.4 Act
 
-| Command            | Synopsis                                                            |
-| ------------------ | ------------------------------------------------------------------- |
-| rename-symbol      | `<file> <line> <char> <new>` Generate safe rename plan.             |
-| apply-edits        | `[--atomic]` Read CodeEdit stream from stdin, write to disk.        |
-| format-code        | `[--stdin] [<files…>]` Emit formatting edits via language server.   |
-| set-active-project | `<name>` Point daemon at another registered project.                |
-| reload-workspace   | Force re-index after dependency file change.                        |
+| Command            | Synopsis                                                          |
+| ------------------ | ----------------------------------------------------------------- |
+| rename-symbol      | `<file> <line> <char> <new>` Generate safe rename plan.           |
+| apply-edits        | `[--atomic]` Read CodeEdit stream from stdin, write to disk.      |
+| format-code        | `[--stdin] [<files…>]` Emit formatting edits via language server. |
+| set-active-project | `<name>` Point daemon at another registered project.              |
+| reload-workspace   | Force re-index after dependency file change.                      |
 
 ## III. Implementation Roadmap
 

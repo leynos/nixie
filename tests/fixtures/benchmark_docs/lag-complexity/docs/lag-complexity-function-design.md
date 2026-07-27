@@ -130,9 +130,9 @@ The central data structures are designed for transparency and interoperability.
   }
   ```
 
-The fields of the `Complexity` struct are private to preserve the invariant
-that `total` always equals the sum of its components. Accessor methods expose
-each component so callers can trigger different actions based on which score is
+The fields of the `Complexity` struct are private to preserve the invariant that
+`total` always equals the sum of its components. Accessor methods expose each
+component so callers can trigger different actions based on which score is
 elevated—for example, a high `ambiguity` might prompt clarification, whereas a
 high `depth` suggests decomposition. The struct derives `serde::Serialize` and
 implements `serde::Deserialize` manually to recompute `total` from the
@@ -427,9 +427,9 @@ that often correlate with syntactic and logical complexity.[^9]
 ##### Feature engineering (depth)
 
 - **Clause Connectors:** It will identify and score coordinating conjunctions
-  (`and`, `or`, `but`) and subordinating conjunctions (`if`, `because`,
-  `while`, `since`, `although`). Subordinating conjunctions will be assigned a
-  higher weight, as they typically introduce dependent logical conditions.
+  (`and`, `or`, `but`) and subordinating conjunctions (`if`, `because`, `while`,
+  `since`, `although`). Subordinating conjunctions will be assigned a higher
+  weight, as they typically introduce dependent logical conditions.
 - **Comparative Structures:** It will detect phrases indicative of comparison,
   such as "compared to," "versus," "as opposed to," and the use of comparative
   adjectives ("more than," "less than").
@@ -509,8 +509,9 @@ For higher accuracy, the crate will provide model-based estimators.
   example:
 
   ```plaintext
-  Prompt: Analyse the question "Which university did the CEO of the company that developed the original iPhone attend?" and
-  state the number of reasoning steps required.
+  Prompt: Analyse the question "Which university did the CEO of the company
+  that developed the original iPhone attend?" and state the number of reasoning
+  steps required.
   Response: 2
   ```
 
@@ -959,11 +960,10 @@ academic datasets and report on its performance.
 
 - **Reasoning Steps (**`depth`**):** Performance will be measured against
   multi-hop question-answering datasets like
-  [**HotpotQA**](https://hotpotqa.github.io),
-  [**2WikiMultiHopQA**](https://github.com/Alab-NII/2wiki-multihop-qa), and
-  [**MuSiQue**](https://arxiv.org/abs/2108.01065). The number of supporting
-  facts or annotated reasoning hops will serve as the ground truth for
-  reasoning depth.
+  [**HotpotQA**](https://hotpotqa.github.io), [**2WikiMultiHopQA**](https://github.com/Alab-NII/2wiki-multihop-qa),
+  and [**MuSiQue**](https://arxiv.org/abs/2108.01065). The number of
+  supporting facts or annotated reasoning hops will serve as the ground truth
+  for reasoning depth.
 
 - **Ambiguity (**`ambiguity`**):** The ambiguity score will be validated
   against datasets designed to study ambiguity, such as **AmbigQA**[^13] and

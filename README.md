@@ -31,8 +31,8 @@ https://deepwiki.com/leynos/nixie)
 By default, nixie prefers `merman-cli` when it is installed and falls back to
 the Node-based `mermaid-cli` otherwise. Note that merman is an independent
 re-implementation targeting Mermaid 11.15.0; acceptance may differ at the
-margins from the official renderer. Use `--renderer mmdc` to validate with
-the official `@mermaid-js/mermaid-cli` instead.
+margins from the official renderer. Use `--renderer mmdc` to validate with the
+official `@mermaid-js/mermaid-cli` instead.
 
 ## Installation
 
@@ -67,12 +67,11 @@ nixie [--verbose] [--renderer {auto,merman,mmdc}] [--no-sandbox]
 Diagram checks are scheduled concurrently across and within files using a
 global worker limit. Output remains deterministic: file boundaries and diagram
 markers are emitted in the order files and diagrams appear in the input.
-`--max-concurrency` is clamped to `max(1, cpu_count - 1)`.
-Paths can be files or directories. If no files are provided, nixie searches the
-current working directory for Markdown files, excluding paths matched by
-`.gitignore` in that directory. Discovery includes files with the `.md`
-extension (case-sensitive). Files are processed in the order provided on the
-command line.
+`--max-concurrency` is clamped to `max(1, cpu_count - 1)`. Paths can be files
+or directories. If no files are provided, nixie searches the current working
+directory for Markdown files, excluding paths matched by `.gitignore` in that
+directory. Discovery includes files with the `.md` extension (case-sensitive).
+Files are processed in the order provided on the command line.
 
 ### Exit codes
 
@@ -82,24 +81,23 @@ command line.
 Only the `.gitignore` file in the working directory is used; nested
 `.gitignore` files are ignored.
 
-`--renderer` selects the rendering backend. `merman` uses `merman-cli`,
-`mmdc` uses the Node-based `@mermaid-js/mermaid-cli`, and the default `auto`
-prefers `merman-cli` (searching `~/.cargo/bin` then `PATH`) with a fallback
-to the mmdc discovery chain. Forcing `--renderer merman` without `merman-cli`
-installed exits with an error explaining how to install it.
-`--verbose` sets the `nixie.cli` logger to `INFO`, logging the exact renderer
-command for each diagram.
+`--renderer` selects the rendering backend. `merman` uses `merman-cli`, `mmdc`
+uses the Node-based `@mermaid-js/mermaid-cli`, and the default `auto` prefers
+`merman-cli` (searching `~/.cargo/bin` then `PATH`) with a fallback to the mmdc
+discovery chain. Forcing `--renderer merman` without `merman-cli` installed
+exits with an error explaining how to install it. `--verbose` sets the
+`nixie.cli` logger to `INFO`, logging the exact renderer command for each
+diagram.
 
-The following flags apply only to the `mmdc` backend and are accepted but
-inert when the merman backend is in use. When using mmdc, nixie launches
-Puppeteer with `--disable-setuid-sandbox`, `--disable-gpu`, and
-`--disable-dev-shm-usage` for reliable headless operation. Use `--no-sandbox`
-to also pass `--no-sandbox` to Chromium.
-`--mermaid-version` selects the `@mermaid-js/mermaid-cli` version when nixie
-launches `npx` or `bun`. The default is `latest`, and the flag is ignored when
-`mmdc` is found on disk. `merman-cli` renders headlessly in Rust and needs no
-Puppeteer configuration.
-`--max-concurrency` bounds the number of simultaneous renderer processes.
+The following flags apply only to the `mmdc` backend and are accepted but inert
+when the merman backend is in use. When using mmdc, nixie launches Puppeteer
+with `--disable-setuid-sandbox`, `--disable-gpu`, and `--disable-dev-shm-usage`
+for reliable headless operation. Use `--no-sandbox` to also pass `--no-sandbox`
+to Chromium. `--mermaid-version` selects the `@mermaid-js/mermaid-cli` version
+when nixie launches `npx` or `bun`. The default is `latest`, and the flag is
+ignored when `mmdc` is found on disk. `merman-cli` renders headlessly in Rust
+and needs no Puppeteer configuration. `--max-concurrency` bounds the number of
+simultaneous renderer processes.
 
 When multiple files are provided, nixie prints markers that show where the
 output for each file starts and ends. Each Mermaid diagram is also bracketed

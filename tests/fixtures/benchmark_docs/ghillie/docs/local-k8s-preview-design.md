@@ -137,8 +137,8 @@ A single Python script (`scripts/local_k8s.py`) will provide subcommands:
 
 The script will create a k3d cluster with a unique name and namespace, map a
 free loopback port to the k3d load balancer on port 80, and write a dedicated
-kubeconfig. This mirrors the loopback-only ingress model from the k3d example.
-[^k3d].
+kubeconfig. This mirrors the loopback-only ingress model from the k3d
+example.[^k3d].
 
 ### Platform dependencies
 

@@ -990,12 +990,11 @@ placeholder handler reads a single JSONL request line, replies with a minimal
 `exit` message, and closes the connection, so CLI clients do not hang while
 waiting for a response.
 
-A `SystemShutdownSignal` built on `signal-hook` listens for `SIGTERM`,
-`SIGINT`, `SIGQUIT`, and `SIGHUP`, logging the event and giving the runtime a
-ten-second budget to shut down gracefully. Developers can opt into a foreground
-mode for debugging by setting the `WEAVER_FOREGROUND` environment variable,
-which bypasses daemonisation while preserving the same PID/lock/health
-choreography.
+A `SystemShutdownSignal` built on `signal-hook` listens for `SIGTERM`, `SIGINT`,
+`SIGQUIT`, and `SIGHUP`, logging the event and giving the runtime a ten-second
+budget to shut down gracefully. Developers can opt into a foreground mode for
+debugging by setting the `WEAVER_FOREGROUND` environment variable, which
+bypasses daemonisation while preserving the same PID/lock/health choreography.
 
 ```mermaid
 erDiagram
@@ -1364,8 +1363,8 @@ language servers or parsers during development.
 
 **Lock traits**:
 
-- `SyntacticLock::validate(&self, context: &VerificationContext) ->
-  SyntacticLockResult` returns either `Passed` or `Failed { failures }`.
+- `SyntacticLock::validate(&self, context: &VerificationContext) -> SyntacticLockResult`
+  returns either `Passed` or `Failed { failures }`.
 - `SemanticLock::validate(...)` permits the semantic backend to surface
   unavailability errors separately from verification failures.
 
@@ -1381,8 +1380,8 @@ passes until the full LSP diagnostic comparison pipeline is wired through
 
 `ConfigurableSyntacticLock` and `ConfigurableSemanticLock` accept
 pre-determined results, enabling BDD scenarios to exercise pass, fail, and
-backend-unavailable paths without external dependencies. These doubles power
-the `safety_harness.feature` behavioural tests.
+backend-unavailable paths without external dependencies. These doubles power the
+`safety_harness.feature` behavioural tests.
 
 **Atomic commit strategy**:
 
@@ -2148,14 +2147,14 @@ same pin, so the entire stack aligns on stable releases.
 The new `weaver-lsp-host` crate owns the lifecycle of language servers for
 Rust, Python, and TypeScript. Initialisation now records the capabilities the
 server advertises for `textDocument/definition`, `textDocument/references`, and
-diagnostics, and then folds in operator overrides from `weaver-config`.
-Explicit `force` directives enable missing features, while `deny` directives
-block requests even when the server reports support. Core observe/verify calls
-are routed through a small trait so higher layers can inject sandboxed or
-recording implementations without spawning real servers during tests. Requests
-fail fast with structured errors that surface both the language and the reason
-(server missing, override deny, or server error) to callers, keeping the
-capability matrix honest before the daemon adds sandboxing and transport.
+diagnostics, and then folds in operator overrides from `weaver-config`. Explicit
+`force` directives enable missing features, while `deny` directives block
+requests even when the server reports support. Core observe/verify calls are
+routed through a small trait so higher layers can inject sandboxed or recording
+implementations without spawning real servers during tests. Requests fail fast
+with structured errors that surface both the language and the reason (server
+missing, override deny, or server error) to callers, keeping the capability
+matrix honest before the daemon adds sandboxing and transport.
 
 #### 2025-12-03: Upgrade `rstest-bdd` from 0.1.0 to 0.2.0
 
