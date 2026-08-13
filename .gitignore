@@ -203,3 +203,8 @@ cython_debug/
 .grepai/
 .typos-oxendict-base.json
 .typos-oxendict-base.toml
+.vtcode/
+.claude/
+.memdb/
+*.swp
+*.swo
