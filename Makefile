@@ -4,7 +4,15 @@ RUFF ?= uv run ruff
 TY ?= uv run ty
 PYTEST ?= uv run pytest
 BUILD_JOBS ?=
-MDLINT ?= npx --yes markdownlint-cli
+MDLINT ?= $(shell command -v markdownlint-cli2 2>/dev/null || printf '%s' "$$HOME/.bun/bin/markdownlint-cli2")
+# `make fmt` and `make check-fmt` call mdtablefix directly. `--git` selects the
+# Markdown files Git tracks and `--include-untracked` adds the untracked files
+# Git does not ignore, so a new document is formatted before it is staged.
+# Both modes need mdtablefix 0.6.0 or later; CI pins the version at the
+# install-mdtablefix step.
+MDTABLEFIX ?= mdtablefix
+MDTABLEFIX_SELECT = --git --include-untracked
+MDTABLEFIX_RULES = --wrap --renumber --breaks --ellipsis --fences
 NIXIE ?= uv run nixie
 HYPERFINE ?= hyperfine
 BENCH_DOCS ?= tests/fixtures/benchmark_sample
@@ -36,10 +44,12 @@ typecheck: build ## Run type checking
 
 fmt: ## Format code
 	$(RUFF) format
-	mdformat-all
+	$(MDTABLEFIX) --in-place $(MDTABLEFIX_SELECT) $(MDTABLEFIX_RULES)
+	$(MDLINT) --fix "**/*.md"
 
 check-fmt: ## Verify formatting
 	$(RUFF) format --check
+	$(MDTABLEFIX) --check $(MDTABLEFIX_SELECT) $(MDTABLEFIX_RULES)
 
 markdownlint: ## Lint Markdown files
 	git ls-files '*.md' \

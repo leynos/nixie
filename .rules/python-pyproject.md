@@ -81,11 +81,11 @@ exists on a contributor's machine.
 
 Table 1. Dependency field selection.
 
-| Field | Installed for | Use it for |
-| --- | --- | --- |
-| `project.dependencies` | Everyone who installs the package | Libraries the shipped code imports at runtime |
-| `project.optional-dependencies` | End users who opt into an *extra* | Optional runtime *features* (`package[extra]`) |
-| `dependency-groups` | Local development only | Test, lint, type-check, docs, and other tooling |
+| Field                           | Installed for                     | Use it for                                      |
+| ------------------------------- | --------------------------------- | ----------------------------------------------- |
+| `project.dependencies`          | Everyone who installs the package | Libraries the shipped code imports at runtime   |
+| `project.optional-dependencies` | End users who opt into an *extra* | Optional runtime *features* (`package[extra]`)  |
+| `dependency-groups`             | Local development only            | Test, lint, type-check, docs, and other tooling |
 
 ### Required runtime dependencies — `project.dependencies`
 
@@ -121,9 +121,9 @@ feature = [
 Tooling only contributors need: test frameworks, linters, type checkers,
 documentation builders, and property or mutation testers. These are
 **local-only** — PEP 735 dependency groups are *not* included in published
-package metadata (they are not part of the wheel), so they must live here rather
-than in `project.optional-dependencies`. Add them with `uv add --dev` (the
-`dev` group) or `uv add --group <name>`:
+package metadata (they are not part of the wheel), so they must live here
+rather than in `project.optional-dependencies`. Add them with `uv add --dev`
+(the `dev` group) or `uv add --group <name>`:
 
 ```toml
 [dependency-groups]
@@ -152,8 +152,7 @@ default-groups = ["dev", "docs"]  # or "all"
 Groups may nest via `{ include-group = "..." }`, and by default `uv` resolves
 every group together into a single `uv.lock`, so groups must be mutually
 compatible unless you declare incompatible sets explicitly under
-`[tool.uv].conflicts`.
-(Astral Docs[^6])
+`[tool.uv].conflicts`. (Astral Docs[^6])
 
 > **Rule of thumb:** if an end user needs it to *run* the code, it belongs
 > in `project.dependencies` (always) or `project.optional-dependencies`
@@ -201,8 +200,8 @@ build-backend = "setuptools.build_meta"
 ```
 
 - **`requires`:** A list of packages needed at build time. For editable installs
-  in `uv`, you need at least `setuptools>=61.0` and `wheel`. (Python
-  Packaging[^4], Astral Docs[^7])
+  in `uv`, you need at least `setuptools>=61.0` and `wheel`. (Python Packaging
+  [^4], Astral Docs[^7])
 - **`build-backend`:** The entry point for your build backend.
   `setuptools.build_meta` is the PEP 517-compliant backend for setuptools.
   (Python Packaging[^4], Astral Docs[^7])
