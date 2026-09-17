@@ -12,14 +12,14 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@c5680ec91f7b9b91406fab4ded5d45245abf7b67
       - name: Install mdtablefix
         # `make check-fmt` runs `mdtablefix --check --git`; 0.6.0 is the
         # first release with `--check` and `--git`.
-        uses: leynos/shared-actions/.github/actions/install-mdtablefix@c5a54701c8603a0fa756a6b34c49bc2af75a6c11
+        uses: leynos/shared-actions/.github/actions/install-mdtablefix@ee58fd34a2d01b7a5059d710119b264cf2f048a4
         with:
           version: "0.6.0"
       - run: make check-fmt
@@ -29,6 +29,6 @@ jobs:
         # resolved from the registry at run time, and Dependabot manages the
         # pin alongside the other actions. It reads .markdownlint-cli2.jsonc
         # from the workspace, so the rules and ignores match `make markdownlint`.
-        uses: DavidAnson/markdownlint-cli2-action@4580e1612f6407034edd6c0e4e316d725920867b  # v24.2.0
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff  # v24.2.0
         with:
           globs: '**/*.md'
