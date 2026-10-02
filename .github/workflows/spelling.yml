@@ -15,5 +15,5 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@c5680ec91f7b9b91406fab4ded5d45245abf7b67
+      - uses: astral-sh/setup-uv@a96208bed1fb5efb8da349c9bcc6cc58af9e7d74
       - run: make spelling
