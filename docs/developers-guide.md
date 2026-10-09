@@ -129,3 +129,26 @@ make test
 
 For Markdown changes, also run `make markdownlint` and `make nixie` (nixie
 validates its own documentation's Mermaid diagrams).
+
+## Markdown formatting
+
+`make fmt` and `make check-fmt` run `mdtablefix` with the Makefile's
+`MDTABLEFIX_RULES` over the Markdown files Git tracks and the untracked files
+it does not ignore. They need mdtablefix 0.6.0 or later, the first release with
+`--check` and `--git`. CI installs 0.6.1 through the shared
+`install-mdtablefix` action; the pin is in `.github/workflows/format.yml`.
+0.6.1 fixes the 0.6.0 bugs that changed Markdown content: `--wrap` breaking
+text with no whitespace, Setext headings turned into rules, and `--renumber`
+changing a list's start. Install the same version locally with
+`cargo binstall mdtablefix@0.6.1`.
+
+mdtablefix has no exclude option, so the Makefile asks it for its selection
+(`--list-files --git --include-untracked`) and removes the directories listed in
+`MARKDOWN_EXCLUDE_DIRS`: `.rules` and the two benchmark fixture directories
+under `tests/fixtures`. `markdownlint`, `spelling` and `nixie` build their Git
+pathspecs from the same variable, so every Markdown target skips the same
+files. Add a directory there, once, when its Markdown is verbatim third-party
+or benchmark input. `make fmt` also refuses to run while a merge has unresolved
+conflicts (`git ls-files --unmerged`), because passing explicit paths to
+mdtablefix bypasses its own conflict guard.
+`tests/integration/test_makefile_markdown.py` holds both rules.
