@@ -52,6 +52,10 @@ typecheck: build ## Run type checking
 
 fmt: ## Format code
 	$(RUFF) format
+	@if [ -n "$$(git ls-files --unmerged)" ]; then \
+		echo "make fmt: unresolved merge conflicts; resolve them first" >&2; \
+		exit 1; \
+	fi
 	files=$$($(MDTABLEFIX) --list-files $(MDTABLEFIX_SELECT)) && \
 	printf '%s\n' "$$files" | grep -v -E '$(MARKDOWN_EXCLUDE_RE)' | tr '\n' '\0' \
 	| xargs -0 --no-run-if-empty -- $(MDTABLEFIX) --in-place $(MDTABLEFIX_RULES)
