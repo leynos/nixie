@@ -16,11 +16,18 @@ pytestmark = pytest.mark.skipif(
 )
 
 _STUB = """#!/bin/sh
-# Test double for mdtablefix: --list-files prints Git's Markdown selection and
-# every other call records its arguments.
+# Test double for mdtablefix. --list-files prints Git's Markdown selection
+# (tracked and untracked, ignoring what Git ignores), recording its flags; every
+# other call records one argument per line, then a separator, and fails when
+# MDTABLEFIX_FAIL is set.
 case " $* " in
-*" --list-files "*) git ls-files '*.md' ;;
-*) printf '%s\\n' "$*" >> "$MDTABLEFIX_LOG" ;;
+*" --list-files "*)
+  printf 'LIST %s\\n' "$*" >> "$MDTABLEFIX_LOG"
+  git ls-files --cached --others --exclude-standard '*.md' ;;
+*)
+  printf 'CALL\\n' >> "$MDTABLEFIX_LOG"
+  for arg in "$@"; do printf 'ARG %s\\n' "$arg" >> "$MDTABLEFIX_LOG"; done
+  [ -z "${MDTABLEFIX_FAIL:-}" ] || exit 3 ;;
 esac
 """
 
@@ -30,6 +37,7 @@ _FILES = (
     ".rules/rule.md",
     "tests/fixtures/benchmark_docs/proj/doc.md",
     "tests/fixtures/benchmark_sample/sample.md",
+    "docs/with space.md",
 )
 
 
@@ -43,7 +51,9 @@ def _git(repo: Path, *args: str) -> None:
     )
 
 
-def _make(repo: Path, target: str, log: Path) -> subprocess.CompletedProcess[str]:
+def _make(
+    repo: Path, target: str, log: Path, *, fail: bool = False
+) -> subprocess.CompletedProcess[str]:
     """Run a Makefile target against the scratch repository with test doubles."""
     stub = repo / "mdtablefix-stub"
     return subprocess.run(  # noqa: S603 - fixed argument vector
@@ -61,7 +71,11 @@ def _make(repo: Path, target: str, log: Path) -> subprocess.CompletedProcess[str
         check=False,
         capture_output=True,
         text=True,
-        env={"PATH": "/usr/bin:/bin:/usr/local/bin", "MDTABLEFIX_LOG": str(log)},
+        env={
+            "PATH": "/usr/bin:/bin:/usr/local/bin",
+            "MDTABLEFIX_LOG": str(log),
+            **({"MDTABLEFIX_FAIL": "1"} if fail else {}),
+        },
     )
 
 
@@ -80,23 +94,96 @@ def scratch_repo(tmp_path: Path) -> Path:
     stub.chmod(0o755)
     _git(repo, "add", ".")
     _git(repo, "commit", "-q", "-m", "init")
+    # An untracked document that Git does not ignore must still be formatted,
+    # and so must one inside a skipped directory be left alone.
+    (repo / "docs" / "new.md").write_text("# New\n")
+    (repo / "tests" / "fixtures" / "benchmark_docs" / "untracked.md").write_text(
+        "# U\n"
+    )
     return repo
 
 
-@pytest.mark.parametrize("target", ["check-fmt", "fmt"])
-def test_mdtablefix_skips_fixture_and_rules_directories(
-    scratch_repo: Path, tmp_path: Path, target: str
+def _calls(log: Path) -> list[list[str]]:
+    """Return the argument vectors of the non-listing mdtablefix calls."""
+    calls: list[list[str]] = []
+    for line in log.read_text().splitlines():
+        if line == "CALL":
+            calls.append([])
+        elif line.startswith("ARG "):
+            calls[-1].append(line.removeprefix("ARG "))
+    return calls
+
+
+@pytest.mark.parametrize(
+    ("target", "mode"), [("check-fmt", "--check"), ("fmt", "--in-place")]
+)
+def test_mdtablefix_gets_the_maintained_markdown_with_the_target_flags(
+    scratch_repo: Path, tmp_path: Path, target: str, mode: str
 ) -> None:
-    """Hand mdtablefix the maintained Markdown only, as the other targets do."""
+    """Hand mdtablefix the maintained Markdown only, one argument per path."""
     log = tmp_path / "calls.log"
     log.write_text("")
     result = _make(scratch_repo, target, log)
     assert result.returncode == 0, result.stderr
-    call = log.read_text()
-    assert "README.md" in call
-    assert "docs/guide.md" in call
+
+    listing = [line for line in log.read_text().splitlines() if line.startswith("LIST")]
+    assert listing == ["LIST --list-files --git --include-untracked"], listing
+
+    (call,) = _calls(log)
+    assert mode in call, f"{target} must pass {mode}: {call}"
+    for flag in ("--wrap", "--renumber", "--breaks", "--ellipsis", "--fences"):
+        assert flag in call, f"{target} must pass {flag}: {call}"
+    paths = [arg for arg in call if arg.endswith(".md")]
+    assert sorted(paths) == [
+        "README.md",
+        "docs/guide.md",
+        "docs/new.md",
+        "docs/with space.md",
+    ], f"{target} selected {paths}"
     for skipped in (".rules/", "benchmark_docs", "benchmark_sample"):
-        assert skipped not in call, f"{target} must not select {skipped}"
+        assert not any(skipped in arg for arg in call), (
+            f"{target} must not select {skipped}"
+        )
+
+
+@pytest.mark.parametrize("target", ["check-fmt", "fmt"])
+def test_a_formatter_failure_fails_the_target(
+    scratch_repo: Path, tmp_path: Path, target: str
+) -> None:
+    """Propagate mdtablefix's exit status rather than masking it in the pipe."""
+    log = tmp_path / "calls.log"
+    log.write_text("")
+    result = _make(scratch_repo, target, log, fail=True)
+    assert result.returncode != 0, f"{target} swallowed a formatter failure"
+
+
+@pytest.mark.parametrize("target", ["markdownlint", "spelling", "nixie"])
+def test_the_other_markdown_targets_share_the_exclusions(
+    scratch_repo: Path, target: str
+) -> None:
+    """Build the git pathspecs of the other targets from the same variable."""
+    result = subprocess.run(  # noqa: S603 - fixed argument vector
+        [  # noqa: S607
+            "make",
+            "-n",
+            "MAKE=true",
+            "-C",
+            str(scratch_repo),
+            "-f",
+            str(MAKEFILE),
+            target,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin:/usr/local/bin"},
+    )
+    assert result.returncode == 0, result.stderr
+    for skipped in (".rules", "benchmark_docs", "benchmark_sample"):
+        assert (
+            f"':!{skipped}" in result.stdout
+            or f"':!tests/fixtures/{skipped}" in result.stdout
+        ), f"{target} must skip {skipped}: {result.stdout}"
 
 
 def test_fmt_refuses_to_rewrite_while_a_merge_has_conflicts(
@@ -123,4 +210,4 @@ def test_fmt_refuses_to_rewrite_while_a_merge_has_conflicts(
     result = _make(scratch_repo, "fmt", log)
     assert result.returncode != 0
     assert "unresolved merge conflicts" in result.stderr
-    assert log.read_text() == "", "mdtablefix must not run over a conflicted tree"
+    assert _calls(log) == [], "mdtablefix must not run over a conflicted tree"
