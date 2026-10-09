@@ -13,6 +13,14 @@ MDLINT ?= $(shell command -v markdownlint-cli2 2>/dev/null || printf '%s' "$$HOM
 MDTABLEFIX ?= mdtablefix
 MDTABLEFIX_SELECT = --git --include-untracked
 MDTABLEFIX_RULES = --wrap --renumber --breaks --ellipsis --fences
+# Directories whose Markdown is verbatim third-party or benchmark input. Every
+# Markdown target skips them: the git pathspecs below, and mdtablefix, which
+# has no exclude option, so its selection is filtered by prefix instead.
+MARKDOWN_EXCLUDE_DIRS = .rules tests/fixtures/benchmark_docs tests/fixtures/benchmark_sample
+MARKDOWN_EXCLUDES = $(foreach dir,$(MARKDOWN_EXCLUDE_DIRS),':!$(dir)/**')
+empty :=
+space := $(empty) $(empty)
+MARKDOWN_EXCLUDE_RE = ^($(subst $(space),|,$(subst .,\.,$(MARKDOWN_EXCLUDE_DIRS))))/
 NIXIE ?= uv run nixie
 HYPERFINE ?= hyperfine
 BENCH_DOCS ?= tests/fixtures/benchmark_sample
@@ -44,18 +52,24 @@ typecheck: build ## Run type checking
 
 fmt: ## Format code
 	$(RUFF) format
-	$(MDTABLEFIX) --in-place $(MDTABLEFIX_SELECT) $(MDTABLEFIX_RULES)
+	@if [ -n "$$(git ls-files --unmerged)" ]; then \
+		echo "make fmt: unresolved merge conflicts; resolve them first" >&2; \
+		exit 1; \
+	fi
+	files=$$($(MDTABLEFIX) --list-files $(MDTABLEFIX_SELECT)) && \
+	printf '%s\n' "$$files" | grep -v -E '$(MARKDOWN_EXCLUDE_RE)' | tr '\n' '\0' \
+	| xargs -0 --no-run-if-empty -- $(MDTABLEFIX) --in-place $(MDTABLEFIX_RULES)
 	$(MDLINT) --fix "**/*.md"
 
 check-fmt: ## Verify formatting
 	$(RUFF) format --check
-	$(MDTABLEFIX) --check $(MDTABLEFIX_SELECT) $(MDTABLEFIX_RULES)
+	files=$$($(MDTABLEFIX) --list-files $(MDTABLEFIX_SELECT)) && \
+	printf '%s\n' "$$files" | grep -v -E '$(MARKDOWN_EXCLUDE_RE)' | tr '\n' '\0' \
+	| xargs -0 --no-run-if-empty -- $(MDTABLEFIX) --check $(MDTABLEFIX_RULES)
 
 markdownlint: ## Lint Markdown files
 	git ls-files '*.md' \
-		':!.rules/**' \
-		':!tests/fixtures/benchmark_docs/**' \
-		':!tests/fixtures/benchmark_sample/**' \
+		$(MARKDOWN_EXCLUDES) \
 	| tr '\n' '\0' \
 	| xargs -0 --no-run-if-empty -- $(MDLINT)
 	+$(MAKE) spelling
@@ -63,17 +77,13 @@ markdownlint: ## Lint Markdown files
 spelling: ## Enforce en-GB-oxendict spelling in maintained Markdown prose
 	uv run scripts/generate_typos_config.py
 	git ls-files '*.md' \
-		':!.rules/**' \
-		':!tests/fixtures/benchmark_docs/**' \
-		':!tests/fixtures/benchmark_sample/**' \
+		$(MARKDOWN_EXCLUDES) \
 	| tr '\n' '\0' \
 	| xargs -0 --no-run-if-empty -- $(TYPOS) --config typos.toml --force-exclude
 
 nixie: ## Validate Mermaid diagrams
 	git ls-files '*.md' \
-		':!.rules/**' \
-		':!tests/fixtures/benchmark_docs/**' \
-		':!tests/fixtures/benchmark_sample/**' \
+		$(MARKDOWN_EXCLUDES) \
 	| tr '\n' '\0' \
 	| xargs -0 --no-run-if-empty -- $(NIXIE)
 
