@@ -25,6 +25,7 @@ def stub_render(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
         *,
         renderer: object | None = None,
     ) -> None:
+        """Return the stubbed render result."""
         _ = timeout
         _ = mermaid_version
         _ = tmpdir

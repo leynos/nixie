@@ -71,11 +71,13 @@ async def _capture_render_failure(
     """
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return False, stderr
 
     monkeypatch.setattr(

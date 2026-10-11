@@ -127,6 +127,18 @@ make lint
 make test
 ```
 
+`make lint` runs `make interrogate` and then Ruff. The `interrogate` target
+runs interrogate 1.7.0 through `uv tool run` on Python 3.14, so it needs uv,
+and requires a docstring on every definition in `nixie`, `pathspec`, `scripts`
+and `tests`, including nested helpers and test doubles. Ruff keeps docstring
+style. The run prints every definition and fails on any `MISSED` row, because
+interrogate rounds its percentage to one decimal. Add a new Python directory to
+`INTERROGATE_TARGETS` in the `Makefile`.
+`tests/integration/test_makefile_interrogate.py` holds the contract: the
+prerequisite, the pin, the flags and the targets are asserted, and the target
+is run against a stub tool to prove that a failing status and a `MISSED` row
+that the rounded percentage hid both fail it.
+
 For Markdown changes, also run `make markdownlint` and `make nixie` (nixie
 validates its own documentation's Mermaid diagrams).
 

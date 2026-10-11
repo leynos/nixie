@@ -1,4 +1,5 @@
-.PHONY: help all clean test build lint fmt check-fmt markdownlint spelling nixie benchmark
+.PHONY: help all clean test build lint fmt check-fmt markdownlint spelling nixie benchmark \
+	interrogate
 
 RUFF ?= uv run ruff
 TY ?= uv run ty
@@ -24,6 +25,16 @@ MARKDOWN_EXCLUDE_RE = ^($(subst $(space),|,$(subst .,\.,$(MARKDOWN_EXCLUDE_DIRS)
 NIXIE ?= uv run nixie
 HYPERFINE ?= hyperfine
 BENCH_DOCS ?= tests/fixtures/benchmark_sample
+# Interrogate measures docstring presence over every Python file the repository
+# owns: the package, the local pathspec shim, the scripts and every test suite.
+# Ruff owns docstring style.
+INTERROGATE_VERSION ?= 1.7.0
+INTERROGATE_TARGETS ?= nixie pathspec scripts tests
+# Level 2 prints a MISSED row per undocumented definition, which the
+# `interrogate` target fails on: the rounded percentage alone passes a lone gap.
+INTERROGATE_FLAGS ?= -vv --fail-under 100
+INTERROGATE = uv tool run --python 3.14 \
+	--from 'interrogate==$(INTERROGATE_VERSION)' interrogate
 TYPOS_VERSION ?= 1.48.0
 TYPOS := uv tool run typos@$(TYPOS_VERSION)
 
@@ -44,8 +55,20 @@ build: ## install deps and build bytecode
 test: build ## Run tests
 	$(PYTEST) -v
 
-lint: ## Run lint
+lint: interrogate ## Run lint, including Python docstring coverage
 	$(RUFF) check
+
+# Interrogate rounds its percentage to one decimal, so `--fail-under 100` alone
+# passes a lone gap in a large repository; fail on any MISSED row as well.
+interrogate: ## Enforce complete Python docstring coverage
+	@report="$$($(INTERROGATE) $(INTERROGATE_FLAGS) $(INTERROGATE_TARGETS))"; \
+	  status=$$?; \
+	  printf '%s\n' "$$report"; \
+	  test "$$status" -eq 0 || exit "$$status"; \
+	  if printf '%s\n' "$$report" | grep -q '| *MISSED |'; then \
+	    printf '%s\n' 'interrogate: undocumented definitions remain; see the MISSED rows above' >&2; \
+	    exit 1; \
+	  fi
 
 typecheck: build ## Run type checking
 	$(TY) check
