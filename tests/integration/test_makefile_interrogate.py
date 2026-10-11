@@ -49,7 +49,7 @@ def _python_directories() -> set[str]:
         if PRUNED & set(relative.parts):
             continue
         parent = relative.parts[:-1]
-        found.add("/".join(parent) if parent else relative.name)
+        found.add(Path(*parent).as_posix() if parent else relative.name)
     return found
 
 
@@ -97,7 +97,7 @@ def _run_target(tmp_path: Path, script: str) -> subprocess.CompletedProcess[str]
     stub.write_text("#!/bin/sh\n" + textwrap.dedent(script), encoding="utf-8")
     stub.chmod(0o755)
     return subprocess.run(  # noqa: S603 - fixed argument vector, scratch stub
-        ["make", "-C", str(ROOT), "interrogate", f"INTERROGATE={stub}"],  # noqa: S607
+        ["make", "-C", str(ROOT), "interrogate", f"INTERROGATE={stub}"],  # noqa: S607 - make is resolved from PATH, as the Makefile targets are
         capture_output=True,
         text=True,
         check=False,
