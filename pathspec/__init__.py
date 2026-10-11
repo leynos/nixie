@@ -34,7 +34,13 @@ class PathSpec:
     """
 
     def __init__(self, rules: list[_Rule]) -> None:
-        """Store the parsed rules."""
+        """Store the parsed rules.
+
+        Parameters
+        ----------
+        rules
+            The parsed rules, each a ``_Rule``.
+        """
         self._rules = rules
 
     @classmethod

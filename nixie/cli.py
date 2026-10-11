@@ -170,7 +170,13 @@ class UnexpectedExecutableError(ValueError):
     """Raised when an executable outside the allowed set is requested."""
 
     def __init__(self, executable: str) -> None:
-        """Name the rejected executable in the message."""
+        """Name the rejected executable in the message.
+
+        Parameters
+        ----------
+        executable
+            The rejected executable name included in the error message.
+        """
         super().__init__(f"Unexpected executable: {executable}")
 
 
