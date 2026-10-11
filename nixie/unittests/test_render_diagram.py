@@ -31,11 +31,13 @@ async def test_render_diagram_writes_file_and_logs(
     block = "A-->B"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(
@@ -70,11 +72,13 @@ async def test_render_diagram_raises_on_failure(
     block = "A-->B"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return False, b"Parse error on line 1:\nfoo\n^\n"
 
     monkeypatch.setattr(
@@ -106,11 +110,13 @@ async def test_render_diagram_merman_failure_reports_raw_stderr(
     block = "A-->B"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return False, b"Mermaid error: unknown diagram type\n"
 
     monkeypatch.setattr(
@@ -163,11 +169,13 @@ async def test_run_mermaid_cli_accepts_windows_executable(
     """Treat Windows executables with common suffixes as valid shims."""
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(

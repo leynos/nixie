@@ -127,6 +127,13 @@ make lint
 make test
 ```
 
+`make lint` runs Ruff and then `make interrogate`, which requires a docstring
+on every definition in `nixie`, `pathspec`, `scripts` and `tests`, including
+nested helpers and test doubles. Ruff keeps docstring style. The run prints
+every definition and fails on any `MISSED` row, because interrogate rounds its
+percentage to one decimal. Add a new Python directory to `INTERROGATE_TARGETS`
+in the `Makefile`.
+
 For Markdown changes, also run `make markdownlint` and `make nixie` (nixie
 validates its own documentation's Mermaid diagrams).
 

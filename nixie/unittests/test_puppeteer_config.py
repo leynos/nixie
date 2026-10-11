@@ -64,6 +64,7 @@ def test_create_puppeteer_config_cleanup_on_exception(
     path: Path | None = None
 
     def boom() -> None:
+        """Raise to simulate a failure while the config file exists."""
         nonlocal path
         with create_puppeteer_config() as cfg:
             path = cfg

@@ -30,12 +30,14 @@ async def test_render_block_accepts_windows_executables(
     """Allow Windows shims discovered via ``which`` when rendering."""
 
     async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         assert cmd[0] == executable
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(
@@ -46,6 +48,7 @@ async def test_render_block_accepts_windows_executables(
     monkeypatch.chdir(tmp_path)
 
     def fake_which(cmd: str) -> str | None:
+        """Stand in for ``shutil.which``."""
         return executable if cmd == which_name else None
 
     monkeypatch.setattr("nixie.cli.shutil.which", fake_which)
@@ -63,6 +66,7 @@ async def test_render_block_rejects_unexpected_executable(
     async def fail_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
         # ``ty`` cannot see through pytest's ``_WithException`` protocol
         # wrapper, so it rejects valid ``skip``/``fail`` call signatures.
+        """Fail the test if a subprocess would be spawned."""
         pytest.fail(reason="create_subprocess_exec should not be called")  # ty: ignore[unknown-argument]
 
     monkeypatch.setattr(
@@ -72,6 +76,7 @@ async def test_render_block_rejects_unexpected_executable(
     monkeypatch.chdir(tmp_path)
 
     def fake_which(cmd: str) -> str | None:
+        """Stand in for ``shutil.which``."""
         return "/usr/bin/python" if cmd == "mmdc" else None
 
     monkeypatch.setattr("nixie.cli.shutil.which", fake_which)

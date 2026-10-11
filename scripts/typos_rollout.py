@@ -137,6 +137,7 @@ def generate_word_mappings(dictionary: Dictionary) -> dict[str, str]:
     mappings = {word: word for word in dictionary.accepted}
 
     def add(word: str, correction: str) -> None:
+        """Record one correction, refusing a conflicting one."""
         existing = mappings.get(word)
         if existing is not None and existing != correction:
             message = (

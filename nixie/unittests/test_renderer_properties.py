@@ -156,6 +156,7 @@ def test_renderer_cmd_invariants(
     discovered = "merman-cli" if backend == "merman" else node_tool
 
     def fake_which(cmd: str) -> str | None:
+        """Stand in for ``shutil.which``."""
         return _DISCOVERY_PATHS[cmd] if cmd == discovered else None
 
     # Purely symbolic paths: the command builders stringify them without

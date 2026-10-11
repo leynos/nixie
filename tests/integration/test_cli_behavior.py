@@ -26,6 +26,7 @@ class SimulatedProcessingError(ValueError):
     """Exception used to simulate processing failures in tests."""
 
     def __init__(self) -> None:
+        """Set the fixed message."""
         super().__init__("Simulated processing error")
 
 
@@ -259,6 +260,7 @@ async def test_cli_handles_file_processing_error(
     original_parse_blocks = cli_module.parse_blocks
 
     def mock_parse_blocks(text: str) -> list[cli_module.Diagram]:
+        """Fail for the trigger text; otherwise delegate to ``parse_blocks``."""
         if "TRIGGER_PARSE_BLOCKS_ERROR" in text:
             raise SimulatedProcessingError
         return original_parse_blocks(text)
@@ -335,6 +337,7 @@ async def test_cli_preserves_deterministic_order_with_out_of_order_completions(
         *,
         renderer: object | None = None,
     ) -> None:
+        """Stand in for the diagram renderer."""
         _ = renderer
         _ = timeout
         _ = mermaid_version
@@ -404,6 +407,7 @@ async def test_cli_caps_concurrency_to_cpu_count_minus_one(
         *,
         renderer: object | None = None,
     ) -> None:
+        """Stand in for the diagram renderer."""
         _ = renderer
         nonlocal active, peak_active
         _ = timeout
@@ -443,18 +447,20 @@ class _RecordingStream:
     """In-memory text stream that exposes an ``encoding`` attribute."""
 
     def __init__(self, encoding: str | None) -> None:
+        """Start with an empty buffer and the given encoding."""
         self.encoding = encoding
         self._chunks: list[str] = []
 
     def write(self, data: str) -> int:
+        """Record *data* and return its length."""
         self._chunks.append(data)
         return len(data)
 
     def flush(self) -> None:
-        # ``print`` may call ``flush``; retain compatibility without side effects.
-        return None
+        """Do nothing: ``print`` may call ``flush``, which needs no side effect."""
 
     def getvalue(self) -> str:
+        """Return everything written so far."""
         return "".join(self._chunks)
 
 

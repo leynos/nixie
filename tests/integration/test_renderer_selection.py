@@ -29,12 +29,14 @@ def spawned_commands(
     commands: list[tuple[str, ...]] = []
 
     async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         commands.append(cmd)
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(
@@ -184,6 +186,7 @@ class TestRendererSelection:
         real_create = cli_module.create_puppeteer_config
 
         def recording_create(*, force_no_sandbox: bool = False) -> object:
+            """Record each puppeteer config before returning it."""
             ctx = real_create(force_no_sandbox=force_no_sandbox)
             configs_created.append(ctx)
             return ctx

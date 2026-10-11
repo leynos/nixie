@@ -35,6 +35,7 @@ def test_cli_scans_cwd_when_no_args(
         max_concurrency: int | None = None,
         renderer: str = "auto",
     ) -> int:
+        """Stand in for the CLI's ``main`` coroutine."""
         _ = renderer
         _ = mermaid_version
         _ = max_concurrency
@@ -71,6 +72,7 @@ def test_cli_handles_empty_directory(
         max_concurrency: int | None = None,
         renderer: str = "auto",
     ) -> int:
+        """Stand in for the CLI's ``main`` coroutine."""
         _ = renderer
         nonlocal called
         _ = mermaid_version
@@ -111,6 +113,7 @@ def test_cli_accepts_no_sandbox_flag(
         max_concurrency: int | None = None,
         renderer: str = "auto",
     ) -> int:
+        """Stand in for the CLI's ``main`` coroutine."""
         _ = renderer
         nonlocal received_no_sandbox
         _ = mermaid_version

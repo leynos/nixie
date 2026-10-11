@@ -21,6 +21,8 @@ if typ.TYPE_CHECKING:
 
 @dc.dataclass(slots=True)
 class _Rule:
+    """One ``.gitignore`` rule: a directory prefix or a root-level file name."""
+
     kind: str  # "dir" or "file"
     value: str
 
@@ -32,6 +34,7 @@ class PathSpec:
     """
 
     def __init__(self, rules: list[_Rule]) -> None:
+        """Store the parsed rules."""
         self._rules = rules
 
     @classmethod

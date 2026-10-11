@@ -62,18 +62,21 @@ def scenario_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ScenarioS
     monkeypatch.chdir(tmp_path)
 
     async def fake_create_subprocess_exec(*cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         state["spawned_commands"].append(cmd)
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     @contextmanager
     def recording_puppeteer_config(
         *, force_no_sandbox: bool = False
     ) -> typ.Generator[Path]:
+        """Record each puppeteer config the renderer creates."""
         with create_puppeteer_config(force_no_sandbox=force_no_sandbox) as cfg:
             state["puppeteer_configs_created"].append(cfg)
             yield cfg

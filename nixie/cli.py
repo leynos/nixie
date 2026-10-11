@@ -45,15 +45,21 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
 
     @dc.dataclass(slots=True)
     class _Rule:
+        """One ``.gitignore`` rule: a directory prefix or a root-level file name."""
+
         kind: str  # "dir" or "file"
         value: str
 
     class _ShimPathSpec:
+        """Minimal stand-in for ``pathspec.PathSpec`` when the package is absent."""
+
         def __init__(self, rules: list[_Rule]) -> None:
+            """Store the parsed rules."""
             self._rules = rules
 
         @classmethod
         def from_lines(cls, style: str, lines: list[str]) -> _ShimPathSpec:
+            """Parse ``.gitignore`` lines into directory and file rules."""
             if style != "gitwildmatch":
                 raise NotImplementedError
             rules: list[_Rule] = []
@@ -68,6 +74,7 @@ except ModuleNotFoundError:  # pragma: no cover - test-only fallback
             return cls(rules)
 
         def match_file(self, rel_path: str) -> bool:
+            """Return whether a rule ignores *rel_path*."""
             for rule in self._rules:
                 if rule.kind == "dir":
                     prefix = f"{rule.value}/" if rule.value else ""
@@ -86,6 +93,8 @@ if typ.TYPE_CHECKING:
     TextIO = typ.TextIO
 
     class _EncodingAwareStream(typ.Protocol):
+        """A text stream that reports its encoding."""
+
         encoding: str | None
 else:
     TextIO = object  # type: ignore[assignment]
@@ -161,6 +170,7 @@ class UnexpectedExecutableError(ValueError):
     """Raised when an executable outside the allowed set is requested."""
 
     def __init__(self, executable: str) -> None:
+        """Name the rejected executable in the message."""
         super().__init__(f"Unexpected executable: {executable}")
 
 
@@ -168,6 +178,7 @@ class NoNodeEnvironmentAvailableError(RuntimeError):
     """Indicates that neither mmdc nor a node environment could be found."""
 
     def __init__(self) -> None:
+        """Set the fixed message."""
         super().__init__("No node environment available.")
 
 
@@ -187,6 +198,7 @@ class NoRendererAvailableError(RuntimeError):
     """
 
     def __init__(self) -> None:
+        """Set the fixed installation guidance as the message."""
         super().__init__(
             "No Mermaid renderer available. Install merman-cli "
             "(cargo install merman-cli) or a Node environment with "

@@ -79,6 +79,7 @@ def scenario_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ScenarioS
         *,
         renderer: object | None = None,
     ) -> None:
+        """Stand in for the diagram renderer."""
         _ = timeout
         _ = mermaid_version
         _ = renderer

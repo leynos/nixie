@@ -55,11 +55,13 @@ async def test_render_block_emits_command(
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
@@ -91,11 +93,13 @@ async def test_render_block_verbose_deprecated(
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
@@ -144,11 +148,13 @@ async def test_render_block_silent_without_verbose(
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         return object()
 
     async def fake_wait_for_proc(
         _proc: object, _path: Path, _idx: int, _timeout: float
     ) -> tuple[bool, bytes]:
+        """Stand in for ``wait_for_proc``."""
         return True, b""
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
@@ -180,6 +186,7 @@ async def test_render_block_logs_missing_cli(
     path = tmp_path / "doc.md"
 
     async def fake_create_subprocess_exec(*_cmd: str, **_kwargs: object) -> object:
+        """Stand in for ``asyncio.create_subprocess_exec``."""
         raise FileNotFoundError(2, "No such file or directory", _cmd[0])
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
@@ -207,6 +214,7 @@ async def test_render_block_logs_runtime_error(
     path = tmp_path / "doc.md"
 
     async def raise_runtime_error(*_args: object, **_kwargs: object) -> None:
+        """Raise a ``RuntimeError``."""
         raise RuntimeError("boom")
 
     monkeypatch.setattr("nixie.cli._render_diagram", raise_runtime_error)
@@ -234,6 +242,7 @@ async def test_render_block_logs_unexpected_exception(
         """Uh oh."""
 
     async def raise_exception(*_args: object, **_kwargs: object) -> None:
+        """Raise a generic exception."""
         raise BoomError
 
     monkeypatch.setattr("nixie.cli._render_diagram", raise_exception)
