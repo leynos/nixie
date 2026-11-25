@@ -29,14 +29,16 @@ BENCH_DOCS ?= tests/fixtures/benchmark_sample
 # owns: the package, the local pathspec shim, the scripts and every test suite.
 # Ruff owns docstring style.
 INTERROGATE_VERSION ?= 1.7.0
-INTERROGATE_TARGETS ?= nixie pathspec scripts tests
+INTERROGATE_TARGETS ?= nixie pathspec tests
 # Level 2 prints a MISSED row per undocumented definition, which the
 # `interrogate` target fails on: the rounded percentage alone passes a lone gap.
 INTERROGATE_FLAGS ?= -vv --fail-under 100
 INTERROGATE = uv tool run --python 3.14 \
 	--from 'interrogate==$(INTERROGATE_VERSION)' interrogate
-TYPOS_VERSION ?= 1.48.0
-TYPOS := uv tool run typos@$(TYPOS_VERSION)
+TYPOS_CONFIG_BUILDER_VERSION ?= v0.1.4
+TYPOS_CONFIG_BUILDER = uv tool run --python 3.14 --from \
+	"git+https://github.com/leynos/typos-config-builder.git@$(TYPOS_CONFIG_BUILDER_VERSION)" \
+	typos-config-builder
 
 all: check-fmt lint test ## Default target runs preflight checks
 	+$(MAKE) spelling
@@ -97,12 +99,10 @@ markdownlint: ## Lint Markdown files
 	| xargs -0 --no-run-if-empty -- $(MDLINT)
 	+$(MAKE) spelling
 
-spelling: ## Enforce en-GB-oxendict spelling in maintained Markdown prose
-	uv run scripts/generate_typos_config.py
-	git ls-files '*.md' \
-		$(MARKDOWN_EXCLUDES) \
-	| tr '\n' '\0' \
-	| xargs -0 --no-run-if-empty -- $(TYPOS) --config typos.toml --force-exclude
+# The gate reads tracked files only, so stage new Markdown files before running
+# this target; untracked files are not checked.
+spelling: ## Enforce en-GB-oxendict spelling in prose
+	$(TYPOS_CONFIG_BUILDER) gate --repository .
 
 nixie: ## Validate Mermaid diagrams
 	git ls-files '*.md' \

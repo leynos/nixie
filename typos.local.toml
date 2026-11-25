@@ -14,4 +14,9 @@ accepted = []
 ignore = []
 
 [files]
-exclude = []
+exclude = [
+  # Vendored benchmark documents keep their upstream wording.
+  ".rules/**",
+  "tests/fixtures/benchmark_docs/**",
+  "tests/fixtures/benchmark_sample/**",
+]
