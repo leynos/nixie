@@ -130,22 +130,22 @@ make test
 `make lint` runs `make interrogate`, `make yamllint` and `make actionlint`, and
 then Ruff. `make yamllint` runs `yamllint --strict` over every tracked `.yml`
 and `.yaml` file, using `.yamllint.yml`, which extends the estate base
-`.yamllint-estate.yml`; run it from the repository root, because yamllint
-resolves `extends` against the current directory. A new YAML file is linted
-once it is tracked, so `git add` it first. `make actionlint` checks the GitHub
-Actions workflows, including their shell scripts, and reads
-`.github/actionlint.yaml` for the Ubicloud runner labels. Both tools must be on
-`PATH` locally; CI installs them with the `install-yaml-lint` action. The
-`interrogate` target runs interrogate 1.7.0 through `uv tool run` on Python
-3.14, so it needs uv, and requires a docstring on every definition in `nixie`,
-`pathspec`, `scripts` and `tests`, including nested helpers and test doubles.
-Ruff keeps docstring style. The run prints every definition and fails on any
-`MISSED` row, because interrogate rounds its percentage to one decimal. Add a
-new Python directory to `INTERROGATE_TARGETS` in the `Makefile`.
-`tests/integration/test_makefile_interrogate.py` holds the contract: the
-prerequisite, the pin, the flags and the targets are asserted, and the target
-is run against a stub tool to prove that a failing status and a `MISSED` row
-that the rounded percentage hid both fail it.
+`.yamllint-estate.yml` (the base ignores Helm chart templates); run it from the
+repository root, because yamllint resolves `extends` against the current
+directory. A new YAML file is linted once it is tracked, so `git add` it first.
+`make actionlint` checks the GitHub Actions workflows, including their shell
+scripts, and reads `.github/actionlint.yaml` for the Ubicloud runner labels.
+Both tools must be on `PATH` locally; CI installs them with the
+`install-yaml-lint` action. The `interrogate` target runs interrogate 1.7.0
+through `uv tool run` on Python 3.14, so it needs uv, and requires a docstring
+on every definition in `nixie`, `pathspec`, `scripts` and `tests`, including
+nested helpers and test doubles. Ruff keeps docstring style. The run prints
+every definition and fails on any `MISSED` row, because interrogate rounds its
+percentage to one decimal. Add a new Python directory to `INTERROGATE_TARGETS`
+in the `Makefile`. `tests/integration/test_makefile_interrogate.py` holds the
+contract: the prerequisite, the pin, the flags and the targets are asserted,
+and the target is run against a stub tool to prove that a failing status and a
+`MISSED` row that the rounded percentage hid both fail it.
 
 For Markdown changes, also run `make markdownlint` and `make nixie` (nixie
 validates its own documentation's Mermaid diagrams).
