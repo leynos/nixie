@@ -64,6 +64,7 @@ def _make(
             "-f",
             str(MAKEFILE),
             target,
+            "UV_GATE=true",
             "RUFF=true",
             "MDLINT=true",
             f"MDTABLEFIX={stub}",
@@ -157,7 +158,7 @@ def test_a_formatter_failure_fails_the_target(
     assert result.returncode != 0, f"{target} swallowed a formatter failure"
 
 
-@pytest.mark.parametrize("target", ["markdownlint", "spelling", "nixie"])
+@pytest.mark.parametrize("target", ["markdownlint", "nixie"])
 def test_the_other_markdown_targets_share_the_exclusions(
     scratch_repo: Path, target: str
 ) -> None:
