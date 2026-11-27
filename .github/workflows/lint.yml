@@ -20,4 +20,5 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@c5680ec91f7b9b91406fab4ded5d45245abf7b67
+      - uses: leynos/shared-actions/.github/actions/install-yaml-lint@a108423efa7fb83565089449f2647d34286a48a4
       - run: make lint

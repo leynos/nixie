@@ -1,7 +1,9 @@
 .PHONY: help all clean test build lint fmt check-fmt markdownlint spelling nixie benchmark \
-	interrogate
+	interrogate yamllint actionlint
 
 RUFF ?= uv run ruff
+YAMLLINT ?= yamllint
+ACTIONLINT ?= actionlint
 TY ?= uv run ty
 PYTEST ?= uv run pytest
 BUILD_JOBS ?=
@@ -57,8 +59,16 @@ build: ## install deps and build bytecode
 test: build ## Run tests
 	$(PYTEST) -v
 
-lint: interrogate ## Run lint, including Python docstring coverage
+lint: interrogate yamllint actionlint ## Run lint, including docstring coverage and YAML lint
 	$(RUFF) check
+
+# yamllint reads `.yamllint.yml`, which extends `.yamllint-estate.yml`, and
+# resolves that path against the current directory, so run it from the root.
+yamllint: ## Lint every tracked YAML file strictly
+	git ls-files -z '*.yml' '*.yaml' | xargs -0 -r $(YAMLLINT) --strict --
+
+actionlint: ## Lint the GitHub Actions workflows, including their shell scripts
+	$(ACTIONLINT)
 
 # Interrogate rounds its percentage to one decimal, so `--fail-under 100` alone
 # passes a lone gap in a large repository; fail on any MISSED row as well.
