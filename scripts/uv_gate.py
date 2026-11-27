@@ -39,6 +39,7 @@ Python 3.9 or later is enough: the file uses only the standard library.
 
 from __future__ import annotations
 
+import contextlib
 import enum
 import os
 import re
@@ -53,7 +54,7 @@ from pathlib import Path
 if typ.TYPE_CHECKING:
     import collections.abc as cabc
 
-VERSION = "0.2.1"
+VERSION = "0.2.3"
 REFUSAL_STATUS = 2
 ALLOW_ONLINE_VARIABLE = "UV_GATE_ALLOW_ONLINE"
 SYSTEM_GIT = Path("/usr/bin/git")
@@ -180,6 +181,11 @@ SIGNATURES: tuple[tuple[Kind, re.Pattern[str]], ...] = (
         re.compile(
             r"not\s+found\s+in\s+the\s+cache(?s:.*)network\s+was\s+disabled"
             r"|network\s+was\s+disabled(?s:.*)not\s+found\s+in\s+the\s+cache"
+            # The variant for a package that a requirement needs but the cache
+            # lacks: "needs to be downloaded from a registry" with the hint
+            # "registry packages may only be read from the cache".
+            r"|needs\s+to\s+be\s+downloaded\s+from\s+a\s+registry"
+            r"(?s:.*)network\s+was\s+disabled"
         ),
     ),
 )
@@ -229,10 +235,30 @@ class GateError(Exception):
     """A refusal by the helper itself, reported with exit status 2."""
 
 
+def _discard_stderr() -> None:
+    """Point standard error at the null device once its reader has gone.
+
+    A write that fails leaves its bytes buffered, and the interpreter would
+    then fail again flushing them at exit and replace uv's status with 120.
+    Redirecting descriptor 2 lets the buffer flush and later writes succeed.
+    """
+    with contextlib.suppress(OSError, ValueError):
+        descriptor = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(descriptor, 2)
+        os.close(descriptor)
+
+
 def say(message: str) -> None:
-    """Print one ``uv-gate:`` line on standard error."""
-    sys.stderr.write(f"uv-gate: {message}\n")
-    sys.stderr.flush()
+    """Print one ``uv-gate:`` line on standard error.
+
+    A closed standard error, as under ``make test 2>&1 | head``, never changes
+    the exit status: the line is dropped and the helper carries on.
+    """
+    try:
+        sys.stderr.write(f"uv-gate: {message}\n")
+        sys.stderr.flush()
+    except (OSError, ValueError):
+        _discard_stderr()
 
 
 def classify(text: str) -> Kind:
@@ -525,6 +551,17 @@ def build_context(
     return _with_git_shim(Context(env, uv, cache))
 
 
+def _forward_stderr(chunk: bytes) -> bool:
+    """Write ``chunk`` to our standard error; report whether forwarding can go on."""
+    try:
+        sys.stderr.buffer.write(chunk)
+        sys.stderr.buffer.flush()
+    except (OSError, ValueError):
+        _discard_stderr()
+        return False
+    return True
+
+
 def _run_streaming(argv: list[str], env: dict[str, str]) -> tuple[int, str]:
     """Run ``argv``, passing standard error through while keeping its tail."""
     tail = bytearray()
@@ -540,12 +577,16 @@ def _run_streaming(argv: list[str], env: dict[str, str]) -> tuple[int, str]:
         return process.wait(), ""
 
     def pump() -> None:
-        """Copy the child's standard error to ours, keeping the last bytes."""
+        """Copy the child's standard error to ours, keeping the last bytes.
+
+        A failed write stops the forwarding but never the reading: a child
+        that blocks on a full pipe would otherwise hang ``process.wait()``.
+        """
+        forwarding = True
         while chunk := os.read(stream.fileno(), 4096):
-            sys.stderr.buffer.write(chunk)
-            sys.stderr.buffer.flush()
             tail.extend(chunk)
             del tail[:-TAIL_BYTES]
+            forwarding = forwarding and _forward_stderr(chunk)
 
     reader = threading.Thread(target=pump)
     reader.start()
@@ -743,8 +784,9 @@ def is_pinned(spec: str) -> bool:
     if direct is not None:
         return is_pinned(direct.group("url"))
     if spec.startswith("git+"):
-        _, _, ref = spec.rpartition("@")
-        return bool(FULL_SHA.fullmatch(ref.split("#", 1)[0]))
+        location = spec.split("#", 1)[0]
+        _, found, ref = location.rpartition("@")
+        return bool(found and FULL_SHA.fullmatch(ref))
     return any(_is_exact_pin(spec, separator) for separator in ("==", "@"))
 
 
