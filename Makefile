@@ -1,11 +1,20 @@
-.PHONY: help all clean test build lint fmt check-fmt markdownlint spelling nixie benchmark \
+.PHONY: help all clean prepare test build lint fmt check-fmt markdownlint spelling nixie benchmark \
 	interrogate yamllint actionlint
 
-RUFF ?= uv run ruff
+# Every uv call but the spelling builder's goes through the vendored helper,
+# which cleans the environment, uses the global uv cache, runs offline first and
+# goes online at most once. The builder runs directly at its release tag, because
+# the spelling baseline requires that form and the helper accepts only a full
+# commit. See https://github.com/leynos/shared-actions/tree/main/uv_gate for the
+# contract.
+# `scripts/uv_gate.py` is the shared-actions helper, vendored byte for byte, so
+# update it by copying the canonical file, never by editing it here.
+UV_GATE ?= python3 scripts/uv_gate.py
+RUFF ?= $(UV_GATE) run --group dev -- ruff
+TY ?= $(UV_GATE) run --group dev -- ty
+PYTEST ?= $(UV_GATE) run --group dev -- pytest
 YAMLLINT ?= yamllint
 ACTIONLINT ?= actionlint
-TY ?= uv run ty
-PYTEST ?= uv run pytest
 BUILD_JOBS ?=
 MDLINT ?= $(shell command -v markdownlint-cli2 2>/dev/null || printf '%s' "$$HOME/.bun/bin/markdownlint-cli2")
 # `make fmt` and `make check-fmt` call mdtablefix directly. `--git` selects the
@@ -24,19 +33,19 @@ MARKDOWN_EXCLUDES = $(foreach dir,$(MARKDOWN_EXCLUDE_DIRS),':!$(dir)/**')
 empty :=
 space := $(empty) $(empty)
 MARKDOWN_EXCLUDE_RE = ^($(subst $(space),|,$(subst .,\.,$(MARKDOWN_EXCLUDE_DIRS))))/
-NIXIE ?= uv run nixie
+NIXIE ?= $(UV_GATE) run --group dev -- nixie
 HYPERFINE ?= hyperfine
 BENCH_DOCS ?= tests/fixtures/benchmark_sample
 # Interrogate measures docstring presence over every Python file the repository
 # owns: the package, the local pathspec shim, the scripts and every test suite.
 # Ruff owns docstring style.
 INTERROGATE_VERSION ?= 1.7.0
-INTERROGATE_TARGETS ?= nixie pathspec tests
+INTERROGATE_TARGETS ?= nixie pathspec scripts tests
 # Level 2 prints a MISSED row per undocumented definition, which the
 # `interrogate` target fails on: the rounded percentage alone passes a lone gap.
 INTERROGATE_FLAGS ?= -vv --fail-under 100
-INTERROGATE = uv tool run --python 3.14 \
-	--from 'interrogate==$(INTERROGATE_VERSION)' interrogate
+INTERROGATE = $(UV_GATE) tool --python 3.14 \
+	--from 'interrogate==$(INTERROGATE_VERSION)' -- interrogate
 TYPOS_CONFIG_BUILDER_VERSION ?= v0.1.4
 TYPOS_CONFIG_BUILDER = uv tool run --python 3.14 --from \
 	"git+https://github.com/leynos/typos-config-builder.git@$(TYPOS_CONFIG_BUILDER_VERSION)" \
@@ -49,17 +58,15 @@ clean: ## Remove build artifacts
 	rm -rf .venv build dist/ *.egg-info
 	rm -f .typos-oxendict-base.json .typos-oxendict-base.toml
 
-build: ## install deps and build bytecode
-	@if [ -x .venv/bin/python ]; then \
-		echo "venv present; skipping uv setup"; \
-	else \
-		uv venv && uv sync --group dev; \
-	fi
+prepare: ## Sync the locked environment, offline first
+	$(UV_GATE) prepare --group dev
+
+build: prepare ## install deps and build bytecode
 
 test: build ## Run tests
 	$(PYTEST) -v
 
-lint: interrogate yamllint actionlint ## Run lint, including docstring coverage and YAML lint
+lint: prepare interrogate yamllint actionlint ## Run lint, including docstring coverage and YAML lint
 	$(RUFF) check
 
 # yamllint reads `.yamllint.yml`, which extends `.yamllint-estate.yml`, and
@@ -85,7 +92,7 @@ interrogate: ## Enforce complete Python docstring coverage
 typecheck: build ## Run type checking
 	$(TY) check
 
-fmt: ## Format code
+fmt: prepare ## Format code
 	$(RUFF) format
 	@if [ -n "$$(git ls-files --unmerged)" ]; then \
 		echo "make fmt: unresolved merge conflicts; resolve them first" >&2; \
@@ -96,7 +103,7 @@ fmt: ## Format code
 	| xargs -0 --no-run-if-empty -- $(MDTABLEFIX) --in-place $(MDTABLEFIX_RULES)
 	$(MDLINT) --fix "**/*.md"
 
-check-fmt: ## Verify formatting
+check-fmt: prepare ## Verify formatting
 	$(RUFF) format --check
 	files=$$($(MDTABLEFIX) --list-files $(MDTABLEFIX_SELECT)) && \
 	printf '%s\n' "$$files" | grep -v -E '$(MARKDOWN_EXCLUDE_RE)' | tr '\n' '\0' \
@@ -114,7 +121,7 @@ markdownlint: ## Lint Markdown files
 spelling: ## Enforce en-GB-oxendict spelling in prose
 	$(TYPOS_CONFIG_BUILDER) gate --repository .
 
-nixie: ## Validate Mermaid diagrams
+nixie: prepare ## Validate Mermaid diagrams
 	git ls-files '*.md' \
 		$(MARKDOWN_EXCLUDES) \
 	| tr '\n' '\0' \
@@ -126,8 +133,8 @@ benchmark: build ## Benchmark serial vs bounded-concurrent validation
 		exit 1; \
 	fi
 	$(HYPERFINE) \
-		'uv run nixie $(BENCH_DOCS) --max-concurrency 1' \
-		'uv run nixie $(BENCH_DOCS)'
+		'$(NIXIE) $(BENCH_DOCS) --max-concurrency 1' \
+		'$(NIXIE) $(BENCH_DOCS)'
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) | \

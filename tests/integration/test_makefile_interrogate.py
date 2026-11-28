@@ -58,12 +58,9 @@ def test_lint_depends_on_interrogate() -> None:
     assert "interrogate" in _prerequisites("lint")
 
 
-def test_the_tool_is_pinned_and_run_through_uv() -> None:
-    """An unpinned tool could change the verdict with no repository change."""
-    assert _variable("INTERROGATE_VERSION") == "1.7.0"
-    command = _variable("INTERROGATE")
-    assert "uv tool run" in command
-    assert "--from 'interrogate==$(INTERROGATE_VERSION)'" in command
+def test_the_tool_is_run_through_the_uv_gate() -> None:
+    """The helper refuses an unpinned tool, so the command must go through it."""
+    assert _variable("INTERROGATE").startswith("$(UV_GATE) tool ")
 
 
 def test_the_flags_demand_a_full_exact_report() -> None:
