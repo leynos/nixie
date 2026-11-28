@@ -1,9 +1,12 @@
 .PHONY: help all clean prepare test build lint fmt check-fmt markdownlint spelling nixie benchmark \
 	interrogate yamllint actionlint
 
-# Every uv call goes through the vendored helper, which cleans the environment,
-# uses the global uv cache, runs offline first and goes online at most once. See
-# https://github.com/leynos/shared-actions/tree/main/uv_gate for the contract.
+# Every uv call but the spelling builder's goes through the vendored helper,
+# which cleans the environment, uses the global uv cache, runs offline first and
+# goes online at most once. The builder runs directly at its release tag, because
+# the spelling baseline requires that form and the helper accepts only a full
+# commit. See https://github.com/leynos/shared-actions/tree/main/uv_gate for the
+# contract.
 # `scripts/uv_gate.py` is the shared-actions helper, vendored byte for byte, so
 # update it by copying the canonical file, never by editing it here.
 UV_GATE ?= python3 scripts/uv_gate.py
