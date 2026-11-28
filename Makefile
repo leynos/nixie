@@ -1,5 +1,5 @@
 .PHONY: help all clean prepare test build lint fmt check-fmt markdownlint spelling nixie benchmark \
-	interrogate
+	interrogate yamllint actionlint
 
 # Every uv call goes through the vendored helper, which cleans the environment,
 # uses the global uv cache, runs offline first and goes online at most once. See
@@ -10,6 +10,8 @@ UV_GATE ?= python3 scripts/uv_gate.py
 RUFF ?= $(UV_GATE) run --group dev -- ruff
 TY ?= $(UV_GATE) run --group dev -- ty
 PYTEST ?= $(UV_GATE) run --group dev -- pytest
+YAMLLINT ?= yamllint
+ACTIONLINT ?= actionlint
 BUILD_JOBS ?=
 MDLINT ?= $(shell command -v markdownlint-cli2 2>/dev/null || printf '%s' "$$HOME/.bun/bin/markdownlint-cli2")
 # `make fmt` and `make check-fmt` call mdtablefix directly. `--git` selects the
@@ -61,8 +63,16 @@ build: prepare ## install deps and build bytecode
 test: build ## Run tests
 	$(PYTEST) -v
 
-lint: prepare interrogate ## Run lint, including Python docstring coverage
+lint: prepare interrogate yamllint actionlint ## Run lint, including docstring coverage and YAML lint
 	$(RUFF) check
+
+# yamllint reads `.yamllint.yml`, which extends `.yamllint-estate.yml`, and
+# resolves that path against the current directory, so run it from the root.
+yamllint: ## Lint every tracked YAML file strictly
+	git ls-files -z '*.yml' '*.yaml' | xargs -0 -r $(YAMLLINT) --strict --
+
+actionlint: ## Lint the GitHub Actions workflows, including their shell scripts
+	$(ACTIONLINT)
 
 # Interrogate rounds its percentage to one decimal, so `--fail-under 100` alone
 # passes a lone gap in a large repository; fail on any MISSED row as well.
